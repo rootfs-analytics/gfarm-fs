@@ -1,0 +1,29 @@
+#!/sbin/sh
+#
+# $Id$
+
+GFSD=@prefix@/sbin/gfsd
+
+# workaround a problem that "ld -R" doesn't work with indirectly dependent SOs
+if [ -n "@globus_location@" ]; then
+	LD_LIBRARY_PATH=@globus_location@/lib
+	export LD_LIBRARY_PATH
+fi
+
+case "$1" in 
+'start')
+	if [ -x $GFSD -a -f /etc/gfarm.conf ]; then
+		$GFSD
+	fi	
+	;;
+
+'stop')
+	/usr/bin/pkill -x -u 0 gfsd
+	;;
+
+*)
+	echo "Usage: $0 { start | stop }"
+	exit 1
+	;;
+esac
+exit 0
