@@ -1,0 +1,67 @@
+gfarm (1.0b2-1) unstable; urgency=low
+
+  * new beta version was released
+
+ -- Naotaka YAMAMOTO <naotaka@earth.nifty.jp>  Mon, 19 May 2003 11:51:20 +0900
+
+gfarm (1.0b1-4) unstable; urgency=low
+
+  * fixed some bugs in these packages
+    * missing directory in gfarm-doc
+    * japanese manpages were installed in default path
+    * rewriten init.d script for gfmd and gfsd 
+
+ -- Naotaka YAMAMOTO <naotaka@earth.nifty.jp>  Wed, 14 May 2003 10:22:22 +0900
+
+gfarm (1.0b1-3) unstable; urgency=low
+
+  * faild dependencies
+
+ -- Naotaka YAMAMOTO <naotaka@earth.nifty.jp>  Mon, 28 Apr 2003 15:13:12 +0900
+
+gfarm (1.0b1-2) unstable; urgency=low
+
+  * change package name to gfarm-gfptool from gfarm 
+  * build --with-globus packages
+
+ -- Naotaka YAMAMOTO <naotaka@earth.nifty.jp>  Mon, 28 Apr 2003 10:57:22 +0900
+
+gfarm (1.0b1-1) unstable; urgency=low
+
+  * beta release version 
+
+ -- Naotaka YAMAMOTO <naotaka@earth.nifty.jp>  Sat, 26 Apr 2003 01:38:57 +0900
+
+gfarm (0.0.cvs20030409-1) unstable; urgency=low
+
+  * new cvs version and re-packaging. 
+    * added libssl-dev, libldap2-dev to Build-Depends.
+    * removal of gfarm-doc.files.
+    * removal of {libgfarm-dev,gfarm-server,gfarm-client,gfarm-doc}.dirs.
+    * removed gfarm-pool.*
+    * removed gfarm-fsnode.{conffiles,install,dirs}.
+    * divided gfarm package into gfarm, gfarmd and gfmd package.
+    * gfarm-fnode -> gfsd.
+    * reasonable sections for all packages.
+  
+ -- Yasuhito Takamiya <takamiya@matsulab.is.titech.ac.jp>  Wed,  9 Apr 2003 00:30:29 +0900
+
+gfarm (0.0.cvs20030404-1) unstable; urgency=low
+
+  * correct debuild failure
+
+ -- Naotaka YAMAMOTO <naotaka@earth.nifty.jp>  Fri,  4 Apr 2003 16:09:56 +0900
+
+gfarm (0.0.cvs20021101-1) unstable; urgency=low
+
+  * New upstream release.
+
+ -- Yasuhito Takamiya <takamiya@lucie.is.titech.ac.jp>  Fri,  1 Nov 2002 17:57:31 +0900
+
+gfarm (0.0.cvs20021005-1) unstable; urgency=low
+
+  * cvs 20021005 release.
+
+ -- Yasuhito Takamiya <takamiya@lucie.is.titech.ac.jp>  Fri,  1 Nov 2002 17:56:29 +0900
+
+

@@ -1,0 +1,111 @@
+Copyright (c) 2003 National Institute of Advanced Industrial Science
+and Technology (AIST).  All Rights Reserved.
+
+Release note for Gfarm 1.0b2
+============================
+
+[2003.5.19]
+
+Updated Features
+
+ * Client commands
+
+   (gfreg) A new feature is added to register multiple local files.
+
+   (gfrun) The executed process can be suspended or executed in the
+           background.
+
+   (gfrcmd) A delegated credential is exported to be delegated by a
+            invoked child process by gfrcmd.
+
+ * Servers (gfsd and gfmd)
+
+   Information about authentication and disconnection is now logged.
+
+ * Parallel I/O Library
+
+   Only available filesystem nodes are selected by every command.
+   Node selection algorithm by load average is improved.
+
+   Flags, GFARM_FILE_REPLICATE and GFARM_FILE_NOT_REPLICATE, for
+   gfs_pio_{open,create} and gfs_pio_set_view_{local,index,global} are
+   implemented.
+
+ * Documentation
+
+   (README.hook) An example of static compilation with the Globus
+                 library is added.
+
+   (INSTALL, GUIDE) Examples of the gfreg command are updated.
+
+   (Gfarm-FAQ) Deleted the item 2.1, and added a new item 2.1.
+
+ * Bug fix
+
+   (gfls) Changed an inappropriate error message from "not a
+          directory" to "no fragment information".
+
+   (gfrep) A bug of buffer overrun is fixed.
+
+   (gfsd) Resource and memory leaks are plugged.
+
+   (gfmd) Resource and memory leaks are plugged.
+          A minor race condition is fixed.
+          Fix a bug which made gfmd core dump at authentication failure.
+
+Release note for Gfarm 1.0b1
+============================
+
+[2003.4.25]
+
+Features
+
+ * Supported client commands
+
+   file management - gfls, gfreg, gfrep, gfrm, gfwhere
+   file utilities  - gfexport, gfimport_text, gfimport_fixed
+   scheduling & host management - gfsched, gfhost
+   process management - gfrun, gfrcmd, gfmpirun_p4, gfps
+   security - gfkey, digest
+
+ * Unsupported client commands
+
+   gfmkdir, gfrmdir,
+   gfchmod, gfchown, gfchgrp,
+   gfcd, gfchdir, gfpwd,
+   gfcp, gfdf, gfsck.
+
+ * Gfarm filesystem
+
+   Gfarm filesystem supports a Gfarm file that is a group of ranked
+   files.  Each file of a Gfarm file can be replicated and stored in
+   any filesystem node.
+
+ * Gfarm filesystem daemon (gfsd)
+
+   Gfsd has a capability of remote file operations, user
+   authentication, file replication, remote program invocation, and
+   node status monitoring.
+
+ * Gfarm job-management daemon (gfmd)
+
+   Gfmd has a capability of job management for gfps.
+
+ * Gfarm filesystem metadata daemon (slapd)
+
+   This implementation utilizes the slapd provided by
+   the OpenLDAP software.
+
+ * Syscall hooking libraries
+
+   Legacy applications can utilize a Gfarm filesystem just linking
+   with syscall-hooking library, gfs_hook.o or gfs_hook_mpi.o.
+
+ * Sample Gfarm parallel commands
+
+   gfgrep    - parallel grep
+   gfwc      - parallel word count
+   gfcp      - parallel copy
+   gfcombine - reduce the number of fragments by combining file fragments
+
+$Id$
