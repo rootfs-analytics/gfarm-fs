@@ -1,0 +1,9 @@
+debian/tmp/usr/bin/gfcombine
+debian/tmp/usr/bin/gfcombine_hook
+debian/tmp/usr/bin/gfcp
+debian/tmp/usr/bin/gfcp_hook
+debian/tmp/usr/bin/gfgrep
+debian/tmp/usr/bin/gfsplck
+debian/tmp/usr/libexec/gfrepbe_client
+debian/tmp/usr/libexec/gfrepbe_server
+debian/tmp/usr/sbin/gfregister
