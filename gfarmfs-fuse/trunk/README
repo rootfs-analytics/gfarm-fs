@@ -11,41 +11,57 @@ GfarmFS-FUSE requires Gfarm version 1.1.1 (or later) and FUSE version
   FUSE:
       http://fuse.sourceforge.net/
 
+
 *** Installation
 
-Building steps for GfarmFS-FUSE:
+Make sure Gfarm and FUSE are installed.
 
-  $ ./configure [options]
-  $ make
+Installation steps of GfarmFS-FUSE:
 
-You may copy 'gfarmfs' to anywhere.
+    $ ./configure [options]
+    $ make
+    $ make install
 
 Options for configure:
 
   --enable-symlink
 
-  specifies to enable symlink(2) to work. This is for exclusive use of
-  GfarmFS-FUSE. The file named NAME.gfarmfs-symlink is used as a
+  specifies to enable symlink(2) to work.  This is for exclusive use
+  of GfarmFS-FUSE.  The file named NAME.gfarmfs-symlink is used as a
   symlink named NAME.
 
   --enable-linkiscopy
 
   specifies to enable link(2) to behave copying a file.
 
+  --prefix=directory
+
+  specifies a destination directory for installation.  The 'gfarmfs'
+  command is installed in this directory.  Default is
+  /usr/local directory.  This is optional.
+
 Example of configure:
 
-  $ env CPPFLAGS='-I/usr/grid/gfarm/include' \
+    $ env CPPFLAGS='-I/usr/grid/gfarm/include' \
     LDFLAGS='-L/usr/grid/gfarm/lib -Wl,-R,/usr/grid/gfarm/lib' \
-    ./configure --enable-symlink --enable-linkiscopy
+    ./configure --enable-symlink --enable-linkiscopy \
+    --prefix=/home/myname/bin/
+
 
 *** Mount
 
-Run as normal user:
+Make sure your Gfarm environment is set. (see ISNTALL.en of Gfarm)
+Run the 'gfarmfs' command as normal user in your Gfarm environment:
 
-  $ ./gfarmfs mountpoint -s [fuse-options]
+    $ gfarmfs mountpoint -s [fuse-options]
 
 The `-s' option is neccessary to disable Multi-threaded operation.
 
+Only you can usually access the mountpoint. (see README of FUSE)
+
+
 *** Unmount
 
-  $ fusermount -u mountpoint
+Run the 'fusermount' command (see README of FUSE):
+
+    $ fusermount -u mountpoint

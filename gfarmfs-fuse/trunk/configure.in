@@ -3,6 +3,7 @@ AC_INIT(gfarmfs.c)
 AC_CONFIG_SRCDIR(gfarmfs.c)
 
 AC_PROG_CC
+AC_PROG_INSTALL
 
 # Checks for libraries.
 AC_CHECK_LIB(fuse, fuse_main,,
