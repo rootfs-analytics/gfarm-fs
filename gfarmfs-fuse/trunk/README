@@ -1,0 +1,51 @@
+*** GfarmFS-FUSE
+
+Using GfarmFS-FUSE, you can mount your Gfarm filesystem in your userspace.
+
+GfarmFS-FUSE requires Gfarm version 1.1.1 (or later) and FUSE version
+2.2 (or later) development packages.
+
+  Gfarm:
+      http://datafarm.apgrid.org/
+
+  FUSE:
+      http://fuse.sourceforge.net/
+
+*** Installation
+
+Building steps for GfarmFS-FUSE:
+
+  $ ./configure [options]
+  $ make
+
+You may copy 'gfarmfs' to anywhere.
+
+Options for configure:
+
+  --enable-symlink
+
+  specifies to enable symlink(2) to work. This is for exclusive use of
+  GfarmFS-FUSE. The file named NAME.gfarmfs-symlink is used as a
+  symlink named NAME.
+
+  --enable-linkiscopy
+
+  specifies to enable link(2) to behave copying a file.
+
+Example of configure:
+
+  $ env CPPFLAGS='-I/usr/grid/gfarm/include' \
+    LDFLAGS='-L/usr/grid/gfarm/lib -Wl,-R,/usr/grid/gfarm/lib' \
+    ./configure --enable-symlink --enable-linkiscopy
+
+*** Mount
+
+Run as normal user:
+
+  $ ./gfarmfs mountpoint -s [fuse-options]
+
+The `-s' option is neccessary to disable Multi-threaded operation.
+
+*** Unmount
+
+  $ fusermount -u mountpoint

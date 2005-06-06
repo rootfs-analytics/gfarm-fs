@@ -1,0 +1,51 @@
+# Process this file with autoconf to produce a configure script.
+AC_INIT(gfarmfs.c)
+AC_CONFIG_SRCDIR(gfarmfs.c)
+
+AC_PROG_CC
+
+# Checks for libraries.
+AC_CHECK_LIB(fuse, fuse_main,,
+[
+echo "Please install the libraries of FUSE."
+exit 1
+])
+AC_CHECK_LIB(gfarm, gfarm_initialize,,
+[
+echo "Please install the libraries of Gfarm."
+exit 1
+])
+
+# Checks for header files.
+
+#AC_CHECK_HEADER(fuse.h,,
+#[
+#echo "Please install the headers of FUSE."
+#exit 1
+#])
+
+AC_CHECK_HEADER(gfarm/gfarm.h,,
+[
+echo "Please install the headers of Gfarm."
+exit 1
+])
+
+
+AC_ARG_ENABLE(symlink,
+[  --enable-symlink        use -DSYMLINK_MODE],
+[symlinkmode=-DSYMLINK_MODE
+],
+[symlinkmode=
+])
+AC_SUBST(symlinkmode)
+
+AC_ARG_ENABLE(linkiscopy,
+[  --enable-linkiscopy     use -DLINK_IS_COPY_MODE],
+[linkiscopymode=-DLINK_IS_COPY_MODE
+],
+[linkiscopymode=
+])
+AC_SUBST(linkiscopymode)
+
+AC_CONFIG_FILES(Makefile)
+AC_OUTPUT
