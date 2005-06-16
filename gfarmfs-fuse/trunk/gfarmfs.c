@@ -35,6 +35,16 @@
 
 #include <gfarm/gfarm.h>
 
+#ifndef GFS_DEV
+#define GFS_DEV ((dev_t)-1);
+#endif
+#ifndef GFS_BLKSIZE
+#define GFS_BLKSIZE 8192
+#endif
+#ifndef STAT_BLKSIZ
+#define STAT_BLKSIZ 512
+#endif
+
 /* #define SYMLINK_MODE   // --enable-symlink */
 #ifdef SYMLINK_MODE
 #define SYMLINK_SUFFIX ".gfarmfs-symlink"
@@ -116,7 +126,7 @@ gfarmfs_dir_nlink(const char *url)
                 res++;
             } 
         }
-        e = gfs_closedir(dir);
+        gfs_closedir(dir);
     }
     if (res == 0) {
         return 2;
@@ -178,8 +188,8 @@ gfarmfs_getattr(const char *path, struct stat *buf)
     }
     if (e == NULL) {
         memset(buf, 0, sizeof(struct stat));
+        buf->st_dev = GFS_DEV;
 
-        buf->st_dev = (dev_t)-1;
         buf->st_ino = gs.st_ino;
         buf->st_mode = gs.st_mode;
 #ifdef SYMLINK_MODE
@@ -193,17 +203,18 @@ gfarmfs_getattr(const char *path, struct stat *buf)
             buf->st_nlink = 1;
         }
 
-        if (gs.st_user == NULL) {
-            buf->st_uid = getuid();
-            buf->st_gid = getgid();
-        } else {
-            p = getpwnam(gs.st_user);
+        if (gs.st_user != NULL && ((p = getpwnam(gs.st_user)) != NULL)) {
             buf->st_uid = p->pw_uid;
             buf->st_gid = p->pw_gid;
+        } else {
+            buf->st_uid = getuid();
+            buf->st_gid = getgid();
         }
 
         buf->st_size = gs.st_size;
-        buf->st_blocks = (gs.st_size + 4096) / 512;
+        buf->st_blksize = GFS_BLKSIZE;
+        buf->st_blocks = (gs.st_size + STAT_BLKSIZ - 1) / STAT_BLKSIZ;
+
         buf->st_atime = gs.st_atimespec.tv_sec;
         buf->st_mtime = gs.st_mtimespec.tv_sec;
         buf->st_ctime = gs.st_ctimespec.tv_sec;
@@ -257,7 +268,7 @@ gfarmfs_mknod(const char *path, mode_t mode, dev_t rdev)
         if (gfarmfs_debug >= 1) {
             printf("mknod: not supported: rdev = %d\n", (int)rdev);
         }
-        return -ENOSYS;  /* TODO? */
+        return -ENOSYS;  /* XXX */
     }
 
     url = add_gfarm_prefix(path);
@@ -413,7 +424,6 @@ gfarmfs_rename(const char *from, const char *to)
         free(from_url);
         free(to_url);
     }
-
     return gfarmfs_final(e, 0, to);
 }
 
@@ -476,7 +486,6 @@ gfarmfs_link(const char *from, const char *to)
     if (toopened == 1) {
         gfs_pio_close(togf);
     }
-
     return gfarmfs_final(e, 0, to);
 #else
     return -ENOSYS;
@@ -602,11 +611,11 @@ gfarmfs_release(const char *path, struct fuse_file_info *fi)
 {
     char *e;
     GFS_File *gfp;
-    (void) path;
 
     gfp = (GFS_File*) fi->fh;
     e = gfs_pio_close(*gfp);
     free(gfp);
+
     return gfarmfs_final(e, 0, path);
 }
 
@@ -652,46 +661,27 @@ gfarmfs_write(const char *path, const char *buf, size_t size,
     return gfarmfs_final(e, n, path);
 }
 
+#if 0
 static int gfarmfs_statfs(const char *path, struct statfs *stbuf)
 {
-    /* TODO: gfs_client_statfs() */
-
-    /*
-      int res;
-      res = statfs(path, stbuf);
-      if (res == -1)
-      return -errno;
-
-      return 0;
-    */
     return -ENOSYS;
 }
 
 static int
 gfarmfs_fsync(const char *path, int isdatasync, struct fuse_file_info *fi)
 {
-    /* Just a stub.  This method is optional and can safely be left
-       unimplemented */
-
-    (void) path;
-    (void) isdatasync;
-    (void) fi;
     return 0;
 }
+#endif
 
-#ifdef HAVE_SETXATTR
+#if 0
+/* #ifdef HAVE_SETXATTR */
 /* xattr operations are optional and can safely be left unimplemented */
 static int
 gfarmfs_setxattr(const char *path, const char *name, const char *value,
                  size_t size, int flags)
 {
     return -ENOSYS;
-    /*
-      int res = lsetxattr(path, name, value, size, flags);
-      if (res == -1)
-      return -errno;
-      return 0;
-    */
 }
 
 static int
@@ -699,36 +689,18 @@ gfarmfs_getxattr(const char *path, const char *name, char *value,
                  size_t size)
 {
     return -ENOSYS;
-    /*
-      int res = lgetxattr(path, name, value, size);
-      if (res == -1)
-      return -errno;
-      return res;
-    */
 }
 
 static int
 gfarmfs_listxattr(const char *path, char *list, size_t size)
 {
     return -ENOSYS;
-    /*
-      int res = llistxattr(path, list, size);
-      if (res == -1)
-      return -errno;
-      return res;
-    */
 }
 
 static int
 gfarmfs_removexattr(const char *path, const char *name)
 {
     return -ENOSYS;
-    /*
-      int res = lremovexattr(path, name);
-      if (res == -1)
-      return -errno;
-      return 0;
-    */
 }
 #endif /* HAVE_SETXATTR */
 
@@ -750,10 +722,13 @@ static struct fuse_operations gfarmfs_oper = {
     .open	= gfarmfs_open,
     .read	= gfarmfs_read,
     .write	= gfarmfs_write,
-    .statfs	= gfarmfs_statfs,
     .release	= gfarmfs_release,
+#if 0
     .fsync	= gfarmfs_fsync,
-#ifdef HAVE_SETXATTR
+    .statfs	= gfarmfs_statfs,
+#endif
+#if 0
+/* #ifdef HAVE_SETXATTR */
     .setxattr	= gfarmfs_setxattr,
     .getxattr	= gfarmfs_getxattr,
     .listxattr	= gfarmfs_listxattr,
