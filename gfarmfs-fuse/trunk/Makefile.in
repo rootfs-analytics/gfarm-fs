@@ -1,6 +1,7 @@
 TARGET	= gfarmfs
 SRCS	= gfarmfs.c
 OBJS	= gfarmfs.o
+DOCS	= LICENSE README README.ja
 
 CC = @CC@
 DEFS = @DEFS@
@@ -16,7 +17,7 @@ LDFLAGS = @LDFLAGS@
 LIBS = @LIBS@
 
 VER     = $(TARGET)-fuse-`date +%Y%m%d`
-FILES   = $(SRCS) Makefile.in configure.in configure README $(INSTALL_PROGRAM)
+FILES   = $(SRCS) Makefile.in configure.in configure $(DOCS) $(INSTALL_PROGRAM)
 BINS  	= $(TARGET)
 
 all: $(TARGET)
@@ -30,13 +31,16 @@ $(TARGET): $(OBJS)
 $(OBJS): Makefile
 
 install: $(BINS)
-	@for i in / $(BINS); do \
-		case $$i in /) continue;; esac; \
+	@for i in -- $(BINS); do \
+		case $$i in --) continue;; esac; \
 		( set -x; $(INSTALL_PROGRAM) $${i} $(bindir)/$${i} ); \
 	done
 
 clean:
 	$(RM) $(OBJS) $(TARGET)
+
+distclean: clean
+	rm -f Makefile config.log config.status
 
 tar:
 	@echo $(VER) > .package
