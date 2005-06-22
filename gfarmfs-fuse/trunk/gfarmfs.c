@@ -10,10 +10,13 @@
   Mount:
     $ ./gfarmfs mountpoint -s
 
-    The `-s' option is neccessary to disable Multi-threaded operation.
+    The `-s' option is necessary to disable Multi-threaded operation.
 
   Unmount:
     $ fusermount -u mountpoint
+
+  Copyright (c) 2005 National Institute of Advanced Industrial Science
+  and Technology (AIST).  All Rights Reserved.
 */
 #include <fuse.h>
 #include <stdio.h>
