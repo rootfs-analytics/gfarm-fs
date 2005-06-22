@@ -585,7 +585,7 @@ gfarmfs_open(const char *path, struct fuse_file_info *fi)
     char *e;
     char *url;
     int flags = 0;
-    GFS_File *gfp;
+    GFS_File gf;
 
     url = add_gfarm_prefix(path);
     e = gfarmfs_init();
@@ -597,9 +597,8 @@ gfarmfs_open(const char *path, struct fuse_file_info *fi)
         } else if ((fi->flags & O_ACCMODE) == O_RDWR) {
             flags = GFARM_FILE_RDWR;
         }
-        gfp = malloc(sizeof(GFS_File));
-        e = gfs_pio_open(url, flags, gfp);
-        fi->fh = (unsigned long) gfp;
+        e = gfs_pio_open(url, flags, &gf);
+        fi->fh = (unsigned long) gf;
     }
     free(url);
 
@@ -610,11 +609,10 @@ static int
 gfarmfs_release(const char *path, struct fuse_file_info *fi)
 {
     char *e;
-    GFS_File *gfp;
+    GFS_File gf;
 
-    gfp = (GFS_File*) fi->fh;
-    e = gfs_pio_close(*gfp);
-    free(gfp);
+    gf = (GFS_File) fi->fh;
+    e = gfs_pio_close(gf);
 
     return gfarmfs_final(e, 0, path);
 }
@@ -626,14 +624,14 @@ gfarmfs_read(const char *path, char *buf, size_t size, off_t offset,
     int n;
     file_offset_t off;
     char *e;
-    GFS_File *gfp;
+    GFS_File gf;
 
     e = gfarmfs_init();
     while (e == NULL) {
-        gfp = (GFS_File*) fi->fh;
-        e = gfs_pio_seek(*gfp, offset, 0, &off);
+        gf = (GFS_File) fi->fh;
+        e = gfs_pio_seek(gf, offset, 0, &off);
         if (e != NULL) break;
-        e = gfs_pio_read(*gfp, buf, size, &n);
+        e = gfs_pio_read(gf, buf, size, &n);
         break;
     }
 
@@ -647,14 +645,14 @@ gfarmfs_write(const char *path, const char *buf, size_t size,
     int n;
     file_offset_t off;
     char *e;
-    GFS_File *gfp;
+    GFS_File gf;
 
     e = gfarmfs_init();
     while (e == NULL) {
-        gfp = (GFS_File*) fi->fh;
-        e = gfs_pio_seek(*gfp, offset, 0, &off);
+        gf = (GFS_File) fi->fh;
+        e = gfs_pio_seek(gf, offset, 0, &off);
         if (e != NULL) break;
-        e = gfs_pio_write(*gfp, buf, size, &n);
+        e = gfs_pio_write(gf, buf, size, &n);
         break;
     }
 
