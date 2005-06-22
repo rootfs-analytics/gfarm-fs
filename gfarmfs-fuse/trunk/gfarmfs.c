@@ -48,18 +48,20 @@
 #define STAT_BLKSIZ 512
 #endif
 
-/* #define SYMLINK_MODE   // --enable-symlink */
+#define SYMLINK_MODE
 #ifdef SYMLINK_MODE
 #define SYMLINK_SUFFIX ".gfarmfs-symlink"
 #endif
 
-/* #define LINK_IS_COPY_MODE  // --enable-linkiscopy */
+#define LINK_IS_COPY_MODE
 
 /* #define GFARMFS_EVERYINIT  (for test) */
 
 /* ################################################################### */
 
 int gfarmfs_debug = 0;  /* 1: error, 2: debug */
+int enable_symlink = 0;
+int enable_linkiscopy = 0;
 
 /* This is necessary to free the memory space by free(). */
 static char *
@@ -176,7 +178,7 @@ gfarmfs_getattr(const char *path, struct stat *buf)
     if (e == NULL) {
         e = gfs_stat(url, &gs);
 #ifdef SYMLINK_MODE
-        if (e != NULL) {
+        if (enable_symlink == 1 && e != NULL) {
             if (gfarm_error_to_errno(e) == ENOENT) {
                 free(url);
                 url = add_gfarm_prefix_symlink_suffix(path);
@@ -247,7 +249,8 @@ gfarmfs_getdir(const char *path, fuse_dirh_t h, fuse_dirfil_t filler)
     if (e == NULL) {
         while ((e = gfs_readdir(dir, &entry)) == NULL && entry != NULL) {
 #ifdef SYMLINK_MODE
-            if (ends_with_and_delete(entry->d_name, SYMLINK_SUFFIX) > 0) {
+            if (enable_symlink == 1 &&
+                ends_with_and_delete(entry->d_name, SYMLINK_SUFFIX) > 0) {
                 entry->d_type = DT_LNK;
             }
 #endif
@@ -316,7 +319,7 @@ gfarmfs_unlink(const char *path)
         e = gfs_unlink(url);
         free(url);
 #ifdef SYMLINK_MODE
-        if (e != NULL) {
+        if (enable_symlink == 1 && e != NULL) {
             if (gfarm_error_to_errno(e) == ENOENT) {
                 url = add_gfarm_prefix_symlink_suffix(path);
                 if (gfarmfs_debug >= 2) {
@@ -358,6 +361,10 @@ gfarmfs_readlink(const char *path, char *buf, size_t size)
     GFS_File gf;
     int n = 0;
 
+    if (enable_symlink == 0) {
+        return -ENOSYS;
+    }
+
     url = add_gfarm_prefix_symlink_suffix(path);
     e = gfarmfs_init();
     while (e == NULL) {
@@ -387,6 +394,9 @@ gfarmfs_symlink(const char *from, const char *to)
     GFS_File gf;
     int n, len;
 
+    if (enable_symlink == 0) {
+        return -ENOSYS;
+    }
     url = add_gfarm_prefix_symlink_suffix(to);
     e = gfarmfs_init();
     while (e == NULL) {
@@ -424,6 +434,20 @@ gfarmfs_rename(const char *from, const char *to)
         from_url = add_gfarm_prefix(from);
         to_url = add_gfarm_prefix(to);
         e = gfs_rename(from_url, to_url);
+#ifdef SYMLINK_MODE
+        if (enable_symlink == 1 && e != NULL) {
+            if (gfarm_error_to_errno(e) == ENOENT) {
+                free(from_url);
+                free(to_url);
+                from_url = add_gfarm_prefix_symlink_suffix(from);
+                to_url = add_gfarm_prefix_symlink_suffix(to);
+                if (gfarmfs_debug >= 2) {
+                    printf("rename: for symlink: %s\n", from);
+                }
+                e = gfs_rename(from_url, to_url);
+            }
+        }
+#endif
         free(from_url);
         free(to_url);
     }
@@ -442,6 +466,11 @@ gfarmfs_link(const char *from, const char *to)
     int mode;
     int m, n;
     char buf[4096];
+    int symlinkmode = 0;
+
+    if (enable_linkiscopy == 0) {
+        return -ENOSYS;
+    }
 
     if (gfarmfs_debug >= 2) {
         printf("hard link is replaced by copy: %s\n", to);
@@ -451,6 +480,19 @@ gfarmfs_link(const char *from, const char *to)
     e = gfarmfs_init();
     while (e == NULL) {
         e = gfs_stat(fromurl, &gs);
+#ifdef SYMLINK_MODE
+        if (enable_symlink == 1 && e != NULL) {
+            if (gfarm_error_to_errno(e) == ENOENT) {
+                free(fromurl);
+                fromurl = add_gfarm_prefix_symlink_suffix(from);
+                if (gfarmfs_debug >= 2) {
+                    printf("link: for symlink: %s\n", from);
+                }
+                e = gfs_stat(fromurl, &gs);
+                symlinkmode = 1;
+            }
+        }
+#endif
         if (e != NULL) break;
         mode = gs.st_mode;
         gfs_stat_free(&gs);
@@ -459,7 +501,11 @@ gfarmfs_link(const char *from, const char *to)
         if (e != NULL) break;
         fromopened = 1;
 
-        tourl = add_gfarm_prefix(to);
+        if (symlinkmode == 1) {
+            tourl = add_gfarm_prefix_symlink_suffix(to);
+        } else {
+            tourl = add_gfarm_prefix(to);
+        }
         e = gfs_pio_create(tourl, GFARM_FILE_WRONLY|GFARM_FILE_EXCLUSIVE,
                            mode, &togf);
         free(tourl);
@@ -744,12 +790,19 @@ char *program_name = "gfarmfs";
 void
 usage()
 {
-    fprintf(stderr, "usage: %s mountpoint -s [fuse-options...]\n",
+    fprintf(stderr, "Usage: %s [options...] mountpoint -s [FUSE-options...]\n",
             program_name);
+    fprintf(stderr, "Options:\n");
+#ifdef SYMLINK_MODE
+    fprintf(stderr, "  --symlink       enable symlink(2) to work. (emulation)\n");
+#endif
+#ifdef LINK_IS_COPY_MODE
+    fprintf(stderr, "  --linkiscopy    enable link(2) to behaves copying a file.\n");
+#endif
 }
 
 void
-check_options(int argc, char *argv[])
+check_fuse_options(int argc, char *argv[])
 {
     int i;
     int ok = 0; /* check -s */
@@ -764,9 +817,39 @@ check_options(int argc, char *argv[])
         }
     }
     if (ok == 0) {
+        fprintf(stderr, "The `-s' option is necessary to disable Multi-threaded operation.\n");
         usage();
         exit(-1);
     }
+}
+
+void
+check_gfarmfs_options(int *argcp, char ***argvp)
+{
+    int argc = *argcp;
+    char **argv = *argvp;
+    char *argv0 = *argv;
+    
+    --argc;
+    ++argv;
+    while (argc > 0 && argv[0][0] == '-' && argv[0][1] == '-') {
+         if (strcmp(&argv[0][2], "symlink") == 0) {
+             printf("enable symlink\n");
+             enable_symlink = 1;
+         } else if (strcmp(&argv[0][2], "linkiscopy") == 0) {
+             printf("enable linkiscopy\n");
+             enable_linkiscopy = 1;
+         } else {
+             break;
+         }
+	 --argc;
+	 ++argv;
+    }
+    ++argc;
+    --argv;
+    *argcp = argc;
+    *argv = argv0;
+    *argvp = argv;
 }
 
 int
@@ -786,7 +869,8 @@ main(int argc, char *argv[])
     }
 #endif
 
-    check_options(argc, argv);
+    check_gfarmfs_options(&argc, &argv);
+    check_fuse_options(argc, argv);
 
     return fuse_main(argc, argv, &gfarmfs_oper);
 }
