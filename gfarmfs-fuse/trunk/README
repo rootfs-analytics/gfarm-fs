@@ -1,6 +1,9 @@
+Copyright (c) 2005 National Institute of Advanced Industrial Science
+and Technology (AIST).  All Rights Reserved.
+
 *** GfarmFS-FUSE
 
-Using GfarmFS-FUSE, you can mount your Gfarm filesystem in your userspace.
+GfarmFS-FUSE enables you to mount a Gfarm filesystem in userspace.
 
 GfarmFS-FUSE requires Gfarm version 1.1.1 (or later) and FUSE version
 2.2 (or later) development packages.
@@ -42,26 +45,40 @@ Options for configure:
   --prefix=directory
 
   specifies a destination directory for installation.  The 'gfarmfs'
-  command is installed in 'directory'/bin.  Default is /usr/local 
-  directory and /usr/local/bin/gfarmfs is created.
+  command is installed in 'directory'/bin.  Default is /usr/local.
 
-Example of configure:
+If Gfarm and/or FUSE are installed to a nonstandard location, you may
+need to specify the location by CPPFLAGS and LDFLAGS environment
+variables in configure.  In the case of sh or bash,
 
-    $ env CPPFLAGS='-I/usr/grid/gfarm/include' \
-    LDFLAGS='-L/usr/grid/gfarm/lib -Wl,-R,/usr/grid/gfarm/lib' \
-    ./configure --enable-symlink --enable-linkiscopy \
-    --prefix=/home/myname/local
+    $ CPPFLAGS='-I/usr/local/include' LDFLAGS='-L/usr/local/lib -Wl,-R,/usr/local/lib' ./configure
+
+In the case of csh or tcsh,
+
+    $ env CPPFLAGS='-I/usr/local/include' LDFLAGS='-L/usr/local/lib -Wl,-R,/usr/local/lib' ./configure
 
 
 *** Mount
 
-Make sure your Gfarm environment is set. (see ISNTALL.en of Gfarm)
-Run the 'gfarmfs' command as normal user in your Gfarm environment:
+Make sure your Gfarm environment is set. (see INSTALL.en of Gfarm)
+
+If your client host is not registered in Gfarm metadata server, you
+need to register the client host by the 'gfhost' command included in
+Gfarm client package.
+
+    $ gfhost -c -a <architecture> <hostname>
+
+<architecture> is typically a canonical system name like
+sparc-sun-solaris8.  <hostname> is a fully qualified domain name
+(FQDN) or an IP address of the client host.
+
+Run the 'gfarmfs' command as a normal user to mount a Gfarm
+filesystem:
 
     $ gfarmfs mountpoint -s [fuse-options]
 
   Note:
-  * The `-s' option is neccessary to disable Multi-threaded operation.
+  * The `-s' option is necessary to disable Multi-threaded operation.
   * Only you can usually access the mountpoint. (see README of FUSE)
 
 
@@ -70,4 +87,3 @@ Run the 'gfarmfs' command as normal user in your Gfarm environment:
 Run the 'fusermount' command (see README of FUSE):
 
     $ fusermount -u mountpoint
-
