@@ -8,9 +8,7 @@
     http://fuse.sourceforge.net/
 
   Mount:
-    $ ./gfarmfs mountpoint -s
-
-    The `-s' option is necessary to disable Multi-threaded operation.
+    $ ./gfarmfs mountpoint
 
   Unmount:
     $ fusermount -u mountpoint
@@ -62,6 +60,7 @@
 int gfarmfs_debug = 0;  /* 1: error, 2: debug */
 int enable_symlink = 0;
 int enable_linkiscopy = 0;
+int enable_gfarm_unbuf = 0;
 
 /* This is necessary to free the memory space by free(). */
 static char *
@@ -646,6 +645,9 @@ gfarmfs_open(const char *path, struct fuse_file_info *fi)
         } else if ((fi->flags & O_ACCMODE) == O_RDWR) {
             flags = GFARM_FILE_RDWR;
         }
+        if (enable_gfarm_unbuf == 1) {
+            flags |= GFARM_FILE_UNBUFFERED;
+        }
         e = gfs_pio_open(url, flags, &gf);
         fi->fh = (unsigned long) gf;
     }
@@ -802,24 +804,33 @@ usage()
 }
 
 void
-check_fuse_options(int argc, char *argv[])
+check_fuse_options(int *argcp, char ***argvp)
 {
+    int argc = *argcp;
+    char **argv = *argvp;
+    char **newargv;
     int i;
-    int ok = 0; /* check -s */
+    int ok_s = 0; /* check -s */
+    static char *opt_s_str = "-s";
 
     for(i = 1; i < argc; i++) {
         if (strcmp(argv[i], "-s") == 0) {
-            ok = 1;
+            ok_s = 1;
         } else if (strcmp(argv[i], "-f") == 0) {
             gfarmfs_debug = 1;
         } else if (strcmp(argv[i], "-d") == 0) {
             gfarmfs_debug = 2;
         }
     }
-    if (ok == 0) {
-        fprintf(stderr, "The `-s' option is necessary to disable Multi-threaded operation.\n");
-        usage();
-        exit(-1);
+    if (ok_s == 0) { /* add -s option */
+        newargv = malloc((argc + 1) * sizeof(char *));
+        for (i = 0; i < argc; i++) {
+            newargv[i] = argv[i];
+        }
+        argc++;
+        newargv[argc - 1] = opt_s_str;
+        *argcp = argc;
+        *argvp = newargv;
     }
 }
 
@@ -839,6 +850,8 @@ check_gfarmfs_options(int *argcp, char ***argvp)
          } else if (strcmp(&argv[0][2], "linkiscopy") == 0) {
              printf("enable linkiscopy\n");
              enable_linkiscopy = 1;
+         } else if (strcmp(&argv[0][2], "unbuf") == 0) {
+             enable_gfarm_unbuf = 1;
          } else {
              break;
          }
@@ -870,7 +883,7 @@ main(int argc, char *argv[])
 #endif
 
     check_gfarmfs_options(&argc, &argv);
-    check_fuse_options(argc, argv);
+    check_fuse_options(&argc, &argv);
 
     return fuse_main(argc, argv, &gfarmfs_oper);
 }
