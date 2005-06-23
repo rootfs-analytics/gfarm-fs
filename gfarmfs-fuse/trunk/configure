@@ -310,7 +310,7 @@ ac_includes_default="\
 # include <unistd.h>
 #endif"
 
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA CPP EGREP symlinkmode linkiscopymode LIBOBJS LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA CPP EGREP LIBOBJS LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -837,12 +837,6 @@ fi
 if test -n "$ac_init_help"; then
 
   cat <<\_ACEOF
-
-Optional Features:
-  --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
-  --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
-  --enable-symlink        use -DSYMLINK_MODE
-  --enable-linkiscopy     use -DLINK_IS_COPY_MODE
 
 Some influential environment variables:
   CC          C compiler command
@@ -3133,29 +3127,6 @@ fi
 
 
 
-
-# Check whether --enable-symlink or --disable-symlink was given.
-if test "${enable_symlink+set}" = set; then
-  enableval="$enable_symlink"
-  symlinkmode=-DSYMLINK_MODE
-
-else
-  symlinkmode=
-
-fi;
-
-
-# Check whether --enable-linkiscopy or --disable-linkiscopy was given.
-if test "${enable_linkiscopy+set}" = set; then
-  enableval="$enable_linkiscopy"
-  linkiscopymode=-DLINK_IS_COPY_MODE
-
-else
-  linkiscopymode=
-
-fi;
-
-
           ac_config_files="$ac_config_files Makefile"
 
 cat >confcache <<\_ACEOF
@@ -3805,8 +3776,6 @@ s,@INSTALL_SCRIPT@,$INSTALL_SCRIPT,;t t
 s,@INSTALL_DATA@,$INSTALL_DATA,;t t
 s,@CPP@,$CPP,;t t
 s,@EGREP@,$EGREP,;t t
-s,@symlinkmode@,$symlinkmode,;t t
-s,@linkiscopymode@,$linkiscopymode,;t t
 s,@LIBOBJS@,$LIBOBJS,;t t
 s,@LTLIBOBJS@,$LTLIBOBJS,;t t
 CEOF

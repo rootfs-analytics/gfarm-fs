@@ -27,21 +27,6 @@ Installation steps of GfarmFS-FUSE:
 
 Options for configure:
 
-  --enable-symlink
-
-  specifies to enable symlink(2) to work.  Enabling this option, 
-  symlink(2) creates a special file named NAME.gfarmfs-symlink instead 
-  of creating NAME.
-  As default, symlink(2) doesn't work on GfarmFS-FUSE because current 
-  version of Gfarm, 1.1.1, doesn't support it.
-
-  --enable-linkiscopy
-
-  specifies to enable link(2) to behaves copying a file instead of 
-  creating a hardlink.
-  As default, link(2) doesn't work on GfarmFS-FUSE because current 
-  version of Gfarm, 1.1.1, doesn't support it.
-
   --prefix=directory
 
   specifies a destination directory for installation.  The 'gfarmfs'
@@ -75,11 +60,30 @@ sparc-sun-solaris8.  <hostname> is a fully qualified domain name
 Run the 'gfarmfs' command as a normal user to mount a Gfarm
 filesystem:
 
-    $ gfarmfs mountpoint -s [fuse-options]
+    $ gfarmfs [options] mountpoint [FUSE-options]
 
-  Note:
-  * The `-s' option is necessary to disable Multi-threaded operation.
+Note:
+
+  * The `-s' FUSE-option is added automatically.
+    (to disable Multi-threaded operation)
   * Only you can usually access the mountpoint. (see README of FUSE)
+
+Options:
+
+  --symlink
+
+  specifies to enable symlink(2) to work.  Enabling this option, 
+  symlink(2) creates a special file named NAME.gfarmfs-symlink instead 
+  of creating NAME.
+  As default, symlink(2) doesn't work on GfarmFS-FUSE because current 
+  version of Gfarm, 1.1.1, doesn't support it.
+
+  --linkiscopy
+
+  specifies to enable link(2) to behaves copying a file instead of 
+  creating a hardlink.
+  As default, link(2) doesn't work on GfarmFS-FUSE because current 
+  version of Gfarm, 1.1.1, doesn't support it.
 
 
 *** Unmount

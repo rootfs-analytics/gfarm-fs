@@ -31,22 +31,5 @@ echo "Please install the headers of Gfarm."
 exit 1
 ])
 
-
-AC_ARG_ENABLE(symlink,
-[  --enable-symlink        use -DSYMLINK_MODE],
-[symlinkmode=-DSYMLINK_MODE
-],
-[symlinkmode=
-])
-AC_SUBST(symlinkmode)
-
-AC_ARG_ENABLE(linkiscopy,
-[  --enable-linkiscopy     use -DLINK_IS_COPY_MODE],
-[linkiscopymode=-DLINK_IS_COPY_MODE
-],
-[linkiscopymode=
-])
-AC_SUBST(linkiscopymode)
-
 AC_CONFIG_FILES(Makefile)
 AC_OUTPUT

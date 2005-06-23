@@ -11,7 +11,7 @@ exec_prefix = @exec_prefix@
 bindir = $(exec_prefix)/bin
 INSTALL_PROGRAM = ./install-sh
 
-CPPFLAGS = -g -Wall -O2 @CPPFLAGS@ -DFUSE_USE_VERSION=22 -D_FILE_OFFSET_BITS=64 @symlinkmode@ @linkiscopymode@
+CPPFLAGS = -g -Wall -O2 @CPPFLAGS@ -DFUSE_USE_VERSION=22 -D_FILE_OFFSET_BITS=64
 
 LDFLAGS = @LDFLAGS@
 LIBS = @LIBS@
