@@ -790,9 +790,9 @@ static struct fuse_operations gfarmfs_oper = {
 char *program_name = "gfarmfs";
 
 void
-usage()
+gfarmfs_usage()
 {
-    fprintf(stderr, "Usage: %s [options...] mountpoint -s [FUSE-options...]\n",
+    fprintf(stderr, "Usage: %s [options...] mountpoint [FUSE options...]\n\n",
             program_name);
     fprintf(stderr, "Options:\n");
 #ifdef SYMLINK_MODE
@@ -801,6 +801,7 @@ usage()
 #ifdef LINK_IS_COPY_MODE
     fprintf(stderr, "  --linkiscopy    enable link(2) to behaves copying a file.\n");
 #endif
+    fprintf(stderr, "\n");
 }
 
 void
@@ -820,6 +821,8 @@ check_fuse_options(int *argcp, char ***argvp)
             gfarmfs_debug = 1;
         } else if (strcmp(argv[i], "-d") == 0) {
             gfarmfs_debug = 2;
+        } else if (strcmp(argv[i], "-h") == 0) {
+            gfarmfs_usage();
         }
     }
     if (ok_s == 0) { /* add -s option */
@@ -851,6 +854,7 @@ check_gfarmfs_options(int *argcp, char ***argvp)
              printf("enable linkiscopy\n");
              enable_linkiscopy = 1;
          } else if (strcmp(&argv[0][2], "unbuf") == 0) {
+             printf("enable GFARM_FILE_UNBUFFERED\n");
              enable_gfarm_unbuf = 1;
          } else {
              break;
