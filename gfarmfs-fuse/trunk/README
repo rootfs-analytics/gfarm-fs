@@ -27,7 +27,7 @@ Installation steps of GfarmFS-FUSE:
 
 Options for configure:
 
-  --prefix=directory
+  --prefix=<directory>
 
   specifies a destination directory for installation.  The 'gfarmfs'
   command is installed in 'directory'/bin.  Default is /usr/local.
@@ -47,30 +47,23 @@ In the case of csh or tcsh,
 
 Make sure your Gfarm environment is set. (see INSTALL.en of Gfarm)
 
-If your client host is not registered in Gfarm metadata server, you
-need to register the client host by the 'gfhost' command included in
-Gfarm client package.
-
-    $ gfhost -c -a <architecture> <hostname>
-
-<architecture> is typically a canonical system name like
-sparc-sun-solaris8.  <hostname> is a fully qualified domain name
-(FQDN) or an IP address of the client host.
+If your client host is not registered in Gfarm metadata server, 
+you need to use the '-a' GfarmFS option. (see GfarmFS options below)
 
 Run the 'gfarmfs' command as a normal user to mount a Gfarm
 filesystem:
 
-    $ gfarmfs [options] mountpoint [FUSE-options]
+    $ gfarmfs [GfarmFS options] <mountpoint> [FUSE options]
 
 Note:
 
-  * The `-s' FUSE-option is added automatically.
+  * The `-s' FUSE option is added automatically.
     (to disable Multi-threaded operation)
   * Only you can usually access the mountpoint. (see README of FUSE)
 
-Options:
+GfarmFS options:
 
-  --symlink
+  -s, --symlink
 
   specifies to enable symlink(2) to work.  Enabling this option, 
   symlink(2) creates a special file named NAME.gfarmfs-symlink instead 
@@ -78,16 +71,27 @@ Options:
   As default, symlink(2) doesn't work on GfarmFS-FUSE because current 
   version of Gfarm, 1.1.1, doesn't support it.
 
-  --linkiscopy
+  -l, --linkiscopy
 
-  specifies to enable link(2) to behaves copying a file instead of 
+  specifies to enable link(2) to behave copying a file instead of 
   creating a hardlink.
   As default, link(2) doesn't work on GfarmFS-FUSE because current 
   version of Gfarm, 1.1.1, doesn't support it.
+
+  -a <architecture>
+
+  specifies the architecture name to create/read/write executable
+  files in the filesystem nodes according with this architecture.
+  This option make it possible that your client host not registered in
+  Gfarm metadata server (by the 'gfhost -c' command)
+  creates/reads/writes executable files.
+  In a filesystem node, this option is not usually needed.
+  <architecture> is typically a canonical system name like
+  sparc-sun-solaris8. (see man gfhost)
 
 
 *** Unmount
 
 Run the 'fusermount' command (see README of FUSE):
 
-    $ fusermount -u mountpoint
+    $ fusermount -u <mountpoint>
