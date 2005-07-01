@@ -8,10 +8,10 @@
     http://fuse.sourceforge.net/
 
   Mount:
-    $ ./gfarmfs mountpoint
+    $ ./gfarmfs [GfarmFS options] <mountpoint> [FUSE options]
 
   Unmount:
-    $ fusermount -u mountpoint
+    $ fusermount -u <mountpoint>
 
   Copyright (c) 2005 National Institute of Advanced Industrial Science
   and Technology (AIST).  All Rights Reserved.
@@ -50,8 +50,6 @@
 #ifdef SYMLINK_MODE
 #define SYMLINK_SUFFIX ".gfarmfs-symlink"
 #endif
-
-#define LINK_IS_COPY_MODE
 
 /* #define GFARMFS_EVERYINIT  (for test) */
 
@@ -156,27 +154,6 @@ ends_with_and_delete(char *str, char *suffix)
     }
     str[m + 1] = '\0';
     return 1; /* true */
-}
-#endif
-
-#if 0
-char *
-gfarmfs_check_program_and_set_archi_using_fstat(GFS_File gf)
-{
-    struct gfs_stat gs;
-    char *e;
-
-    if (archi_name == NULL) {
-        return NULL;
-    }
-    e = gfs_fstat(gf, &gs);
-    if (e != NULL) return e;
-
-    if ((gs.st_mode & (S_IXUSR | S_IXGRP | S_IXOTH)) != 0) {
-        e = gfs_pio_set_view_section(gf, archi_name, NULL, 0);
-    }
-    gfs_stat_free(&gs);
-    return e;
 }
 #endif
 
@@ -509,7 +486,6 @@ gfarmfs_rename(const char *from, const char *to)
 static int
 gfarmfs_link(const char *from, const char *to)
 {
-#ifdef LINK_IS_COPY_MODE
     char *e;
     char *fromurl, *tourl;
     GFS_File fromgf, togf;
@@ -594,9 +570,6 @@ gfarmfs_link(const char *from, const char *to)
         gfs_pio_close(togf);
     }
     return gfarmfs_final(e, 0, to);
-#else
-    return -ENOSYS;
-#endif
 }
 
 static int
@@ -867,17 +840,21 @@ char *program_name = "gfarmfs";
 void
 gfarmfs_usage()
 {
-    fprintf(stderr, "Usage: %s [GfarmFS options] mountpoint [FUSE options]\n\n",
-            program_name);
-    fprintf(stderr, "GfarmFS options:\n");
+    const char *fusehelp[] = { program_name, "-ho", NULL };
+
+    fprintf(stderr,
+"Usage: %s [GfarmFS options] <mountpoint> [FUSE options]\n"
+"\n"
+"GfarmFS options:\n"
 #ifdef SYMLINK_MODE
-    fprintf(stderr, "  --s or --symlink         enable symlink(2) to work. (emulation)\n");
+"    -s, --symlink          enable symlink(2) to work (emulation)\n"
 #endif
-#ifdef LINK_IS_COPY_MODE
-    fprintf(stderr, "  --l or --linkiscopy      enable link(2) to behaves copying a file.\n");
-#endif
-    fprintf(stderr, "  --a [architecture]       for a client not registered by gfhost mainly.\n");
-    fprintf(stderr, "\n");
+"    -l, --linkiscopy       enable link(2) to behave copying a file (emulation)\n"
+"    -a <architecture>      for a client not registered by gfhost\n"
+"\n", program_name);
+
+    fuse_main(2, (char **) fusehelp, &gfarmfs_oper);
+    exit(1);
 }
 
 void
@@ -899,6 +876,7 @@ check_fuse_options(int *argcp, char ***argvp)
             gfarmfs_debug = 2;
         } else if (strcmp(argv[i], "-h") == 0) {
             gfarmfs_usage();
+            /* exit */
         }
     }
     if (ok_s == 0) { /* add -s option */
@@ -922,34 +900,35 @@ check_gfarmfs_options(int *argcp, char ***argvp)
     
     --argc;
     ++argv;
-    while (argc > 0 && argv[0][0] == '-' && argv[0][1] == '-') {
-         if (strcmp(&argv[0][2], "symlink") == 0
-             || strcmp(&argv[0][2], "s") == 0) {
-             printf("enable symlink\n");
-             enable_symlink = 1;
-         } else if (strcmp(&argv[0][2], "linkiscopy") == 0
-                    || strcmp(&argv[0][2], "l") == 0) {
-             printf("enable linkiscopy\n");
-             enable_linkiscopy = 1;
-         } else if (strncmp(&argv[0][2], "a", 1) == 0) {
-             --argc;
-             ++argv;
-             if (argc > 0) {
-                 archi_name = *argv;
-                 printf("set architecture: `%s'\n", archi_name);
-             } else {
-                 gfarmfs_usage();
-                 break;
-             }                 
-         } else if (strcmp(&argv[0][2], "unbuf") == 0) {
-             printf("enable GFARM_FILE_UNBUFFERED\n");
-             enable_gfarm_unbuf = 1;
-         } else {
-             gfarmfs_usage();
-             break;
-         }
-	 --argc;
-	 ++argv;
+    while (argc > 0 && argv[0][0] == '-') {
+        if (strcmp(&argv[0][1], "-symlink") == 0
+            || strcmp(&argv[0][1], "s") == 0) {
+            printf("enable symlink\n");
+            enable_symlink = 1;
+        } else if (strcmp(&argv[0][1], "-linkiscopy") == 0
+                   || strcmp(&argv[0][1], "l") == 0) {
+            printf("enable linkiscopy\n");
+            enable_linkiscopy = 1;
+        } else if (strcmp(&argv[0][1], "-architecture") == 0
+                   || strcmp(&argv[0][1], "a") == 0) {
+            --argc;
+            ++argv;
+            if (argc > 0) {
+                archi_name = *argv;
+                printf("set architecture: `%s'\n", archi_name);
+            } else {
+                gfarmfs_usage();
+                /* exit */
+            }           
+        } else if (strcmp(&argv[0][1], "-unbuf") == 0) {
+            printf("enable GFARM_FILE_UNBUFFERED\n");
+            enable_gfarm_unbuf = 1;
+        } else {
+            gfarmfs_usage();
+            /* exit */
+        }
+        --argc;
+        ++argv;
     }
     ++argc;
     --argv;
