@@ -1,0 +1,94 @@
+Copyright (c) 2005 National Institute of Advanced Industrial Science
+and Technology (AIST).  All Rights Reserved.
+
+*** GfarmFS-FUSE
+
+GfarmFS-FUSE は，Gfarm ファイルシステムをユーザ権限でマウントすること
+を可能にします．
+
+  Gfarm:
+      http://datafarm.apgrid.org/
+
+  FUSE:
+      http://fuse.sourceforge.net/
+
+
+*** 構築方法
+
+GfarmFS-FUSE の構築には，Gfarm version 1.1.1 以降，および FUSE version
+2.2 以降の開発パッケージが導入されている必要があります．
+
+GfarmFS-FUSE を構築するには，下記のようにします．
+
+    $ ./configure [オプション]
+    $ make
+    $ make install
+
+configure コマンドには，下記のオプションがあります．
+
+  --prefix=<directory>
+
+  インストール先のディレクトリを指定します．このオプションを省略した場
+  合は /usr/local ディレクトリの下にインストールします．
+
+Gfarm あるいは FUSE が，/usr など標準的な場所にインストールされていない
+場合は，以下のように CPPFLAGS および LDFLAGS 環境変数によりインストール
+先を明示的に指定します．
+
+Bourne Shell の場合：
+
+    $ CPPFLAGS='-I/usr/local/include' LDFLAGS='-L/usr/local/lib -Wl,-R,/usr/local/lib' ./configure
+
+csh の場合：
+
+    $ env CPPFLAGS='-I/usr/local/include' LDFLAGS='-L/usr/local/lib -Wl,-R,/usr/local/lib' ./configure
+
+
+*** マウント
+
+まず，クライアントとして Gfarm を利用する設定がなされていることを確認し
+ます．詳細は Gfarm パッケージに含まれる INSTALL.ja，INSTALL.RPM.ja を参
+照してください．
+
+Gfarm ファイルシステムをマウントするためには gfarmfs コマンドを利用しま
+す．
+
+    $ gfarmfs [GfarmFS のオプション] <マウントポイント> [FUSE のオプション]
+
+マウントポイントは，利用者が読み書き可能なディレクトリを指定します．通
+常はマウントポイント以下はマウントした利用者以外はアクセスできません．
+また，gfarmfs は，FUSE のオプションである '-s' を指定して，single
+thread で実行されます．その他，FUSE のオプションの詳細は FUSE パッケー
+ジに含まれる README を参照してください．
+
+gfarmfs コマンドには，以下のオプションがあります．
+
+  -a <architecture>
+
+  クライアントのアーキテクチャ名を指定します．クライアントが Gfarm メタ
+  データサーバに登録されていない場合（ファイルシステムノードではない場
+  合），このオプションを指定しないと実行ビットのたっているファイルにア
+  クセスができなくなります．<architecture> には通常 sparc-sun-solaris8
+  のような計算機アーキテクチャを表す名称を指定します．
+
+  -s, --symlink
+
+  GfarmFS-FUSE でマウントした Gfarm ファイルシステム上でシンボリックリ
+  ンク操作を可能にします．Gfarm version 1 では，シンボリックリンクはサ
+  ポートされていませんが，"シンボリックリンク名.gfarmfs-symlink" という
+  ファイルにリンク先を格納することによりシンボリックリンク操作をエミュ
+  レートします．
+
+  -l, --linkiscopy
+
+  GfarmFS-FUSE でマウントした Gfarm ファイルシステム上でハードリンク操
+  作を可能にします．Gfarm version 1 では，ハードリンクはサポートされて
+  いませんが，ハードリンクを作成する代りにファイルをコピーすることによ
+  りハードリンク操作をエミュレートします．
+
+
+*** アンマウント
+
+アンマウントするためには fusermount コマンドを利用します．
+
+    $ fusermount -u <マウントポイント>
