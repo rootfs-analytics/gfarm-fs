@@ -1,0 +1,51 @@
+TARGET	= gfarmfs
+SRCS	= gfarmfs.c
+OBJS	= gfarmfs.o
+DOCS	= LICENSE README README.ja
+
+CC = @CC@
+DEFS = @DEFS@
+
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+bindir = $(exec_prefix)/bin
+INSTALL_PROGRAM = ./install-sh
+
+CPPFLAGS = -g -Wall -O2 @CPPFLAGS@ -DFUSE_USE_VERSION=22 -D_FILE_OFFSET_BITS=64
+
+LDFLAGS = @LDFLAGS@
+LIBS = @LIBS@
+
+VER     = $(TARGET)-fuse-`date +%Y%m%d`
+FILES   = $(SRCS) Makefile.in configure.in configure $(DOCS) $(INSTALL_PROGRAM)
+BINS  	= $(TARGET)
+
+all: $(TARGET)
+
+$(TARGET): $(OBJS)
+	$(CC) $(LDFLAGS) -o $@ $(OBJS) $(LIBS)
+
+.c.o:
+	$(CC) $(CPPFLAGS) -c -o $@ $<
+
+$(OBJS): Makefile
+
+install: $(BINS)
+	@for i in -- $(BINS); do \
+		case $$i in --) continue;; esac; \
+		( set -x; $(INSTALL_PROGRAM) $${i} $(bindir)/$${i} ); \
+	done
+
+clean:
+	$(RM) $(OBJS) $(TARGET)
+
+distclean: clean
+	rm -f Makefile config.log config.status
+
+tar:
+	@echo $(VER) > .package
+	@$(RM) -r `cat .package`
+	@mkdir `cat .package`
+	cp --parents $(FILES) `cat .package`
+	tar cvf - `cat .package` | gzip -9 > `cat .package`.tar.gz
+	@$(RM) -r `cat .package` .package
