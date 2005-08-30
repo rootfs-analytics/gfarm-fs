@@ -306,8 +306,9 @@ gfarmfs_mknod(const char *path, mode_t mode, dev_t rdev)
     url = add_gfarm_prefix(path);
     e = gfarmfs_init();
     while (e == NULL) {
-        e = gfs_pio_create(url, GFARM_FILE_WRONLY|GFARM_FILE_EXCLUSIVE,
-                           mode, &gf);
+        e = gfs_pio_create(url, 
+                GFARM_FILE_WRONLY|GFARM_FILE_TRUNC|GFARM_FILE_EXCLUSIVE,
+                mode, &gf);
         if (e != NULL) break;
 
         ex = gfarmfs_check_program_and_set_archi_using_mode(gf, mode);
@@ -429,8 +430,9 @@ gfarmfs_symlink(const char *from, const char *to)
     url = add_gfarm_prefix_symlink_suffix(to);
     e = gfarmfs_init();
     while (e == NULL) {
-        e = gfs_pio_create(url, GFARM_FILE_WRONLY|GFARM_FILE_EXCLUSIVE,
-                           0644, &gf);
+        e = gfs_pio_create(url,
+                GFARM_FILE_WRONLY|GFARM_FILE_TRUNC|GFARM_FILE_EXCLUSIVE,
+                0644, &gf);
         if (e != NULL) break;
         len = strlen(from);
         e = gfs_pio_write(gf, from, len, &n);
@@ -537,8 +539,9 @@ gfarmfs_link(const char *from, const char *to)
         } else {
             tourl = add_gfarm_prefix(to);
         }
-        e = gfs_pio_create(tourl, GFARM_FILE_WRONLY|GFARM_FILE_EXCLUSIVE,
-                           mode, &togf);
+        e = gfs_pio_create(tourl,
+                GFARM_FILE_WRONLY|GFARM_FILE_TRUNC|GFARM_FILE_EXCLUSIVE,
+                mode, &togf);
         free(tourl);
         if (e != NULL) break;
         toopened = 1;
