@@ -58,6 +58,7 @@
 int gfarmfs_debug = 0;  /* 1: error, 2: debug */
 int enable_symlink = 0;
 int enable_linkiscopy = 0;
+int enable_unlinkall = 0;
 int enable_gfarm_unbuf = 0;
 char *archi_name = NULL;
 
@@ -160,11 +161,11 @@ ends_with_and_delete(char *str, char *suffix)
 char *
 gfarmfs_check_program_and_set_archi_using_url(GFS_File gf, char *url)
 {
-    char *e, *ex;
+    char *e;
 
     if (archi_name != NULL) {
-        ex = gfs_access(url, X_OK);
-        if (ex == NULL) {
+        e = gfs_access(url, X_OK);
+        if (e == NULL) {
             e = gfs_pio_set_view_section(gf, archi_name, NULL, 0);
             return e;
         }
@@ -345,12 +346,13 @@ gfarmfs_unlink(const char *path)
 
     e = gfarmfs_init();
     if (e == NULL) {
-        url = add_gfarm_prefix(path);
-        e = gfs_unlink(url);
-        free(url);
+        if (enable_unlinkall == 1) { /* remove an entry (all architecture) */
+            url = add_gfarm_prefix(path);
+            e = gfs_unlink(url);
+            free(url);
 #ifdef SYMLINK_MODE
-        if (enable_symlink == 1 && e != NULL) {
-            if (gfarm_error_to_errno(e) == ENOENT) {
+            if (enable_symlink == 1 && e != NULL
+                && gfarm_error_to_errno(e) == ENOENT) {
                 url = add_gfarm_prefix_symlink_suffix(path);
                 if (gfarmfs_debug >= 2) {
                     printf("unlink: for symlink: %s\n", path);
@@ -358,10 +360,45 @@ gfarmfs_unlink(const char *path)
                 e = gfs_unlink(url);
                 free(url);
             }
-        }
 #endif
-    }
+        } else {  /* remove a self architecture file */
+            struct gfs_stat gs;
 
+            url = add_gfarm_prefix(path);
+            e = gfs_stat(url, &gs);
+#ifdef SYMLINK_MODE
+            if (enable_symlink == 1 && e != NULL
+                && gfarm_error_to_errno(e) == ENOENT) {
+                free(url);
+                url = add_gfarm_prefix_symlink_suffix(path);
+                if (gfarmfs_debug >= 2) {
+                    printf("unlink: for symlink: %s\n", path);
+                }
+                e = gfs_stat(url, &gs);
+            }
+#endif
+            if (e == NULL) {    /* gfs_stat succeeds */
+                if (GFARM_S_IS_PROGRAM(gs.st_mode)) {
+                    /* executable file */
+                    char *arch;
+
+                    e = gfarm_host_get_self_architecture(&arch);
+                    if (e != NULL) {
+                        e = GFARM_ERR_OPERATION_NOT_PERMITTED;
+                    } else {
+
+                        e = gfs_unlink_section(url, arch);
+                    }
+                    printf("*** %s %s\n", arch, e);
+                } else {
+                    /* regular file */
+                    e = gfs_unlink(url);
+                }
+                gfs_stat_free(&gs);
+            }
+            free(url);
+        }
+    }
     return gfarmfs_final(e, 0, path);
 }
 
@@ -854,6 +891,7 @@ gfarmfs_usage()
 #endif
 "    -l, --linkiscopy       enable link(2) to behave copying a file (emulation)\n"
 "    -a <architecture>      for a client not registered by gfhost\n"
+"    -u, --unlinkall        enable unlink(2) to remove all architecture files\n"
 "\n", program_name);
 
     fuse_main(2, (char **) fusehelp, &gfarmfs_oper);
@@ -922,7 +960,12 @@ check_gfarmfs_options(int *argcp, char ***argvp)
             } else {
                 gfarmfs_usage();
                 /* exit */
-            }           
+            }
+        } else if (strcmp(&argv[0][1], "-unlinkall") == 0
+                   || strcmp(&argv[0][1], "u") == 0) {
+            archi_name = *argv;
+            printf("enable unlinkall\n");
+            enable_unlinkall = 1;
         } else if (strcmp(&argv[0][1], "-unbuf") == 0) {
             printf("enable GFARM_FILE_UNBUFFERED\n");
             enable_gfarm_unbuf = 1;

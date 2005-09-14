@@ -66,6 +66,9 @@ GfarmFS options:
   client host is not registered in Gfarm metadata server (or your
   client host is not a file system node).  <architecture> is typically
   a canonical system name like sparc-sun-solaris8. (see man gfhost)
+  In Gfarm version 1.2 or later, you can use 'client_architecture'
+  directive of gfarm.conf or the environment variable GFARM_ARCHITECTURE
+  instead of this option. (see man gfarm.conf)
 
   -s, --symlink
 
@@ -81,6 +84,12 @@ GfarmFS options:
   target file instead of creating a hardlink.  Note that Gfarm version
   1.1.1 does not support it.
 
+  -u, --unlinkall
+
+  enables unlink(2) to remove the specified program file of all
+  architecture.  Not using this option (default), unlink(2) removes
+  olny a specified program file of current client architecture in
+  the same way as libgfs_hook.
 
 *** Unmount
 
