@@ -61,35 +61,46 @@ GfarmFS options:
 
   -a <architecture>
 
-  specifies the architecture name of the client host.  You cannot
-  access files that has execution bits without this option when your
-  client host is not registered in Gfarm metadata server (or your
-  client host is not a file system node).  <architecture> is typically
-  a canonical system name like sparc-sun-solaris8. (see man gfhost)
-  In Gfarm version 1.2 or later, you can use 'client_architecture'
-  directive of gfarm.conf or the environment variable GFARM_ARCHITECTURE
-  instead of this option. (see man gfarm.conf)
+  specifies the architecture name of the client host.
+
+  In Gfarm file system, the architecture name is required to access
+  files that has execution bits since they may have multiple binaries
+  for each different architecture.  When the client host is a file
+  system node, the architecture is automatically determined by the
+  Gfarm metadata database.  Otherwise, you need to specify the client
+  architecture explicitly to access files that has execution bits.
+  <architecture> is typically a canonical system name like
+  sparc-sun-solaris8. (see man gfhost)
+
+  Since Gfarm version 1.2 or later, the 'client_architecture'
+  directive in the configuration file or the environment variable
+  GFARM_ARCHITECTURE can also specify the architecture name of the
+  client host. (see man gfarm.conf)
 
   -s, --symlink
 
-  enables symlink(2) to work even though Gfarm file system does not
-  support it.  With this option, a symbolic link is emulated using an
-  invisible file whose suffix is '.gfarmfs-symlink' to manage the
-  target path.  Note that Gfarm version 1.1.1 does not support it.
+  enables symlink(2) emulation.  With this option, a symbolic link is
+  emulated using an invisible file whose suffix is '.gfarmfs-symlink'
+  to manage the target path.  You can use this option until Gfarm does
+  support it.
 
   -l, --linkiscopy
 
-  enables link(2) to work even though Gfarm file system does not
-  support it.  With this option, link(2) is emulated by copies a
-  target file instead of creating a hardlink.  Note that Gfarm version
-  1.1.1 does not support it.
+  enables link(2) emulation.  With this option, link(2) is emulated by
+  copying a target file instead of creating a hardlink.  You can use
+  this option until Gfarm does support it.
 
   -u, --unlinkall
 
-  enables unlink(2) to remove the specified program file of all
-  architecture.  Not using this option (default), unlink(2) removes
-  olny a specified program file of current client architecture in
-  the same way as libgfs_hook.
+  With this option, unlink(2) removes all binaries for different
+  architectures of the specified file that has execution bits.  This
+  was the default feature of GfarmFS-FUSE version 1.0.
+
+  Since GfarmFS-FUSE version 1.1, unlink(2) removes just a binary that
+  corresponds to the client architecture of the specified file that
+  has execution bits, which is the same behavior as the Gfarm syscall
+  hooking library since Gfarm version 1.2.
+
 
 *** Unmount
 
