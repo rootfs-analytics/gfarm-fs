@@ -36,6 +36,9 @@
 
 #include <gfarm/gfarm.h>
 
+#define GFARMFS_VER "1.1"
+#define GFARMFS_VER_DATE "12 Oct 2005"
+
 #ifndef GFS_DEV
 #define GFS_DEV ((dev_t)-1);
 #endif
@@ -878,6 +881,13 @@ static struct fuse_operations gfarmfs_oper = {
 char *program_name = "gfarmfs";
 
 void
+gfarmfs_version()
+{
+    fprintf(stdout, "GfarmFS-FUSE version %s (%s)\n",
+            GFARMFS_VER, GFARMFS_VER_DATE);
+}
+
+void
 gfarmfs_usage()
 {
     const char *fusehelp[] = { program_name, "-ho", NULL };
@@ -892,10 +902,10 @@ gfarmfs_usage()
 "    -l, --linkiscopy       enable link(2) to behave copying a file (emulation)\n"
 "    -a <architecture>      for a client not registered by gfhost\n"
 "    -u, --unlinkall        enable unlink(2) to remove all architecture files\n"
+"    -v, --version          show version and exit\n"
 "\n", program_name);
 
     fuse_main(2, (char **) fusehelp, &gfarmfs_oper);
-    exit(1);
 }
 
 void
@@ -917,7 +927,7 @@ check_fuse_options(int *argcp, char ***argvp)
             gfarmfs_debug = 2;
         } else if (strcmp(argv[i], "-h") == 0) {
             gfarmfs_usage();
-            /* exit */
+            exit(0);
         }
     }
     if (ok_s == 0) { /* add -s option */
@@ -959,7 +969,7 @@ check_gfarmfs_options(int *argcp, char ***argvp)
                 printf("set architecture: `%s'\n", archi_name);
             } else {
                 gfarmfs_usage();
-                /* exit */
+                exit(1);
             }
         } else if (strcmp(&argv[0][1], "-unlinkall") == 0
                    || strcmp(&argv[0][1], "u") == 0) {
@@ -969,9 +979,13 @@ check_gfarmfs_options(int *argcp, char ***argvp)
         } else if (strcmp(&argv[0][1], "-unbuf") == 0) {
             printf("enable GFARM_FILE_UNBUFFERED\n");
             enable_gfarm_unbuf = 1;
+        } else if (strcmp(&argv[0][1], "-version") == 0
+                   || strcmp(&argv[0][1], "v") == 0) {
+            gfarmfs_version();
+            exit(0);
         } else {
             gfarmfs_usage();
-            /* exit */
+            exit(1);
         }
         --argc;
         ++argv;
