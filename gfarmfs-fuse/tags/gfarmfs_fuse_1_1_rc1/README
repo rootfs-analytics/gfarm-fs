@@ -1,0 +1,109 @@
+Copyright (c) 2005 National Institute of Advanced Industrial Science
+and Technology (AIST).  All Rights Reserved.
+
+*** GfarmFS-FUSE
+
+GfarmFS-FUSE enables you to mount a Gfarm filesystem in userspace.
+
+  Gfarm:
+      http://datafarm.apgrid.org/
+
+  FUSE:
+      http://fuse.sourceforge.net/
+
+
+*** Installation
+
+To build GfarmFS-FUSE, development packages of Gfarm version 1.1.1 (or
+later) and FUSE version 2.2 (or later) are required.
+
+Installation steps of GfarmFS-FUSE:
+
+    $ ./configure [options]
+    $ make
+    $ make install
+
+Options for configure:
+
+  --prefix=<directory>
+
+  specifies a destination directory for installation.  The 'gfarmfs'
+  command is installed in 'directory'/bin.  Default is /usr/local.
+
+If Gfarm and/or FUSE are installed to a nonstandard location, you may
+need to specify the location by CPPFLAGS and LDFLAGS environment
+variables in configure.  In the case of sh or bash,
+
+    $ CPPFLAGS='-I/usr/local/include' LDFLAGS='-L/usr/local/lib -Wl,-R,/usr/local/lib' ./configure
+
+In the case of csh or tcsh,
+
+    $ env CPPFLAGS='-I/usr/local/include' LDFLAGS='-L/usr/local/lib -Wl,-R,/usr/local/lib' ./configure
+
+
+*** Mount
+
+Make sure your Gfarm environment is set. (see INSTALL.en of Gfarm)
+
+Run the 'gfarmfs' command as a normal user to mount a Gfarm
+filesystem:
+
+    $ gfarmfs [GfarmFS options] <mountpoint> [FUSE options]
+
+<mountpoint> needs to be a directory where a user can access in read
+and write mode.  By default, other users than a user that mounts a
+Gfarm file system cannot access files or directories under the mount
+point.  'gfarmfs' is executed in a single thread by specifying the
+'-s' FUSE option.  For other FUSE options, refer to README included in
+FUSE package.
+
+GfarmFS options:
+
+  -a <architecture>
+
+  specifies the architecture name of the client host.
+
+  In Gfarm file system, the architecture name is required to access
+  files that has execution bits since they may have multiple binaries
+  for each different architecture.  When the client host is a file
+  system node, the architecture is automatically determined by the
+  Gfarm metadata database.  Otherwise, you need to specify the client
+  architecture explicitly to access files that has execution bits.
+  <architecture> is typically a canonical system name like
+  sparc-sun-solaris8. (see man gfhost)
+
+  Since Gfarm version 1.2 or later, the 'client_architecture'
+  directive in the configuration file or the environment variable
+  GFARM_ARCHITECTURE can also specify the architecture name of the
+  client host. (see man gfarm.conf)
+
+  -s, --symlink
+
+  enables symlink(2) emulation.  With this option, a symbolic link is
+  emulated using an invisible file whose suffix is '.gfarmfs-symlink'
+  to manage the target path.  You can use this option until Gfarm does
+  support it.
+
+  -l, --linkiscopy
+
+  enables link(2) emulation.  With this option, link(2) is emulated by
+  copying a target file instead of creating a hardlink.  You can use
+  this option until Gfarm does support it.
+
+  -u, --unlinkall
+
+  With this option, unlink(2) removes all binaries for different
+  architectures of the specified file that has execution bits.  This
+  was the default feature of GfarmFS-FUSE version 1.0.
+
+  Since GfarmFS-FUSE version 1.1, unlink(2) removes just a binary that
+  corresponds to the client architecture of the specified file that
+  has execution bits, which is the same behavior as the Gfarm syscall
+  hooking library since Gfarm version 1.2.
+
+
+*** Unmount
+
+Run the 'fusermount' command (see README of FUSE):
+
+    $ fusermount -u <mountpoint>
