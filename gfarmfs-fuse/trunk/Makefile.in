@@ -1,7 +1,7 @@
 TARGET	= gfarmfs
 SRCS	= gfarmfs.c
 OBJS	= gfarmfs.o
-DOCS	= LICENSE README README.ja
+DOCS	= LICENSE README README.ja ChangeLog ChangeLog.ja
 
 CC = @CC@
 DEFS = @DEFS@
