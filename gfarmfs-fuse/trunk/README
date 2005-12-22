@@ -15,7 +15,9 @@ GfarmFS-FUSE enables you to mount a Gfarm filesystem in userspace.
 *** Installation
 
 To build GfarmFS-FUSE, development packages of Gfarm version 1.1.1 (or
-later) and FUSE version 2.2 (or later) are required.
+later) and FUSE version 2.2 (or later) are required.  When you install
+Gfarm using RPM binary packages, it is necessary to install
+gfarm-gsi-devel (or gfarm-devel) package also.
 
 Installation steps of GfarmFS-FUSE:
 

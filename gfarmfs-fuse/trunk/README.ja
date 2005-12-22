@@ -15,8 +15,10 @@ GfarmFS-FUSE は，Gfarm ファイルシステムをユーザ権限でマウントすること
 
 *** 構築方法
 
-GfarmFS-FUSE の構築には，Gfarm version 1.1.1 以降，および FUSE version
-2.2 以降の開発パッケージが導入されている必要があります．
+GfarmFS-FUSE の構築には，Gfarm version 1.1.1 以降の開発パッケージ，およ
+び FUSE version 2.2 以降の開発パッケージが導入されている必要があります．
+Gfarm の開発パッケージは，RPM の場合は gfarm-gsi-devel（あるいは
+gfarm-devel）となります．
 
 GfarmFS-FUSE を構築するには，下記のようにします．
 
