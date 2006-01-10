@@ -284,7 +284,7 @@ gfarmfs_getdir(const char *path, fuse_dirh_t h, fuse_dirfil_t filler)
                 entry->d_type = DT_LNK;
             }
 #endif
-            res = filler(h, entry->d_name, entry->d_type, entry->d_ino);    
+            res = filler(h, entry->d_name, entry->d_type, entry->d_ino);
             if (res != 0)
                 break;
         }
@@ -330,7 +330,7 @@ gfarmfs_mkdir(const char *path, mode_t mode)
 {
     char *e;
     char *url;
-  
+
     url = add_gfarm_prefix(path);
     e = gfarmfs_init();
     if (e == NULL) {
@@ -392,7 +392,6 @@ gfarmfs_unlink(const char *path)
 
                         e = gfs_unlink_section(url, arch);
                     }
-                    printf("*** %s %s\n", arch, e);
                 } else {
                     /* regular file */
                     e = gfs_unlink(url);
@@ -410,7 +409,7 @@ gfarmfs_rmdir(const char *path)
 {
     char *e;
     char *url;
-  
+
     url = add_gfarm_prefix(path);
     e = gfarmfs_init();
     if (e == NULL) {
@@ -620,7 +619,7 @@ gfarmfs_chmod(const char *path, mode_t mode)
 {
     char *e;
     char *url;
-  
+
     url = add_gfarm_prefix(path);
     e = gfarmfs_init();
     if (e == NULL) {
@@ -638,7 +637,7 @@ gfarmfs_chown(const char *path, uid_t uid, gid_t gid)
     char *e;
     char *url;
     struct gfs_stat s;
-    
+
     e = gfarmfs_init();
     if (e == NULL) {
         url = add_gfarm_prefix(path);
@@ -661,7 +660,7 @@ gfarmfs_truncate(const char *path, off_t size)
     char *e;
     GFS_File gf;
     char *url;
-  
+
     url = add_gfarm_prefix(path);
     e = gfarmfs_init();
     while (e == NULL) {
@@ -693,7 +692,7 @@ gfarmfs_utime(const char *path, struct utimbuf *buf)
             e = gfs_utimes(url, NULL);
         else {
             struct gfarm_timespec gt[2];
-      
+
             gt[0].tv_sec = buf->actime;
             gt[0].tv_nsec= 0;
             gt[1].tv_sec = buf->modtime;
@@ -729,7 +728,7 @@ gfarmfs_open(const char *path, struct fuse_file_info *fi)
         }
         e = gfs_pio_open(url, flags, &gf);
         if (e != NULL) break;
-        
+
         e = gfarmfs_check_program_and_set_archi_using_url(gf, url);
         if (e != NULL) {
             gfs_pio_close(gf);
@@ -948,17 +947,15 @@ check_gfarmfs_options(int *argcp, char ***argvp)
     int argc = *argcp;
     char **argv = *argvp;
     char *argv0 = *argv;
-    
+
     --argc;
     ++argv;
     while (argc > 0 && argv[0][0] == '-') {
         if (strcmp(&argv[0][1], "-symlink") == 0
             || strcmp(&argv[0][1], "s") == 0) {
-            printf("enable symlink\n");
             enable_symlink = 1;
         } else if (strcmp(&argv[0][1], "-linkiscopy") == 0
                    || strcmp(&argv[0][1], "l") == 0) {
-            printf("enable linkiscopy\n");
             enable_linkiscopy = 1;
         } else if (strcmp(&argv[0][1], "-architecture") == 0
                    || strcmp(&argv[0][1], "a") == 0) {
@@ -966,7 +963,6 @@ check_gfarmfs_options(int *argcp, char ***argvp)
             ++argv;
             if (argc > 0) {
                 archi_name = *argv;
-                printf("set architecture: `%s'\n", archi_name);
             } else {
                 gfarmfs_usage();
                 exit(1);
@@ -974,10 +970,8 @@ check_gfarmfs_options(int *argcp, char ***argvp)
         } else if (strcmp(&argv[0][1], "-unlinkall") == 0
                    || strcmp(&argv[0][1], "u") == 0) {
             archi_name = *argv;
-            printf("enable unlinkall\n");
             enable_unlinkall = 1;
         } else if (strcmp(&argv[0][1], "-unbuf") == 0) {
-            printf("enable GFARM_FILE_UNBUFFERED\n");
             enable_gfarm_unbuf = 1;
         } else if (strcmp(&argv[0][1], "-version") == 0
                    || strcmp(&argv[0][1], "v") == 0) {
