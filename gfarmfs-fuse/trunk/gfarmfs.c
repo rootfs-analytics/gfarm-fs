@@ -33,6 +33,7 @@
 #include <pwd.h>
 #include <libgen.h>
 #include <stdlib.h>
+#include <time.h>
 
 #include <gfarm/gfarm.h>
 
@@ -54,14 +55,13 @@
 #define SYMLINK_SUFFIX ".gfarmfs-symlink"
 #endif
 
-/* #define GFARMFS_EVERYINIT  (for test) */
-
 /* ################################################################### */
 
 static int gfarmfs_debug = 0;  /* 1: error, 2: debug */
 static int enable_symlink = 0;
 static int enable_linkiscopy = 0;
 static int enable_unlinkall = 0;
+static int enable_fastcreate = 0;
 static int enable_gfarm_unbuf = 0;
 static char *arch_name = NULL;
 
@@ -72,7 +72,7 @@ add_gfarm_prefix(const char *path)
 	char *url;
 	url = malloc(strlen(path) + 7);
 	sprintf(url, "gfarm:%s", path);
-	return url;
+	return (url);
 }
 
 #ifdef SYMLINK_MODE
@@ -83,28 +83,25 @@ add_gfarm_prefix_symlink_suffix(const char *path)
 	char *url;
 	url = malloc(strlen(path) + 7 + strlen(SYMLINK_SUFFIX));
 	sprintf(url, "gfarm:%s%s", path, SYMLINK_SUFFIX);
-	return url;
+	return (url);
 }
 #endif
 
+#if 0
 static char *
 gfarmfs_init()
 {
-#ifdef GFARMFS_EVERYINIT
-	return gfarm_initialize(NULL, NULL);
-#else
-	return NULL;
-#endif
+	return (NULL);
 }
+#else
+#define gfarmfs_init() (NULL)
+#endif
 
 static int
 gfarmfs_final(char *e, int val_noerror, const char *name)
 {
-#ifdef GFARMFS_EVERYINIT
-	gfarm_terminate();
-#endif
 	if (e == NULL) {
-		return val_noerror;
+		return (val_noerror);
 	} else {
 		if (gfarmfs_debug >= 1) {
 			if (name != NULL) {
@@ -136,9 +133,9 @@ gfarmfs_dir_nlink(const char *url)
 		gfs_closedir(dir);
 	}
 	if (res == 0) {
-		return 2;
+		return (2);
 	} else {
-		return res;
+		return (res);
 	}
 }
 
@@ -147,17 +144,18 @@ static int
 ends_with_and_delete(char *str, char *suffix)
 {
 	int m, n;
+
 	m = strlen(str) - 1;
 	n = strlen(suffix) - 1;
 	while (n >=0) {
 		if (m <= 0 || str[m] != suffix[n]) {
-			return 0; /* false */
+			return (0); /* false */
 		}
 		m--;
 		n--;
 	}
 	str[m + 1] = '\0';
-	return 1; /* true */
+	return (1); /* true */
 }
 #endif
 
@@ -170,10 +168,10 @@ gfarmfs_check_program_and_set_arch_using_url(GFS_File gf, char *url)
 		e = gfs_access(url, X_OK);
 		if (e == NULL) {
 			e = gfs_pio_set_view_section(gf, arch_name, NULL, 0);
-			return e;
+			return (e);
 		}
 	}
-	return NULL;
+	return (NULL);
 }
 
 static char *
@@ -184,11 +182,153 @@ gfarmfs_check_program_and_set_arch_using_mode(GFS_File gf, mode_t mode)
 	if (arch_name != NULL &&
 	    (mode & (S_IXUSR | S_IXGRP | S_IXOTH)) != 0) {
 		e = gfs_pio_set_view_section(gf, arch_name, NULL, 0);
-		return e;
+		return (e);
 	} else {
-		return NULL;
+		return (NULL);
 	}
 }
+
+static char *
+gfarmfs_create_empty_file(const char *path, mode_t mode)
+{
+	char *e, *e2;
+	char *url;
+	GFS_File gf;
+
+	url = add_gfarm_prefix(path);
+	while (1) {
+		e = gfs_pio_create(url,
+				   GFARM_FILE_WRONLY|GFARM_FILE_TRUNC|
+				   GFARM_FILE_EXCLUSIVE,
+				   mode, &gf);
+		if (e != NULL) break;
+		e2 = gfarmfs_check_program_and_set_arch_using_mode(gf, mode);
+		e = gfs_pio_close(gf);
+		if (e2 != NULL) e = e2;
+		break;
+	}
+	free(url);
+	return (e);
+}
+
+/* ################################################################### */
+
+struct fastcreate {
+	char *path;
+	mode_t mode;
+};
+
+static struct fastcreate fc = {NULL, 0};
+
+static void
+gfarmfs_fastcreate_free()
+{
+	if (fc.path != NULL) {
+		free(fc.path);
+		fc.path = NULL;
+	}
+}
+
+static char *
+gfarmfs_fastcreate_flush()
+{
+	if (fc.path != NULL) {
+		char *e;
+
+		if (gfarmfs_debug >= 2) {
+			printf("fastcreate flush: %s\n", fc.path);
+		}
+		e = gfarmfs_create_empty_file(fc.path, fc.mode);
+		if (e != NULL) {
+			if (gfarmfs_debug >= 1) {
+				printf("fastcreate flush error: %s: %s\n",
+				       fc.path, e);
+			}
+		}
+		gfarmfs_fastcreate_free();
+		return (e);
+	} else {
+		return (NULL);  /* do nothing */
+	}
+}
+
+static char *
+gfarmfs_fastcreate_save(const char *path, mode_t mode)
+{
+	gfarmfs_fastcreate_flush();
+
+	fc.path = strdup(path);
+	if (fc.path == NULL) {
+		return (GFARM_ERR_NO_MEMORY);
+	}
+	fc.mode = mode;
+	if (gfarmfs_debug >= 2) {
+		printf("fast_create add: %s\n", path);
+	}
+	return (NULL);
+}
+
+static char *
+gfarmfs_fastcreate_open(const char *path, int flags, GFS_File *gfp)
+{
+	char *e;
+	char *url;
+
+	url = add_gfarm_prefix(path);
+	if (fc.path != NULL && strcmp(fc.path, path) == 0) {
+		if (gfarmfs_debug >= 2) {
+			printf("fast_create open: %s\n", path);
+		}
+		e = gfs_pio_create(url,
+				   flags|GFARM_FILE_TRUNC|GFARM_FILE_EXCLUSIVE,
+				   fc.mode, gfp);
+		if (e == NULL) {
+			e = gfarmfs_check_program_and_set_arch_using_mode(
+				*gfp, fc.mode);
+		}
+		gfarmfs_fastcreate_free();
+	} else {
+		gfarmfs_fastcreate_flush(); /* flush previous saved path */
+		e = gfs_pio_open(url, flags, gfp);
+		if (e == NULL) {
+			e = gfarmfs_check_program_and_set_arch_using_url(
+				*gfp, url);
+		}
+	}
+	if (e == NULL) {
+		free(url);
+	}
+	return (e);
+}
+
+static int
+gfarmfs_fastcreate_getattr(const char *path, struct stat *buf)
+{
+	time_t now;
+
+	if(fc.path != NULL && strcmp(fc.path, path) == 0) {
+		memset(buf, 0, sizeof(struct stat));
+		buf->st_dev = GFS_DEV;
+		buf->st_ino = 12345;    /* XXX */
+		buf->st_mode = fc.mode;
+		buf->st_nlink = 1;
+		buf->st_uid = getuid();
+		buf->st_gid = getgid();
+		buf->st_size = 0;
+		buf->st_blksize = GFS_BLKSIZE;
+		buf->st_blocks = 0;
+		time(&now);
+		buf->st_atime =
+			buf->st_mtime =
+			buf->st_ctime = now;
+		return (1);
+	} else {
+		return (0);
+	}
+}
+
+#define gfarmfs_fastcreate_check() \
+(enable_fastcreate == 1 ? (gfarmfs_fastcreate_flush() == NULL ? 1 : -1) : 0)
 
 /* ################################################################### */
 
@@ -203,6 +343,12 @@ gfarmfs_getattr(const char *path, struct stat *buf)
 #ifdef SYMLINK_MODE
 	int symlinkmode = 0;
 #endif
+	static struct passwd *p_save = NULL;
+	static char *username_save = NULL;
+
+	if (enable_fastcreate == 1 && gfarmfs_fastcreate_getattr(path, buf)) {
+		return (0);
+	}
 
 	url = add_gfarm_prefix(path);
 	e = gfarmfs_init();
@@ -238,10 +384,21 @@ gfarmfs_getattr(const char *path, struct stat *buf)
 			buf->st_nlink = 1;
 		}
 
-		if (gs.st_user != NULL &&
-		    ((p = getpwnam(gs.st_user)) != NULL)) {
+		if (gs.st_user != NULL &&  username_save != NULL &&
+		    strcmp(gs.st_user, username_save) == 0) {
+			buf->st_uid = p_save->pw_uid;
+			buf->st_gid = p_save->pw_gid;
+			if (gfarmfs_debug >= 2) {
+				printf("getpwnam cancel: use cache\n");
+			}
+		} else if (gs.st_user != NULL &&
+			   ((p = getpwnam(gs.st_user)) != NULL)) {
 			buf->st_uid = p->pw_uid;
 			buf->st_gid = p->pw_gid;
+			if (username_save != NULL)
+				free(username_save);
+			username_save = strdup(gs.st_user);
+			p_save = p;
 		} else {
 			buf->st_uid = getuid();
 			buf->st_gid = getgid();
@@ -266,9 +423,9 @@ gfarmfs_getdir(const char *path, fuse_dirh_t h, fuse_dirfil_t filler)
 	GFS_Dir dir;
 	struct gfs_dirent *entry;
 	char *e;
-	int res;
 	char *url;
 
+	gfarmfs_fastcreate_check();
 	e = gfarmfs_init();
 	if (e == NULL) {
 		url = add_gfarm_prefix(path);
@@ -285,10 +442,8 @@ gfarmfs_getdir(const char *path, fuse_dirh_t h, fuse_dirfil_t filler)
 				entry->d_type = DT_LNK;
 			}
 #endif
-			res = filler(h, entry->d_name, entry->d_type,
-				     entry->d_ino);
-			if (res != 0)
-				break;
+			if (filler(h, entry->d_name, entry->d_type,
+				   entry->d_ino) != 0) break;
 		}
 		e = gfs_closedir(dir);
 	}
@@ -298,33 +453,20 @@ gfarmfs_getdir(const char *path, fuse_dirh_t h, fuse_dirfil_t filler)
 static int
 gfarmfs_mknod(const char *path, mode_t mode, dev_t rdev)
 {
-	char *e, *e2;
-	GFS_File gf;
-	char *url;
+	char *e;
 
 	if (rdev != 0 && ((rdev & S_IFREG) != S_IFREG)) {
 		if (gfarmfs_debug >= 1) {
 			printf("mknod: not supported: rdev = %d\n", (int)rdev);
 		}
-		return -ENOSYS;  /* XXX */
+		return (-ENOSYS);  /* XXX */
 	}
 
-	url = add_gfarm_prefix(path);
-	e = gfarmfs_init();
-	while (e == NULL) {
-		e = gfs_pio_create(url,
-				   GFARM_FILE_WRONLY|GFARM_FILE_TRUNC|
-				   GFARM_FILE_EXCLUSIVE,
-				   mode, &gf);
-		if (e != NULL) break;
-
-		e2 = gfarmfs_check_program_and_set_arch_using_mode(gf, mode);
-		e = gfs_pio_close(gf);
-		if (e2 != NULL) e = e2;
-		break;
+	if (enable_fastcreate == 1) {
+		e = gfarmfs_fastcreate_save(path, mode);
+	} else {
+		e = gfarmfs_create_empty_file(path, mode);
 	}
-	free(url);
-
 	return gfarmfs_final(e, 0, path);
 }
 
@@ -334,6 +476,7 @@ gfarmfs_mkdir(const char *path, mode_t mode)
 	char *e;
 	char *url;
 
+	gfarmfs_fastcreate_check();
 	url = add_gfarm_prefix(path);
 	e = gfarmfs_init();
 	if (e == NULL) {
@@ -350,6 +493,7 @@ gfarmfs_unlink(const char *path)
 	char *e;
 	char *url;
 
+	gfarmfs_fastcreate_check();
 	if ((e = gfarmfs_init()) != NULL) goto end;
 
 	if (enable_unlinkall == 1) { /* remove an entry (all architecture) */
@@ -412,6 +556,7 @@ gfarmfs_rmdir(const char *path)
 	char *e;
 	char *url;
 
+	gfarmfs_fastcreate_check();
 	url = add_gfarm_prefix(path);
 	e = gfarmfs_init();
 	if (e == NULL) {
@@ -432,8 +577,9 @@ gfarmfs_readlink(const char *path, char *buf, size_t size)
 	GFS_File gf;
 	int n = 0;
 
+	gfarmfs_fastcreate_check();
 	if (enable_symlink == 0) {
-		return -ENOSYS;
+		return (-ENOSYS);
 	}
 
 	url = add_gfarm_prefix_symlink_suffix(path);
@@ -451,7 +597,8 @@ gfarmfs_readlink(const char *path, char *buf, size_t size)
 
 	return gfarmfs_final(e, 0, path);
 #else
-	return -ENOSYS;
+	gfarmfs_fastcreate_check();
+	return (-ENOSYS);
 #endif
 }
 
@@ -465,8 +612,9 @@ gfarmfs_symlink(const char *from, const char *to)
 	GFS_File gf;
 	int n, len;
 
+	gfarmfs_fastcreate_check();
 	if (enable_symlink == 0) {
-		return -ENOSYS;
+		return (-ENOSYS);
 	}
 	url = add_gfarm_prefix_symlink_suffix(to);
 	e = gfarmfs_init();
@@ -483,7 +631,7 @@ gfarmfs_symlink(const char *from, const char *to)
 			e = gfs_unlink(url);
 			gfarmfs_final(e, 0, to);
 			free(url);
-			return -EIO;
+			return (-EIO);
 		}
 		break;
 	}
@@ -491,7 +639,8 @@ gfarmfs_symlink(const char *from, const char *to)
 
 	return gfarmfs_final(e, 0, to);
 #else
-	return -ENOSYS;
+	gfarmfs_fastcreate_check();
+	return (-ENOSYS);
 #endif
 }
 
@@ -502,6 +651,7 @@ gfarmfs_rename(const char *from, const char *to)
 	char *from_url;
 	char *to_url;
 
+	gfarmfs_fastcreate_check();
 	e = gfarmfs_init();
 	if (e == NULL) {
 		from_url = add_gfarm_prefix(from);
@@ -542,8 +692,9 @@ gfarmfs_link(const char *from, const char *to)
 	char buf[4096];
 	int symlinkmode = 0;
 
+	gfarmfs_fastcreate_check();
 	if (enable_linkiscopy == 0) {
-		return -ENOSYS;
+		return (-ENOSYS);
 	}
 
 	if (gfarmfs_debug >= 2) {
@@ -629,6 +780,7 @@ gfarmfs_chmod(const char *path, mode_t mode)
 	char *e;
 	char *url;
 
+	gfarmfs_fastcreate_check();
 	url = add_gfarm_prefix(path);
 	e = gfarmfs_init();
 	if (e == NULL) {
@@ -647,6 +799,7 @@ gfarmfs_chown(const char *path, uid_t uid, gid_t gid)
 	char *url;
 	struct gfs_stat s;
 
+	gfarmfs_fastcreate_check();
 	e = gfarmfs_init();
 	if (e == NULL) {
 		url = add_gfarm_prefix(path);
@@ -672,6 +825,7 @@ gfarmfs_truncate(const char *path, off_t size)
 	GFS_File gf;
 	char *url;
 
+	gfarmfs_fastcreate_check();
 	url = add_gfarm_prefix(path);
 	e = gfarmfs_init();
 	while (e == NULL) {
@@ -696,6 +850,7 @@ gfarmfs_utime(const char *path, struct utimbuf *buf)
 	char *e;
 	char *url;
 
+	gfarmfs_fastcreate_check();
 	url = add_gfarm_prefix(path);
 	e = gfarmfs_init();
 	if (e == NULL) {
@@ -724,7 +879,6 @@ gfarmfs_open(const char *path, struct fuse_file_info *fi)
 	int flags = 0;
 	GFS_File gf;
 
-	url = add_gfarm_prefix(path);
 	e = gfarmfs_init();
 	while (e == NULL) {
 		if ((fi->flags & O_ACCMODE) == O_RDONLY) {
@@ -737,19 +891,29 @@ gfarmfs_open(const char *path, struct fuse_file_info *fi)
 		if (enable_gfarm_unbuf == 1) {
 			flags |= GFARM_FILE_UNBUFFERED;
 		}
-		e = gfs_pio_open(url, flags, &gf);
-		if (e != NULL) break;
 
-		e = gfarmfs_check_program_and_set_arch_using_url(gf, url);
+		if (enable_fastcreate == 1) {
+			/* check a created file on memory and create/open */
+			/* with checking program */
+			e = gfarmfs_fastcreate_open(path, flags, &gf);
+		} else {
+			url = add_gfarm_prefix(path);
+			e = gfs_pio_open(url, flags, &gf);
+			if (e != NULL) {
+				free(url);
+				break;
+			}
+			e = gfarmfs_check_program_and_set_arch_using_url(
+				gf, url);
+			free(url);
+		}
 		if (e != NULL) {
 			gfs_pio_close(gf);
 			break;
 		}
-
 		fi->fh = (unsigned long) gf;
 		break;
 	}
-	free(url);
 
 	return gfarmfs_final(e, 0, path);
 }
@@ -760,6 +924,7 @@ gfarmfs_release(const char *path, struct fuse_file_info *fi)
 	char *e;
 	GFS_File gf;
 
+	gfarmfs_fastcreate_check();
 	e = gfarmfs_init();
 	if (e == NULL) {
 		gf = (GFS_File) fi->fh;
@@ -814,13 +979,13 @@ gfarmfs_write(const char *path, const char *buf, size_t size,
 #if 0
 static int gfarmfs_statfs(const char *path, struct statfs *stbuf)
 {
-	return -ENOSYS;
+	return (-ENOSYS);
 }
 
 static int
 gfarmfs_fsync(const char *path, int isdatasync, struct fuse_file_info *fi)
 {
-	return 0;
+	return (0);
 }
 #endif
 
@@ -830,26 +995,26 @@ static int
 gfarmfs_setxattr(const char *path, const char *name, const char *value,
 		 size_t size, int flags)
 {
-	return -ENOSYS;
+	return (-ENOSYS);
 }
 
 static int
 gfarmfs_getxattr(const char *path, const char *name, char *value,
 		 size_t size)
 {
-	return -ENOSYS;
+	return (-ENOSYS);
 }
 
 static int
 gfarmfs_listxattr(const char *path, char *list, size_t size)
 {
-	return -ENOSYS;
+	return (-ENOSYS);
 }
 
 static int
 gfarmfs_removexattr(const char *path, const char *name)
 {
-	return -ENOSYS;
+	return (-ENOSYS);
 }
 #endif /* HAVE_SETXATTR */
 
@@ -911,6 +1076,8 @@ gfarmfs_usage()
 "    -l, --linkiscopy       enable link(2) to behave copying a file (emulation)\n"
 "    -a <architecture>      for a client not registered by gfhost\n"
 "    -u, --unlinkall        enable unlink(2) to remove all architecture files\n"
+"    -f, --fastcreate       improve performance of file creation\n"
+"                           (MKNOD does not flush the meta data)\n"
 "    -v, --version          show version and exit\n"
 "\n", program_name);
 
@@ -980,6 +1147,9 @@ check_gfarmfs_options(int *argcp, char ***argvp)
 		} else if (strcmp(&argv[0][1], "-unlinkall") == 0 ||
 			   strcmp(&argv[0][1], "u") == 0) {
 			enable_unlinkall = 1;
+		} else if (strcmp(&argv[0][1], "-fastcreate") == 0 ||
+			   strcmp(&argv[0][1], "f") == 0) {
+			enable_fastcreate = 1;
 		} else if (strcmp(&argv[0][1], "-unbuf") == 0) {
 			enable_gfarm_unbuf = 1;
 		} else if (strcmp(&argv[0][1], "-version") == 0 ||
@@ -1003,7 +1173,7 @@ check_gfarmfs_options(int *argcp, char ***argvp)
 int
 main(int argc, char *argv[])
 {
-#ifndef GFARMFS_EVERYINIT
+	int ret;
 	char *e;
 
 	if (argc > 0) {
@@ -1015,9 +1185,10 @@ main(int argc, char *argv[])
 		fprintf(stderr, "%s: %s\n", program_name, e);
 		exit(-1);
 	}
-#endif
 	check_gfarmfs_options(&argc, &argv);
 	check_fuse_options(&argc, &argv);
 
-	return fuse_main(argc, argv, &gfarmfs_oper);
+	ret =  fuse_main(argc, argv, &gfarmfs_oper);
+	gfarmfs_fastcreate_check();
+	return (ret);
 }
