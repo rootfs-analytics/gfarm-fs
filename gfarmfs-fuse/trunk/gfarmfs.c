@@ -37,8 +37,8 @@
 
 #include <gfarm/gfarm.h>
 
-#define GFARMFS_VER "1.1"
-#define GFARMFS_VER_DATE "12 Oct 2005"
+#define GFARMFS_VER "1.2"
+#define GFARMFS_VER_DATE "30 Jan 2006"
 
 #ifndef GFS_DEV
 #define GFS_DEV ((dev_t)-1);
@@ -1188,7 +1188,7 @@ main(int argc, char *argv[])
 	check_gfarmfs_options(&argc, &argv);
 	check_fuse_options(&argc, &argv);
 
-	ret =  fuse_main(argc, argv, &gfarmfs_oper);
+	ret = fuse_main(argc, argv, &gfarmfs_oper);
 	gfarmfs_fastcreate_check();
 	return (ret);
 }
