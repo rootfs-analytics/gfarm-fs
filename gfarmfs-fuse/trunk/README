@@ -64,6 +64,7 @@ GfarmFS options:
   -a <architecture>
 
   specifies the architecture name of the client host.
+  However, chmod(2) is not supported.
 
   In Gfarm file system, the architecture name is required to access
   files that has execution bits since they may have multiple binaries
@@ -102,6 +103,11 @@ GfarmFS options:
   corresponds to the client architecture of the specified file that
   has execution bits, which is the same behavior as the Gfarm syscall
   hooking library since Gfarm version 1.2.
+
+  -f, --fastcreate
+
+  improves performance of file creation.  If you create and use empty
+  files, some problem may occur.
 
 
 *** Unmount
