@@ -37,8 +37,8 @@
 
 #include <gfarm/gfarm.h>
 
-#define GFARMFS_VER "1.2"
-#define GFARMFS_VER_DATE "30 Jan 2006"
+#define GFARMFS_VER "1.2.1"
+#define GFARMFS_VER_DATE "1 Feb 2006"
 
 #ifndef GFS_DEV
 #define GFS_DEV ((dev_t)-1);
@@ -976,7 +976,8 @@ gfarmfs_write(const char *path, const char *buf, size_t size,
 }
 
 #if 0
-static int gfarmfs_statfs(const char *path, struct statfs *stbuf)
+static int
+gfarmfs_statfs(const char *path, struct statfs *stbuf)
 {
 	return (-ENOSYS);
 }
