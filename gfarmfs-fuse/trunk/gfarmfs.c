@@ -196,16 +196,14 @@ gfarmfs_create_empty_file(const char *path, mode_t mode)
 	GFS_File gf;
 
 	url = add_gfarm_prefix(path);
-	while (1) {
-		e = gfs_pio_create(url,
-				   GFARM_FILE_WRONLY|GFARM_FILE_TRUNC|
-				   GFARM_FILE_EXCLUSIVE,
-				   mode, &gf);
-		if (e != NULL) break;
+	e = gfs_pio_create(url,
+			   GFARM_FILE_WRONLY|GFARM_FILE_TRUNC|
+			   GFARM_FILE_EXCLUSIVE,
+			   mode, &gf);
+	if (e == NULL) {
 		e2 = gfarmfs_check_program_and_set_arch_using_mode(gf, mode);
 		e = gfs_pio_close(gf);
 		if (e2 != NULL) e = e2;
-		break;
 	}
 	free(url);
 	return (e);
@@ -263,7 +261,7 @@ gfarmfs_fastcreate_save(const char *path, mode_t mode)
 	}
 	fc.mode = mode;
 	if (gfarmfs_debug >= 2) {
-		printf("fast_create add: %s\n", path);
+		printf("fastcreate add: %s\n", path);
 	}
 	return (NULL);
 }
@@ -277,7 +275,7 @@ gfarmfs_fastcreate_open(const char *path, int flags, GFS_File *gfp)
 	url = add_gfarm_prefix(path);
 	if (fc.path != NULL && strcmp(fc.path, path) == 0) {
 		if (gfarmfs_debug >= 2) {
-			printf("fast_create open: %s\n", path);
+			printf("fastcreate open: %s\n", path);
 		}
 		e = gfs_pio_create(url,
 				   flags|GFARM_FILE_TRUNC|GFARM_FILE_EXCLUSIVE,
@@ -295,9 +293,7 @@ gfarmfs_fastcreate_open(const char *path, int flags, GFS_File *gfp)
 				*gfp, url);
 		}
 	}
-	if (e == NULL) {
-		free(url);
-	}
+	free(url);
 	return (e);
 }
 
@@ -384,7 +380,7 @@ gfarmfs_getattr(const char *path, struct stat *buf)
 			buf->st_nlink = 1;
 		}
 
-		if (gs.st_user != NULL &&  username_save != NULL &&
+		if (gs.st_user != NULL && username_save != NULL &&
 		    strcmp(gs.st_user, username_save) == 0) {
 			buf->st_uid = p_save->pw_uid;
 			buf->st_gid = p_save->pw_gid;
@@ -896,6 +892,9 @@ gfarmfs_open(const char *path, struct fuse_file_info *fi)
 			/* check a created file on memory and create/open */
 			/* with checking program */
 			e = gfarmfs_fastcreate_open(path, flags, &gf);
+			if (e != NULL) {
+				break;
+			}
 		} else {
 			url = add_gfarm_prefix(path);
 			e = gfs_pio_open(url, flags, &gf);
@@ -906,10 +905,10 @@ gfarmfs_open(const char *path, struct fuse_file_info *fi)
 			e = gfarmfs_check_program_and_set_arch_using_url(
 				gf, url);
 			free(url);
-		}
-		if (e != NULL) {
-			gfs_pio_close(gf);
-			break;
+			if (e != NULL) {
+				gfs_pio_close(gf);
+				break;
+			}
 		}
 		fi->fh = (unsigned long) gf;
 		break;
