@@ -302,7 +302,7 @@ gfarmfs_fastcreate_getattr(const char *path, struct stat *buf)
 {
 	time_t now;
 
-	if(fc.path != NULL && strcmp(fc.path, path) == 0) {
+	if (fc.path != NULL && strcmp(fc.path, path) == 0) {
 		memset(buf, 0, sizeof(struct stat));
 		buf->st_dev = GFS_DEV;
 		buf->st_ino = 12345;    /* XXX */
@@ -351,16 +351,14 @@ gfarmfs_getattr(const char *path, struct stat *buf)
 	if (e == NULL) {
 		e = gfs_stat(url, &gs);
 #ifdef SYMLINK_MODE
-		if (enable_symlink == 1 && e != NULL) {
-			if (gfarm_error_to_errno(e) == ENOENT) {
-				free(url);
-				url = add_gfarm_prefix_symlink_suffix(path);
-				if (gfarmfs_debug >= 2) {
-					printf("check for symlink: %s\n", url);
-				}
-				e = gfs_stat(url, &gs);
-				symlinkmode = 1;
+		if (enable_symlink == 1 && e == GFARM_ERR_NO_SUCH_OBJECT) {
+			free(url);
+			url = add_gfarm_prefix_symlink_suffix(path);
+			if (gfarmfs_debug >= 2) {
+				printf("check for symlink: %s\n", url);
 			}
+			e = gfs_stat(url, &gs);
+			symlinkmode = 1;
 		}
 #endif
 	}
@@ -497,8 +495,7 @@ gfarmfs_unlink(const char *path)
 		e = gfs_unlink(url);
 		free(url);
 #ifdef SYMLINK_MODE
-		if (enable_symlink == 1 && e != NULL &&
-		    gfarm_error_to_errno(e) == ENOENT) {
+		if (enable_symlink == 1 && e == GFARM_ERR_NO_SUCH_OBJECT) {
 			url = add_gfarm_prefix_symlink_suffix(path);
 			if (gfarmfs_debug >= 2) {
 				printf("unlink: for symlink: %s\n", path);
@@ -513,8 +510,7 @@ gfarmfs_unlink(const char *path)
 		url = add_gfarm_prefix(path);
 		e = gfs_stat(url, &gs);
 #ifdef SYMLINK_MODE
-		if (enable_symlink == 1 && e != NULL &&
-		    gfarm_error_to_errno(e) == ENOENT) {
+		if (enable_symlink == 1 && e == GFARM_ERR_NO_SUCH_OBJECT) {
 			free(url);
 			url = add_gfarm_prefix_symlink_suffix(path);
 			if (gfarmfs_debug >= 2) {
@@ -577,7 +573,6 @@ gfarmfs_readlink(const char *path, char *buf, size_t size)
 	if (enable_symlink == 0) {
 		return (-ENOSYS);
 	}
-
 	url = add_gfarm_prefix_symlink_suffix(path);
 	e = gfarmfs_init();
 	while (e == NULL) {
@@ -654,19 +649,15 @@ gfarmfs_rename(const char *from, const char *to)
 		to_url = add_gfarm_prefix(to);
 		e = gfs_rename(from_url, to_url);
 #ifdef SYMLINK_MODE
-		if (enable_symlink == 1 && e != NULL) {
-			if (gfarm_error_to_errno(e) == ENOENT) {
-				free(from_url);
-				free(to_url);
-				from_url =
-					add_gfarm_prefix_symlink_suffix(from);
-				to_url = add_gfarm_prefix_symlink_suffix(to);
-				if (gfarmfs_debug >= 2) {
-					printf("rename: for symlink: %s\n",
-					       from);
-				}
-				e = gfs_rename(from_url, to_url);
+		if (enable_symlink == 1 && e == GFARM_ERR_NO_SUCH_OBJECT) {
+			free(from_url);
+			free(to_url);
+			from_url = add_gfarm_prefix_symlink_suffix(from);
+			to_url = add_gfarm_prefix_symlink_suffix(to);
+			if (gfarmfs_debug >= 2) {
+				printf("rename: for symlink: %s\n", from);
 			}
+			e = gfs_rename(from_url, to_url);
 		}
 #endif
 		free(from_url);
@@ -702,18 +693,14 @@ gfarmfs_link(const char *from, const char *to)
 	while (e == NULL) {
 		e = gfs_stat(from_url, &gs);
 #ifdef SYMLINK_MODE
-		if (enable_symlink == 1 && e != NULL) {
-			if (gfarm_error_to_errno(e) == ENOENT) {
-				free(from_url);
-				from_url =
-					add_gfarm_prefix_symlink_suffix(from);
-				if (gfarmfs_debug >= 2) {
-					printf("link: for symlink: %s\n",
-					       from);
-				}
-				e = gfs_stat(from_url, &gs);
-				symlinkmode = 1;
+		if (enable_symlink == 1 && e == GFARM_ERR_NO_SUCH_OBJECT) {
+			free(from_url);
+			from_url = add_gfarm_prefix_symlink_suffix(from);
+			if (gfarmfs_debug >= 2) {
+				printf("link: for symlink: %s\n", from);
 			}
+			e = gfs_stat(from_url, &gs);
+			symlinkmode = 1;
 		}
 #endif
 		if (e != NULL) break;
@@ -744,7 +731,7 @@ gfarmfs_link(const char *from, const char *to)
 		e = gfarmfs_check_program_and_set_arch_using_mode(to_gf, mode);
 		if (e != NULL) break;
 
-		while(1) {
+		while (1) {
 			e = gfs_pio_read(from_gf, buf, 4096, &m);
 			if (e != NULL) break;
 			if (m == 0) { /* EOF */
@@ -777,12 +764,12 @@ gfarmfs_chmod(const char *path, mode_t mode)
 	char *url;
 
 	gfarmfs_fastcreate_check();
-	url = add_gfarm_prefix(path);
 	e = gfarmfs_init();
 	if (e == NULL) {
+		url = add_gfarm_prefix(path);
 		e = gfs_chmod(url, mode);
+		free(url);
 	}
-	free(url);
 
 	return gfarmfs_final(e, 0, path);
 }
@@ -921,13 +908,11 @@ static int
 gfarmfs_release(const char *path, struct fuse_file_info *fi)
 {
 	char *e;
-	GFS_File gf;
 
 	gfarmfs_fastcreate_check();
 	e = gfarmfs_init();
 	if (e == NULL) {
-		gf = (GFS_File) fi->fh;
-		e = gfs_pio_close(gf);
+		e = gfs_pio_close((GFS_File) fi->fh);
 	}
 
 	return gfarmfs_final(e, 0, path);
@@ -1094,7 +1079,7 @@ check_fuse_options(int *argcp, char ***argvp)
 	int ok_s = 0; /* check -s */
 	char *opt_s_str = "-s";
 
-	for(i = 1; i < argc; i++) {
+	for (i = 1; i < argc; i++) {
 		if (strcmp(argv[i], "-s") == 0) {
 			ok_s = 1;
 		} else if (strcmp(argv[i], "-f") == 0) {
@@ -1179,14 +1164,15 @@ main(int argc, char *argv[])
 	if (argc > 0) {
 		program_name = basename(argv[0]);
 	}
-	/* e = gfarm_initialize(&argc, &argv); */
+
+	check_gfarmfs_options(&argc, &argv);
+	check_fuse_options(&argc, &argv);
+
 	e = gfarm_initialize(NULL, NULL);
 	if (e != NULL) {
 		fprintf(stderr, "%s: %s\n", program_name, e);
 		exit(-1);
 	}
-	check_gfarmfs_options(&argc, &argv);
-	check_fuse_options(&argc, &argv);
 
 	ret = fuse_main(argc, argv, &gfarmfs_oper);
 	gfarmfs_fastcreate_check();
