@@ -62,7 +62,7 @@ static int enable_symlink = 0;
 static int enable_linkiscopy = 0;
 static int enable_unlinkall = 0;
 static int enable_fastcreate = 0;
-static int enable_gfarm_unbuf = 0;
+static int enable_gfarm_unbuf = 1; /* default: GFARM_FILE_UNBUFFERED */
 static char *arch_name = NULL;
 
 /* This is necessary to free the memory space by free(). */
@@ -960,6 +960,30 @@ gfarmfs_write(const char *path, const char *buf, size_t size,
 	return gfarmfs_final(e, n, path);
 }
 
+static int
+gfarmfs_fsync(const char *path, int isdatasync, struct fuse_file_info *fi)
+{
+	char *e;
+	GFS_File gf;
+
+	e = gfarmfs_init();
+	if (e == NULL) {
+		gf = (GFS_File) fi->fh;
+		if (enable_gfarm_unbuf == 0) {
+			e = gfs_pio_flush(gf);
+		}
+		if (e == NULL) {
+			if (isdatasync) {
+				e = gfs_pio_datasync(gf);
+			} else {
+				e = gfs_pio_sync(gf);
+			}
+		}
+	}
+
+	return gfarmfs_final(e, 0, path);
+}
+
 #if 0
 static int
 gfarmfs_statfs(const char *path, struct statfs *stbuf)
@@ -968,7 +992,7 @@ gfarmfs_statfs(const char *path, struct statfs *stbuf)
 }
 
 static int
-gfarmfs_fsync(const char *path, int isdatasync, struct fuse_file_info *fi)
+gfarmfs_flush(const char *path, struct fuse_file_info *fi)
 {
 	return (0);
 }
@@ -1022,8 +1046,9 @@ static struct fuse_operations gfarmfs_oper = {
 	.read     = gfarmfs_read,
 	.write    = gfarmfs_write,
 	.release  = gfarmfs_release,
-#if 0
 	.fsync    = gfarmfs_fsync,
+#if 0
+	.flush    = gfarmfs_flush,
 	.statfs   = gfarmfs_statfs,
 #endif
 #if 0
@@ -1135,8 +1160,10 @@ check_gfarmfs_options(int *argcp, char ***argvp)
 		} else if (strcmp(&argv[0][1], "-fastcreate") == 0 ||
 			   strcmp(&argv[0][1], "f") == 0) {
 			enable_fastcreate = 1;
-		} else if (strcmp(&argv[0][1], "-unbuf") == 0) {
+		} else if (strcmp(&argv[0][1], "-write-unbuf") == 0) {
 			enable_gfarm_unbuf = 1;
+		} else if (strcmp(&argv[0][1], "-write-buf") == 0) {
+			enable_gfarm_unbuf = 0;
 		} else if (strcmp(&argv[0][1], "-version") == 0 ||
 			   strcmp(&argv[0][1], "v") == 0) {
 			gfarmfs_version();
