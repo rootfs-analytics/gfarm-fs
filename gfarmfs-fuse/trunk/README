@@ -108,6 +108,24 @@ GfarmFS options:
 
   improves performance of file creation.  If you create and use empty
   files, some problem may occur.
+  This option is needless for FUSE 2.5 (or later) and Linux Kernel
+  2.6.15 (or later).
+
+  --statfs, -H <hostfile>
+
+  enables statfs(2).  This statfs(2) returns values of total of
+  filesystem nodes.  --statfs option uses filesystem nodes from
+  gfhost command.  The hostfile with -H option consists of a hostname
+  of a filesystem node in each line.  If ``-'' is specified as hostfile,
+  standard input is used to read hostnames.
+  This works on Gfarm version 1.3 (or later).
+
+  --buffered
+
+  enables buffered I/O mode.  If you open the same file more than
+  two at the same time, some problem may occur.
+  Since GfarmFS-FUSE version 1.3, it was changed so that unbuffered
+  I/O mode is default.
 
 
 *** Unmount
