@@ -1619,6 +1619,94 @@ next_arg_set(char **valp, int *argcp, char ***argvp, int errorexit)
 }
 
 static void
+parse_long_option(int *argcp, char ***argvp)
+{
+	char **argv = *argvp;
+
+	if (strcmp(&argv[0][1], "-symlink") == 0)
+		enable_symlink = 1;
+	else if (strcmp(&argv[0][1], "-linkiscopy") == 0)
+		enable_linkiscopy = 1;
+	else if (strcmp(&argv[0][1], "-architecture") == 0)
+		next_arg_set(&arch_name, argcp, argvp, 1);
+	else if (strcmp(&argv[0][1], "-unlinkall") == 0)
+		enable_unlinkall = 1;
+	else if (strcmp(&argv[0][1], "-fastcreate") == 0)
+		enable_fastcreate = 1;
+	else if (strcmp(&argv[0][1], "-unbuffered") == 0)
+		enable_gfarm_unbuf = 1;
+	else if (strcmp(&argv[0][1], "-buffered") == 0)
+		enable_gfarm_unbuf = 0;
+	else if (strcmp(&argv[0][1], "-statfs") == 0)
+		enable_statfs = 1;
+	else if (strcmp(&argv[0][1], "-print-enoent") == 0)
+		enable_print_enoent = 1;
+	else if (strcmp(&argv[0][1], "-trace") == 0) {
+		next_arg_set(&trace_out, argcp, argvp, 0);
+		if (trace_out == NULL || (strcmp(trace_out, "-") == 0))
+			enable_trace = stdout;
+		else
+			enable_trace = fopen(trace_out, "w");
+		if (enable_trace == NULL) {
+			perror(trace_out);
+			exit(1);
+		}
+	} else if (strcmp(&argv[0][1], "-version") == 0) {
+		gfarmfs_version();
+		exit(0);
+	} else if (strcmp(&argv[0][1], "-disable-dirnlink") == 0)
+		enable_count_dir_nlink = 0;
+	else if (strcmp(&argv[0][1], "-statisfstat") == 0)
+		/* On Gfarm version 1.3 (or earlier), gfs_stat
+		   cannot get the correct st_size while a file
+		   is opened.  But gfs_fstat can do it.
+		*/
+		enable_statisfstat = 1;
+	else {
+		gfarmfs_usage();
+		exit(1);
+	}
+}
+
+static int
+parse_short_option(int *argcp, char ***argvp)
+{
+	char **argv = *argvp;
+	char *a = &argv[0][1];
+
+	while (*a) {
+		switch (*a) {
+		case 's':
+			enable_symlink = 1;
+			break;
+		case 'l':
+			enable_linkiscopy = 1;
+			break;
+		case 'a':
+			return (next_arg_set(&arch_name, argcp, argvp, 1));
+		case 'u':
+			enable_unlinkall = 1;
+			break;
+		case 'f':
+			enable_fastcreate = 1;
+			break;
+		case 'H':
+			enable_statfs = 1;
+			return (next_arg_set(
+					&statfs_hosts_file, argcp, argvp, 1));
+		case 'v':
+			gfarmfs_version();
+			exit(0);
+		default:
+			gfarmfs_usage();
+			exit(1);
+		}
+		++a;
+	}
+	return (0);
+}
+
+static void
 check_gfarmfs_options(int *argcp, char ***argvp)
 {
 	int argc = *argcp;
@@ -1628,62 +1716,10 @@ check_gfarmfs_options(int *argcp, char ***argvp)
 	--argc;
 	++argv;
 	while (argc > 0 && argv[0][0] == '-') {
-		if (strcmp(&argv[0][1], "-symlink") == 0 ||
-		    strcmp(&argv[0][1], "s") == 0) {
-			enable_symlink = 1;
-		} else if (strcmp(&argv[0][1], "-linkiscopy") == 0 ||
-			   strcmp(&argv[0][1], "l") == 0) {
-			enable_linkiscopy = 1;
-		} else if (strcmp(&argv[0][1], "-architecture") == 0 ||
-			   strcmp(&argv[0][1], "a") == 0) {
-			next_arg_set(&arch_name, &argc, &argv, 1);
-		} else if (strcmp(&argv[0][1], "-unlinkall") == 0 ||
-			   strcmp(&argv[0][1], "u") == 0) {
-			enable_unlinkall = 1;
-		} else if (strcmp(&argv[0][1], "-fastcreate") == 0 ||
-			   strcmp(&argv[0][1], "f") == 0) {
-			enable_fastcreate = 1;
-		} else if (strcmp(&argv[0][1], "-unbuffered") == 0) {
-			enable_gfarm_unbuf = 1;
-		} else if (strcmp(&argv[0][1], "-buffered") == 0) {
-			enable_gfarm_unbuf = 0;
-		} else if (strcmp(&argv[0][1], "H") == 0) {
-			next_arg_set(&statfs_hosts_file, &argc, &argv, 1);
-			enable_statfs = 1;
-		} else if (strcmp(&argv[0][1], "-statfs") == 0) {
-			enable_statfs = 1;
-		} else if (strcmp(&argv[0][1], "-print-enoent") == 0) {
-			enable_print_enoent = 1;
-		} else if (strcmp(&argv[0][1], "-trace") == 0) {
-			next_arg_set(&trace_out, &argc, &argv, 0);
-			if (trace_out == NULL ||
-			    (strcmp(trace_out, "-") == 0)) {
-				enable_trace = stdout;
-			} else {
-				enable_trace = fopen(trace_out, "w");
-			}
-			if (enable_trace == NULL) {
-				perror(trace_out);
-				exit(1);
-			}
-		} else if (strcmp(&argv[0][1], "-version") == 0 ||
-			   strcmp(&argv[0][1], "v") == 0) {
-			gfarmfs_version();
-			exit(0);
-
-		} else if (strcmp(&argv[0][1], "-disable-dirnlink") == 0) {
-			enable_count_dir_nlink = 0;
-		} else if (strcmp(&argv[0][1], "-statisfstat") == 0) {
-			/* On Gfarm version 1.3 (or earlier), gfs_stat
-			   cannot get the correct st_size while a file
-			   is opened.  But gfs_fstat can do it.
-			*/
-			enable_statisfstat = 1;
-
-		} else {
-			gfarmfs_usage();
-			exit(1);
-		}
+		if (argv[0][1] == '-')
+			parse_long_option(&argc, &argv);
+		else
+			parse_short_option(&argc, &argv);
 		--argc;
 		++argv;
 	}
