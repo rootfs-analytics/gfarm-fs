@@ -20,9 +20,10 @@
 #define GFARMFS_VER_DATE "6 June 2006"
 
 #if FUSE_USE_VERSION >= 25
-/* #  warning FUSE 2.5 compatible mode. (TODO: ftruncate, access) */
+/* #  warning FUSE 2.5 compatible mode. */
 #elif FUSE_USE_VERSION == 22
 /* #  warning FUSE 2.2 compatible mode. */
+#define ENABLE_FASTCREATE
 #else
 #  error Please install FUSE 2.2 or later
 #endif
@@ -71,7 +72,7 @@ static int gfarmfs_debug = 0;  /* 1: error, 2: debug */
 static int enable_symlink = 0;
 static int enable_linkiscopy = 0;
 static int enable_unlinkall = 0;
-static int enable_fastcreate = 0;
+static int enable_fastcreate = 0;  /* can be used on FUSE version 2.2 only */
 static int enable_gfarm_unbuf = 1; /* default: GFARM_FILE_UNBUFFERED */
 static char *arch_name = NULL;
 static int enable_count_dir_nlink = 1; /* default: enable */
@@ -242,6 +243,8 @@ gfarmfs_create_empty_file(const char *path, mode_t mode)
 }
 
 /* ################################################################### */
+/* FUSE version 2.2 only */
+#ifdef ENABLE_FASTCREATE
 
 struct fastcreate {
 	char *path;
@@ -356,6 +359,10 @@ gfarmfs_fastcreate_getattr(const char *path, struct stat *buf)
 #define gfarmfs_fastcreate_check() \
 (enable_fastcreate == 1 ? (gfarmfs_fastcreate_flush() == NULL ? 1 : -1) : 0)
 
+#else
+#define gfarmfs_fastcreate_check()
+#endif /* ENABLE_FASTCREATE */
+
 /* ################################################################### */
 
 static char *
@@ -419,10 +426,11 @@ gfarmfs_getattr(const char *path, struct stat *buf)
 
 	if ((e = gfarmfs_init()) != NULL) goto end;
 
+#ifdef ENABLE_FASTCREATE
 	if (enable_fastcreate == 1 && gfarmfs_fastcreate_getattr(path, buf)) {
 		goto end;
 	}
-
+#endif
 	url = add_gfarm_prefix(path);
 	e = gfs_stat(url, &gs);
 #ifdef SYMLINK_MODE
@@ -598,11 +606,15 @@ gfarmfs_mknod(const char *path, mode_t mode, dev_t rdev)
 	if ((e = gfarmfs_init()) != NULL) goto end;
 
 	if (S_ISREG(mode)) {
+#ifdef ENABLE_FASTCREATE
 		if (enable_fastcreate == 1) {
 			e = gfarmfs_fastcreate_save(path, mode);
 		} else {
 			e = gfarmfs_create_empty_file(path, mode);
 		}
+#else
+		e = gfarmfs_create_empty_file(path, mode);
+#endif
 	} else {
 		if (gfarmfs_debug >= 1) {
 			printf("MKNOD: not supported: mode = %o, rdev = %o\n",
@@ -1067,8 +1079,7 @@ gfarmfs_utime(const char *path, struct utimbuf *buf)
 }
 
 static inline GFS_File
-gfarmfs_cast_fh(
-	struct fuse_file_info *fi)
+gfarmfs_cast_fh(struct fuse_file_info *fi)
 {
 	return (GFS_File)(unsigned long) fi->fh;
 }
@@ -1094,6 +1105,7 @@ gfarmfs_open(const char *path, struct fuse_file_info *fi)
 			flags |= GFARM_FILE_UNBUFFERED;
 		}
 
+#ifdef ENABLE_FASTCREATE
 		if (enable_fastcreate == 1) {
 			/* check a created file on memory and create/open */
 			/* with checking program */
@@ -1102,6 +1114,7 @@ gfarmfs_open(const char *path, struct fuse_file_info *fi)
 				break;
 			}
 		} else {
+#endif
 			url = add_gfarm_prefix(path);
 			e = gfs_pio_open(url, flags, &gf);
 			if (e != NULL) {
@@ -1115,7 +1128,9 @@ gfarmfs_open(const char *path, struct fuse_file_info *fi)
 				gfs_pio_close(gf);
 				break;
 			}
+#ifdef ENABLE_FASTCREATE
 		}
+#endif
 		fi->fh = (unsigned long) gf;
 		break;
 	}
@@ -1132,7 +1147,6 @@ gfarmfs_create(const char *path, mode_t mode, struct fuse_file_info *fi)
 	int flags = 0;
 	GFS_File gf;
 
-	gfarmfs_fastcreate_check();
 	e = gfarmfs_init();
 	while (e == NULL) {
 		if ((fi->flags & O_ACCMODE) == O_RDONLY) {
@@ -1174,7 +1188,6 @@ gfarmfs_fgetattr(const char *path, struct stat *stbuf,
 	char *e;
 	struct gfs_stat gs;
 
-	gfarmfs_fastcreate_check();
 	e = gfarmfs_init();
 	if (e == NULL) {
 		e = gfs_fstat(gfarmfs_cast_fh(fi), &gs);
@@ -1208,7 +1221,6 @@ gfarmfs_access(const char *path, int mask)
 	char *e;
 	char *url;
 
-	gfarmfs_fastcreate_check();
 	e = gfarmfs_init();
 	if (e == NULL) {
 		url = add_gfarm_prefix(path);
@@ -1536,7 +1548,7 @@ gfarmfs_usage()
 "Usage: %s [GfarmFS options] <mountpoint> [FUSE options]\n"
 "\n"
 "GfarmFS options:\n"
-#if FUSE_USE_VERSION == 22
+#ifdef ENABLE_FASTCREATE
 "    -f, --fastcreate       improve performance of file creation\n"
 #endif
 #ifdef SYMLINK_MODE
@@ -1556,13 +1568,20 @@ gfarmfs_usage()
 "    --print-enoent         do not ignore to print ENOENT to stderr\n"
 "                           (in -f or -d of FUSE option) (default: ignore)\n"
 "    -v, --version          show version and exit\n"
+"\n"
+#ifdef ENABLE_FASTCREATE
+"    --safe                 equivalent to -fsS --unbuffered --statisfstat\n"
+"    --fast                 equivalent to -f --buffered\n"
+#else
+"    --safe                 equivalent to -sS --unbuffered --statisfstat\n"
+#endif
 "\n", program_name);
 
 	fuse_main(2, (char **) fusehelp, &gfarmfs_oper);
 }
 
 static void
-check_fuse_options(int *argcp, char ***argvp)
+check_fuse_options(int *argcp, char ***argvp, int *newargcp, char ***newargvp)
 {
 	int argc = *argcp;
 	char **argv = *argvp;
@@ -1590,8 +1609,8 @@ check_fuse_options(int *argcp, char ***argvp)
 		}
 		argc++;
 		newargv[argc - 1] = opt_s_str;
-		*argcp = argc;
-		*argvp = newargv;
+		*newargcp = argc;
+		*newargvp = newargv;
 	}
 }
 
@@ -1662,7 +1681,20 @@ parse_long_option(int *argcp, char ***argvp)
 		   is opened.  But gfs_fstat can do it.
 		*/
 		enable_statisfstat = 1;
-	else {
+	else if (strcmp(&argv[0][1], "-safe") == 0) {
+		enable_symlink = 1;     /* -s */
+#ifdef ENABLE_FASTCREATE
+		enable_fastcreate = 1;  /* -f */
+#endif
+		enable_gfarm_unbuf = 1; /* --unbuffered */
+		enable_statisfstat = 1; /* --statfsisfstat */
+		enable_statfs = 1;      /* -S */
+	} else if (strcmp(&argv[0][1], "-fast") == 0) {
+#ifdef ENABLE_FASTCREATE
+		enable_fastcreate = 1;  /* -f */
+#endif
+		enable_gfarm_unbuf = 0; /* --buffered */
+	} else {
 		gfarmfs_usage();
 		exit(1);
 	}
@@ -1689,6 +1721,9 @@ parse_short_option(int *argcp, char ***argvp)
 			break;
 		case 'f':
 			enable_fastcreate = 1;
+			break;
+		case 'S':
+			enable_statfs = 1;
 			break;
 		case 'H':
 			enable_statfs = 1;
@@ -1795,14 +1830,6 @@ setup_options()
 	} else {
 		gfarmfs_oper.statfs = NULL;
 	}
-#if FUSE_USE_VERSION >= 25
-	if (enable_fastcreate == 1) {
-		if (gfarmfs_debug > 0) {
-			printf("fastcreate is not needed by FUSE 2.5 compatible mode. (disabled)\n");
-		}
-		enable_fastcreate = 0;
-	}
-#endif
 }
 
 static void
@@ -1822,11 +1849,13 @@ print_options()
 		if (enable_unlinkall == 1) {
 			printf("enable unlinkall\n");
 		}
-#if FUSE_USE_VERSION == 22
 		if (enable_fastcreate == 1) {
+#ifdef ENABLE_FASTCREATE
 			printf("enable fastcreate\n");
-		}
+#else
+			printf("fastcreate is not needed by FUSE 2.5 compatible mode. (disabled)\n");
 #endif
+		}
 		if (enable_statfs == 1) {
 			printf("enable statfs: %d hosts\n",
 			       statfs_nhosts);
@@ -1848,11 +1877,13 @@ print_options()
 			printf("disable count_dir_nlink\n");
 		}
 		if (enable_statisfstat == 1) {
-			printf("correct st_size while a file is opend (gfs_fstat instead of gfs_stat)\n");
+			printf("correct st_size during file-opened (gfs_fstat instead of gfs_stat)\n");
 			if (enable_gfarm_unbuf == 0) {
 				printf("warning: not set GFARM_FILE_UNBUFFERED\n");
 			}
 		}
+#ifndef ENABLE_FASTCREATE
+#endif
 	}
 }
 
@@ -1861,13 +1892,15 @@ main(int argc, char *argv[])
 {
 	int ret;
 	char *e;
+	char **newargv;
+	int newargc;
 
 	if (argc > 0) {
 		program_name = basename(argv[0]);
 	}
 
 	check_gfarmfs_options(&argc, &argv);
-	check_fuse_options(&argc, &argv);
+	check_fuse_options(&argc, &argv, &newargc, &newargv);
 
 	e = gfarm_initialize(NULL, NULL);
 	if (e != NULL) {
@@ -1878,6 +1911,7 @@ main(int argc, char *argv[])
 	print_options();
 
 	ret = fuse_main(argc, argv, &gfarmfs_oper);
+	free(newargv);
 
 	gfarmfs_fastcreate_check();
 
