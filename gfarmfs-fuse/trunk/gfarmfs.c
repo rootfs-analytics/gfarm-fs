@@ -1558,7 +1558,7 @@ gfarmfs_usage()
 "    -u, --unlinkall        enable unlink(2) to remove all architecture files\n"
 "                           (MKNOD does not flush the meta data)\n"
 #ifdef USE_GFS_STATFSNODE
-"    --statfs               enable statfs(2) (total of hosts from gfhost)\n"
+"    -S, --statfs           enable statfs(2) (total of hosts from gfhost)\n"
 "    -H <hostfile>          enable statfs(2) (total of hosts in hostfile)\n"
 #endif
 "\n"
@@ -1892,7 +1892,7 @@ main(int argc, char *argv[])
 {
 	int ret;
 	char *e;
-	char **newargv;
+	char **newargv = NULL;
 	int newargc;
 
 	if (argc > 0) {
@@ -1910,7 +1910,7 @@ main(int argc, char *argv[])
 	setup_options();
 	print_options();
 
-	ret = fuse_main(argc, argv, &gfarmfs_oper);
+	ret = fuse_main(newargc, newargv, &gfarmfs_oper);
 	free(newargv);
 
 	gfarmfs_fastcreate_check();
