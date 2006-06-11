@@ -318,6 +318,8 @@ gfarmfs_fastcreate_open(const char *path, int flags, GFS_File *gfp)
 		if (e == NULL) {
 			e = gfarmfs_check_program_and_set_arch_using_mode(
 				*gfp, fc.mode);
+			if (e != NULL)
+				gfs_pio_close(*gfp);
 		}
 		gfarmfs_fastcreate_free();
 	} else {
@@ -326,6 +328,8 @@ gfarmfs_fastcreate_open(const char *path, int flags, GFS_File *gfp)
 		if (e == NULL) {
 			e = gfarmfs_check_program_and_set_arch_using_url(
 				*gfp, url);
+			if (e != NULL)
+				gfs_pio_close(*gfp);
 		}
 	}
 	free(url);
@@ -1604,6 +1608,11 @@ check_fuse_options(int *argcp, char ***argvp, int *newargcp, char ***newargvp)
 	}
 	if (ok_s == 0) { /* add -s option */
 		newargv = malloc((argc + 1) * sizeof(char *));
+		if (newargv == NULL) {
+			errno = ENOMEM;
+			perror("");
+			exit(1);
+		}
 		for (i = 0; i < argc; i++) {
 			newargv[i] = argv[i];
 		}
@@ -1611,6 +1620,9 @@ check_fuse_options(int *argcp, char ***argvp, int *newargcp, char ***newargvp)
 		newargv[argc - 1] = opt_s_str;
 		*newargcp = argc;
 		*newargvp = newargv;
+	} else {
+		*newargcp = argc;
+		*newargvp = argv;
 	}
 }
 
@@ -1893,7 +1905,7 @@ main(int argc, char *argv[])
 	int ret;
 	char *e;
 	char **newargv = NULL;
-	int newargc;
+	int newargc = 0;
 
 	if (argc > 0) {
 		program_name = basename(argv[0]);
