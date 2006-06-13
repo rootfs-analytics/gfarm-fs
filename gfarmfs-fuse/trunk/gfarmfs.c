@@ -1397,13 +1397,14 @@ gfarmfs_statfs(const char *path, struct statfs *stfs)
 	if ((e = gfarmfs_init()) != NULL) goto end;
 
 	e = gfs_statfsnode_total_of_hostlist(statfs_hosts, statfs_nhosts,
-					     &stfs->f_bsize,
-					     &stfs->f_blocks,
-					     &stfs->f_bfree,
-					     &stfs->f_bavail,
-					     &stfs->f_files,
-					     &stfs->f_ffree,
-					     &favail);
+					     (gfarm_int32_t*)&stfs->f_bsize,
+					     (file_offset_t*)&stfs->f_blocks,
+					     (file_offset_t*)&stfs->f_bfree,
+					     (file_offset_t*)&stfs->f_bavail,
+					     (file_offset_t*)&stfs->f_files,
+					     (file_offset_t*)&stfs->f_ffree,
+					     (file_offset_t*)&favail);
+
 end:
 	return gfarmfs_final("STATFS", e, 0, path);
 }
@@ -1413,26 +1414,17 @@ gfarmfs_statfs(
 	const char *path, struct statvfs *stvfs)
 {
 	char *e;
-	gfarm_int32_t bsize;
-	file_offset_t blocks, bfree ,bavail, files, ffree, favail;
 
 	if ((e = gfarmfs_init()) != NULL) goto end;
 
 	e = gfs_statfsnode_total_of_hostlist(statfs_hosts, statfs_nhosts,
-					     &bsize,
-					     &blocks,
-					     &bfree,
-					     &bavail,
-					     &files,
-					     &ffree,
-					     &favail);
-	stvfs->f_bsize  = (unsigned long) bsize;
-	stvfs->f_blocks = (fsblkcnt_t) blocks;
-	stvfs->f_bfree  = (fsblkcnt_t) bfree;
-	stvfs->f_bavail = (fsblkcnt_t) bavail;
-	stvfs->f_files  = (fsfilcnt_t) files;
-	stvfs->f_ffree  = (fsfilcnt_t) ffree;
-	stvfs->f_favail = (fsfilcnt_t) favail;
+					     (gfarm_int32_t*)&stvfs->f_bsize,
+					     (file_offset_t*)&stvfs->f_blocks,
+					     (file_offset_t*)&stvfs->f_bfree,
+					     (file_offset_t*)&stvfs->f_bavail,
+					     (file_offset_t*)&stvfs->f_files,
+					     (file_offset_t*)&stvfs->f_ffree,
+					     (file_offset_t*)&stvfs->f_favail);
 end:
 	return gfarmfs_final("STATFS", e, 0, path);
 }
