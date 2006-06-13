@@ -1546,18 +1546,17 @@ gfarmfs_usage()
 "GfarmFS options:\n"
 #ifdef ENABLE_FASTCREATE
 "    -f, --fastcreate       improve performance of file creation\n"
+"                           (MKNOD does not flush the meta data)\n"
 #endif
 #ifdef SYMLINK_MODE
 "    -s, --symlink          enable symlink(2) to work (emulation)\n"
 #endif
 "    -l, --linkiscopy       enable link(2) to behave copying a file (emulation)\n"
 "    -u, --unlinkall        enable unlink(2) to remove all architecture files\n"
-"                           (MKNOD does not flush the meta data)\n"
 #ifdef USE_GFS_STATFSNODE
 "    -S, --statfs           enable statfs(2) (total of hosts from gfhost)\n"
 "    -H <hostfile>          enable statfs(2) (total of hosts in hostfile)\n"
 #endif
-"\n"
 "    --buffered             enable buffered I/O (unset GFARM_FILE_UNBUFFERED)\n"
 "    -a <architecture>      for a client not registered by gfhost\n"
 "    --trace <filename>     record FUSE operations called by processes\n"
@@ -1567,9 +1566,10 @@ gfarmfs_usage()
 "\n"
 #ifdef ENABLE_FASTCREATE
 "    --safe                 equivalent to -fsS --unbuffered --statisfstat\n"
-"    --fast                 equivalent to -f --buffered\n"
+"    --fast                 equivalent to -f --buffered --disable-dirnlink\n"
 #else
 "    --safe                 equivalent to -sS --unbuffered --statisfstat\n"
+"    --fast                 equivalent to --buffered --disable-dirnlink\n"
 #endif
 "\n", program_name);
 
@@ -1697,6 +1697,7 @@ parse_long_option(int *argcp, char ***argvp)
 #ifdef ENABLE_FASTCREATE
 		enable_fastcreate = 1;  /* -f */
 #endif
+		enable_count_dir_nlink = 0; /* --disable-dirnlink */
 		enable_gfarm_unbuf = 0; /* --buffered */
 	} else {
 		gfarmfs_usage();
