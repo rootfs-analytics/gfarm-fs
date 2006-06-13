@@ -111,10 +111,10 @@ GfarmFS options:
   This option is needless for FUSE 2.5 (or later) and Linux Kernel
   2.6.15 (or later).
 
-  --statfs, -H <hostfile>
+  -S, --statfs, -H <hostfile>
 
   enables statfs(2).  This statfs(2) returns values of total of
-  filesystem nodes.  --statfs option uses filesystem nodes from
+  filesystem nodes.  -S or --statfs option uses filesystem nodes from
   gfhost command.  The hostfile with -H option consists of a hostname
   of a filesystem node in each line.  If ``-'' is specified as hostfile,
   standard input is used to read hostnames.
