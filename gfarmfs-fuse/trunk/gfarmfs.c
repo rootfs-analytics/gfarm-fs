@@ -75,7 +75,7 @@ static int enable_unlinkall = 0;
 static int enable_fastcreate = 0;  /* can be used on FUSE version 2.2 only */
 static int enable_gfarm_unbuf = 1; /* default: GFARM_FILE_UNBUFFERED */
 static char *arch_name = NULL;
-static int enable_count_dir_nlink = 1; /* default: enable */
+static int enable_count_dir_nlink = 0; /* default: disable */
 static int enable_print_enoent = 0; /* default: do not print ENOENT */
 static FILE *enable_trace = NULL;
 static char *trace_out = "gfarmfs.trace"; /* default filename */
@@ -1410,21 +1410,22 @@ end:
 }
 #elif FUSE_USE_VERSION >= 25
 static int
-gfarmfs_statfs(
-	const char *path, struct statvfs *stvfs)
+gfarmfs_statfs(const char *path, struct statvfs *stvfs)
 {
 	char *e;
+	gfarm_int32_t bsize;
 
 	if ((e = gfarmfs_init()) != NULL) goto end;
 
 	e = gfs_statfsnode_total_of_hostlist(statfs_hosts, statfs_nhosts,
-					     (gfarm_int32_t*)&stvfs->f_bsize,
+					     &bsize,
 					     (file_offset_t*)&stvfs->f_blocks,
 					     (file_offset_t*)&stvfs->f_bfree,
 					     (file_offset_t*)&stvfs->f_bavail,
 					     (file_offset_t*)&stvfs->f_files,
 					     (file_offset_t*)&stvfs->f_ffree,
 					     (file_offset_t*)&stvfs->f_favail);
+	stvfs->f_bsize = (unsigned long) bsize;
 end:
 	return gfarmfs_final("STATFS", e, 0, path);
 }
@@ -1522,16 +1523,8 @@ gfarmfs_version()
 	printf("Build: %s %s\n", __DATE__, __TIME__);
 #if FUSE_USE_VERSION >= 25
 	printf("FUSE version 2.5 compatible mode\n");
-	printf("Recommend GfarmFS options:\n");
-	printf("    -s -u --statfs --statisfstat\n");
-	printf("Recommend FUSE options:\n");
-	printf("    -o default_permissions\n");
 #else
 	printf("FUSE version 2.2 compatible mode\n");
-	printf("Recommend GfarmFS options:\n");
-	printf("    -f -s -u --statfs --statisfstat\n");
-	printf("Recommend FUSE options:\n");
-	printf("    -o default_permissions\n");
 #endif
 }
 
@@ -1553,11 +1546,13 @@ gfarmfs_usage()
 #endif
 "    -l, --linkiscopy       enable link(2) to behave copying a file (emulation)\n"
 "    -u, --unlinkall        enable unlink(2) to remove all architecture files\n"
+"    -n, --enable-dirnlink  count nlink of a directory precisely\n"
+"    -F, --statisfstat      get correct st_size while a file is opened\n"
 #ifdef USE_GFS_STATFSNODE
 "    -S, --statfs           enable statfs(2) (total of hosts from gfhost)\n"
 "    -H <hostfile>          enable statfs(2) (total of hosts in hostfile)\n"
 #endif
-"    --buffered             enable buffered I/O (unset GFARM_FILE_UNBUFFERED)\n"
+"    -b, --buffered         enable buffered I/O (unset GFARM_FILE_UNBUFFERED)\n"
 "    -a <architecture>      for a client not registered by gfhost\n"
 "    --trace <filename>     record FUSE operations called by processes\n"
 "    --print-enoent         do not ignore to print ENOENT to stderr\n"
@@ -1565,11 +1560,11 @@ gfarmfs_usage()
 "    -v, --version          show version and exit\n"
 "\n"
 #ifdef ENABLE_FASTCREATE
-"    --safe                 equivalent to -fsS --unbuffered --statisfstat\n"
-"    --fast                 equivalent to -f --buffered --disable-dirnlink\n"
+"    --safe                 equivalent to -fsFS\n"
+"    --fast                 equivalent to -fb\n"
 #else
-"    --safe                 equivalent to -sS --unbuffered --statisfstat\n"
-"    --fast                 equivalent to --buffered --disable-dirnlink\n"
+"    --safe                 equivalent to -sFS\n"
+"    --fast                 equivalent to -b\n"
 #endif
 "\n", program_name);
 
@@ -1677,6 +1672,8 @@ parse_long_option(int *argcp, char ***argvp)
 	} else if (strcmp(&argv[0][1], "-version") == 0) {
 		gfarmfs_version();
 		exit(0);
+	} else if (strcmp(&argv[0][1], "-enable-dirnlink") == 0) {
+		enable_count_dir_nlink = 1;
 	} else if (strcmp(&argv[0][1], "-disable-dirnlink") == 0)
 		enable_count_dir_nlink = 0;
 	else if (strcmp(&argv[0][1], "-statisfstat") == 0)
@@ -1691,7 +1688,7 @@ parse_long_option(int *argcp, char ***argvp)
 		enable_fastcreate = 1;  /* -f */
 #endif
 		enable_gfarm_unbuf = 1; /* --unbuffered */
-		enable_statisfstat = 1; /* --statfsisfstat */
+		enable_statisfstat = 1; /* --statisfstat */
 		enable_statfs = 1;      /* -S */
 	} else if (strcmp(&argv[0][1], "-fast") == 0) {
 #ifdef ENABLE_FASTCREATE
@@ -1734,6 +1731,15 @@ parse_short_option(int *argcp, char ***argvp)
 			enable_statfs = 1;
 			return (next_arg_set(
 					&statfs_hosts_file, argcp, argvp, 1));
+		case 'n':
+			enable_count_dir_nlink = 1;
+			break;
+		case 'b':
+			enable_gfarm_unbuf = 0;
+			break;
+		case 'F':
+			enable_statisfstat = 1;
+			break;
 		case 'v':
 			gfarmfs_version();
 			exit(0);
@@ -1849,7 +1855,7 @@ print_options()
 			printf("enable linkiscopy\n");
 		}
 		if (arch_name != NULL) {
-			printf("set architecture: %s\n", arch_name);
+			printf("set architecture (%s)\n", arch_name);
 		}
 		if (enable_unlinkall == 1) {
 			printf("enable unlinkall\n");
@@ -1858,37 +1864,36 @@ print_options()
 #ifdef ENABLE_FASTCREATE
 			printf("enable fastcreate\n");
 #else
-			printf("fastcreate is not needed by FUSE 2.5 compatible mode. (disabled)\n");
+			printf("attention: fastcreate is not needed by FUSE 2.5 compatible mode.\n");
 #endif
 		}
 		if (enable_statfs == 1) {
-			printf("enable statfs: %d hosts\n",
+			printf("enable statfs (%d hosts)\n",
 			       statfs_nhosts);
 		}
 		if (statfs_hosts_file != NULL) {
 			if (strcmp(statfs_hosts_file, "-") == 0) {
-				printf("statfs: hostlist: stdin\n");
+				printf("statfs (hostlist: stdin)\n");
 			} else {
-				printf("statfs: hostlist: %s\n",
+				printf("statfs (hostlist: %s)\n",
 				       statfs_hosts_file);
 			}
 		}
 		if (enable_trace != NULL) {
-			printf("enable trace: output file: %s\n", trace_out);
+			printf("enable trace (output file: %s)\n", trace_out);
 		}
-
-		/* hidden options */
-		if (enable_count_dir_nlink == 0) {
-			printf("disable count_dir_nlink\n");
+		if (enable_count_dir_nlink == 1) {
+			printf("enable count_dir_nlink\n");
+		}
+		if (enable_gfarm_unbuf == 0) {
+			printf("enable buffered I/O (unset GFARM_FILE_UNBUFFERED)\n");
 		}
 		if (enable_statisfstat == 1) {
-			printf("correct st_size during file-opened (gfs_fstat instead of gfs_stat)\n");
+			printf("enable statisfstat\n");
 			if (enable_gfarm_unbuf == 0) {
-				printf("warning: not set GFARM_FILE_UNBUFFERED\n");
+				printf("warning: better not use --buffered for --statisfstat\n");
 			}
 		}
-#ifndef ENABLE_FASTCREATE
-#endif
 	}
 }
 
