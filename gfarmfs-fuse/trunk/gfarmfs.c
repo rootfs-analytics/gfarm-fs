@@ -1672,10 +1672,8 @@ parse_long_option(int *argcp, char ***argvp)
 	} else if (strcmp(&argv[0][1], "-version") == 0) {
 		gfarmfs_version();
 		exit(0);
-	} else if (strcmp(&argv[0][1], "-enable-dirnlink") == 0) {
+	} else if (strcmp(&argv[0][1], "-dirnlink") == 0)
 		enable_count_dir_nlink = 1;
-	} else if (strcmp(&argv[0][1], "-disable-dirnlink") == 0)
-		enable_count_dir_nlink = 0;
 	else if (strcmp(&argv[0][1], "-statisfstat") == 0)
 		/* On Gfarm version 1.3 (or earlier), gfs_stat
 		   cannot get the correct st_size while a file
@@ -1689,12 +1687,11 @@ parse_long_option(int *argcp, char ***argvp)
 #endif
 		enable_gfarm_unbuf = 1; /* --unbuffered */
 		enable_statisfstat = 1; /* --statisfstat */
-		enable_statfs = 1;      /* -S */
+		enable_statfs = 1;      /* --statfs */
 	} else if (strcmp(&argv[0][1], "-fast") == 0) {
 #ifdef ENABLE_FASTCREATE
 		enable_fastcreate = 1;  /* -f */
 #endif
-		enable_count_dir_nlink = 0; /* --disable-dirnlink */
 		enable_gfarm_unbuf = 0; /* --buffered */
 	} else {
 		gfarmfs_usage();
