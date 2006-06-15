@@ -3,10 +3,13 @@ GfarmFS-FUSE - ChangeLog
 [2006.06.06] Version 1.3
 
 * add FUSE 2.5 compatible mode. (auto configuration)
-* add --statfs option.
-* add --trace option.
+* add -S/--statfs options
+* do not count nlink of a directory by default setting
+* add -n/--dirnlink options
+* add -b/--buffered option.s (GFARM_FILE_UNBUFFERED mode is default)
+* add -F/--statisfstat options
+* add --trace option
 * fix a bug such that gfs_pio_create can create invalid FIFO.
-* add --buffered option. (GFARM_FILE_UNBUFFERED mode is default.)
 
 [2006.02.01] Version 1.2.1
 
