@@ -1,12 +1,15 @@
 Copyright (c) 2005 National Institute of Advanced Industrial Science
 and Technology (AIST).  All Rights Reserved.
 
-*** GfarmFS-FUSE
+============
+GfarmFS-FUSE
+============
 
 GfarmFS-FUSE は，Gfarm ファイルシステムをユーザ権限でマウントすること
 を可能にします．
-Gfarm のクライアント用ライブラリ関数を利用して記述していますので，通常の
-Gfarm クライアントアプリケーションとして動作します．
+gfarmfs コマンドが，通常の Gfarm クライアントアプリケーションとして動
+作し，Gfarm のルートディレクトリ以下がマウントポイント以下に見えるよう
+になります．
 
   Gfarm:
       http://datafarm.apgrid.org/
@@ -15,12 +18,40 @@ Gfarm クライアントアプリケーションとして動作します．
       http://fuse.sourceforge.net/
 
 
-*** 構築方法
+================
+クイックスタート
+================
+
+Fedora Core 5 の例です．
+
+    # yum install fuse fuse-libs fuse-devel
+    # vigr コマンドで fuse グループに FUSE 利用許可ユーザを所属させる
+    # rpm -ivh gfarm-libs-1.3-0.i386.rpm gfarm-client-1.3-0.i386.rpm \
+      gfarm-devel-1.3-0.i386.rpm
+
+    $ Gfarm のクライアント設定ファイル確認 (~/.gfarmrc など)
+    $ Gfarm の認証関係確認 (gfhost, gfkey, grid-proxy-init など)
+    $ tar zxvf gfarmfs-fuse-1.3.tar.gz
+    $ cd gfarmfs-fuse-1.3
+    $ ./configure
+    $ make
+    $ mkdir ~/mountpoint
+    $ ./gfarmfs ~/mountpoint
+    $ cd ~/mountpoint
+
+
+========
+構築方法
+========
 
 GfarmFS-FUSE の構築には，Gfarm version 1.1.1 以降の開発パッケージ，およ
 び FUSE version 2.2 以降の開発パッケージが導入されている必要があります．
 Gfarm の開発パッケージは，RPM の場合は gfarm-gsi-devel（あるいは
 gfarm-devel）となります．
+
+FUSE version 2.5 以降で，かつ Linux Kernel 2.6.15 以降のを使用している
+場合は FUSE version 2.5 互換モードでコンパイルされます．そうでない場合
+は FUES version 2.2 互換モードでコンパイルされます．
 
 GfarmFS-FUSE を構築するには，下記のようにします．
 
@@ -30,7 +61,7 @@ GfarmFS-FUSE を構築するには，下記のようにします．
 
 configure コマンドには，下記のオプションがあります．
 
-  --prefix=<directory>
+--prefix=<directory>
 
   インストール先のディレクトリを指定します．このオプションを省略した場
   合は /usr/local ディレクトリの下にインストールします．
@@ -48,11 +79,18 @@ csh の場合：
     $ env CPPFLAGS='-I/usr/local/include' LDFLAGS='-L/usr/local/lib -Wl,-R,/usr/local/lib' ./configure
 
 
-*** マウント
+========
+マウント
+========
 
-まず，クライアントとして Gfarm を利用する設定がなされていることを確認し
-ます．詳細は Gfarm パッケージに含まれる INSTALL.ja，INSTALL.RPM.ja を参
-照してください．
+最初に，クライアントとして Gfarm を利用する設定がなされていることを確
+認します．詳細は Gfarm パッケージに含まれる INSTALL.ja，INSTALL.RPM.ja 
+を参照してください．
+
+次に，FUSE が利用できる状態になっていることを確認します．例えば，
+Fedora Core 5 の場合，fuse, fuse-libs パッケージが導入されいて，
+fusermount コマンドを実行できる権限のある fuse グループに，利用するユー
+ザが所属している必要があります．
 
 Gfarm ファイルシステムをマウントするためには gfarmfs コマンドを利用しま
 す．
@@ -61,13 +99,106 @@ Gfarm ファイルシステムをマウントするためには gfarmfs コマンドを利用しま
 
 マウントポイントは，利用者が読み書き可能なディレクトリを指定します．通
 常はマウントした利用者以外はマウントポイント以下にアクセスできません．
-また，gfarmfs は，FUSE のオプションである '-s' を指定して，single
-thread で実行されます．その他，FUSE のオプションの詳細は FUSE パッケー
-ジに含まれる README を参照してください．
+
+また，gfarmfs は，FUSE のオプションである '-s' を自動的に指定して，
+single thread で実行されます．その他，FUSE のオプションの詳細は FUSE 
+パッケージに含まれる README を参照してください．
+
+もし，マウントできなかった場合は，fuse カーネルモジュールがロードされ
+ているかどうか，FUSE が利用できるユーザかどうか確認してください．
+
+また，/etc/fstab に記述して mount することもできます．
+このとき「gfarmfs#GfarmFS のショートオプション」のような指定ができます.
+
+例：
+
+    gfarmfs#-sluS  <マウントポイント>  fuse  noauto,user,exec  0  0
+
+この場合は，以下のようにして一般ユーザ権限でマウントできます.
+
+    $ mount <マウントポイント>
+
+
+============
+アンマウント
+============
+
+アンマウントするためには FUSE 付属の fusermount コマンドを利用します．
+
+    $ fusermount -u <マウントポイント>
+
+
+==========
+オプション
+==========
 
 gfarmfs コマンドには，以下のオプションがあります．
 
-  -a <architecture>
+-s, --symlink
+
+  symlink(2) をエミュレートします．作成されたシンボリックリンクは，実
+  際には '.gfarmfs-symlink' という拡張子が付き，Gfarm 上で管理されます．
+  このオプションは，Gfarm がシンボリックリンクをサポートするまで使用で
+  きます．
+
+-l, --linkiscopy
+
+  link(2) をエミュレートします．ハードリンクを作る代わりにコピーするこ
+  とでエミュレートします．このオプションは，Gfarm がハードリンクをサポー
+  トするまで使用できます．
+
+-u, --unlinkall
+
+  unlink(2) は，実行ビットのついたファイルが複数アーキテクチャのバイナ
+  リをもつ場合に，それらすべてを削除します．このオプションをつけると
+  GfarmFS-FUSE version 1.0 でのデフォルトの挙動と同じになります．
+
+  GfarmFS-FUSE version 1.1 からは，unlink(2) は，実行ビットがついたファ
+  イルを削除する場合，クライアントアーキテクチャと一致するバイナリだけ
+  を削除します．これは，Gfarm version 1.2 以降でのシステムコールフック
+  ライブラリの挙動と同じです．
+
+-f, --fastcreate
+
+  ファイルの新規作成が速くなります．空ファイルを作って書き込まずに使用
+  する場合は問題があるかもしれません．
+  FUSE version 2.5 互換モードの場合，このオプションは効果が無いので
+  無視されます．
+
+-S, --statfs, -H <hostfile>
+
+  statfs(2) を有効にします．ファイルシステムノードそれぞれを合計した値
+  を返します．-S または --statfs オプションを指定した場合はメタデータに
+  登録されているファイルシステムノードを合計します．-H オプションを使う
+  場合は hostfile にファイルシステムノードのリストを記述して指定できます．
+  hostfile として ``-'' を指定した場合は，標準入力から読み込みます．
+  これらのオプションは Gfarm version 1.3 以降で利用できます．
+
+-b, --buffered
+
+  バッファリングして I/O するようになります．1 つのファイルを同時に
+  2 つ以上 open すると問題になるかもしれません．
+  GfarmFS-FUSE version 1.3 から標準ではバッファリングしなくなりました．
+
+-n, --dirnlink
+
+  ディレクトリの nlink を正確に数えます．
+  GfarmFS-FUSE version 1.3 から，このオプションを指定しない場合は，
+  ディレクトリの nlink が常に 32000 となります．
+
+-F, --statisfstat
+
+  open(2)/creat(2) 中に stat(2)/lstat(2)/stat(2) を使った場合に正確
+  なファイルサイズを取得できるようになります．
+  FUSE version 2.5 互換モードの場合は，このオプションを付けなくても 
+  fstat(2) だけは問題ありません．
+  このオプションは Gfarm version 1.3 以降で効果があります．
+
+  Gfarm version 1.3 から，gfs_fstat() でのみ open 中に正確なファイル
+  サイズを取得できるようになったので，これを gfs_stat() の代わりに
+  利用するようになります．
+
+-a <architecture>
 
   クライアントホストのアーキテクチャ名を指定します．
   しかし chmod(2) に対応していません．
@@ -84,57 +215,6 @@ gfarmfs コマンドには，以下のオプションがあります．
 
   Gfarm version 1.2 以降では，クライアントホストのアーキテクチャ名を指
   定するために，設定ファイルで 'client_architecture' を指定したり，環
-  境変数で GFARM_ARCHITECTURE を指定できるようにもなっています．詳しく
-  は man gfarm.conf をご覧ください．
-
-  -s, --symlink
-
-  symlink(2) をエミュレートします．作成されたシンボリックリンクは，実
-  際には '.gfarmfs-symlink' という拡張子が付き，Gfarm 上で管理されます．
-  このオプションは，Gfarm がシンボリックリンクをサポートするまで使用で
-  きます．
-
-  -l, --linkiscopy
-
-  link(2) をエミュレートします．ハードリンクを作る代わりにコピーするこ
-  とでエミュレートします．このオプションは，Gfarm がハードリンクをサポー
-  トするまで使用できます．
-
-  -u, --unlinkall
-
-  unlink(2) は，実行ビットのついたファイルが複数アーキテクチャのバイナ
-  リをもつ場合に，それらすべてを削除します．このオプションをつけると
-  GfarmFS-FUSE version 1.0 でのデフォルトの挙動と同じになります．
-
-  GfarmFS-FUSE version 1.1 からは，unlink(2) は，実行ビットがついたファ
-  イルを削除する場合，クライアントアーキテクチャと一致するバイナリだけ
-  を削除します．これは，Gfarm version 1.2 以降でのシステムコールフック
-  ライブラリの挙動と同じです．
-
-  -f, --fastcreate
-
-  ファイルの新規作成が速くなります．空ファイルを作って書き込まずに使用
-  する場合は問題があるかもしれません．
-  FUSE version 2.5 以降で，かつ Linux Kernel 2.6.15 以降の場合，
-  このオプションは無視されます．
-
-  -S, --statfs, -H <hostfile>
-
-  statfs(2) を有効にします．ファイルシステムノードそれぞれを合計した値
-  を返します．-S または --statfs オプションを指定した場合は gfhost コマ
-  ンドの結果をファイルシステムノードとして使います．-H オプションを使うと
-  hostfile にファイルシステムノードのリストを記述して指定できます．
-  hostfile として ``-'' を指定した場合は，標準入力から読み込みます．
-  これらのオプションは Gfarm version 1.3 以降で利用できます．
-
-  --buffered
-
-  バッファリングして I/O するようになります．1 つのファイルを同時に
-  2 つ以上 open すると問題になるかもしれません．
-  GfarmFS-FUSE version 1.3 から標準ではバッファリングしなくなりました．
-
-*** アンマウント
-
-アンマウントするためには fusermount コマンドを利用します．
-
-    $ fusermount -u <マウントポイント>
+  境変数で GFARM_ARCHITECTURE を指定できるようにもなっています．
+  これらで指定することをおすすめします．詳しくは man gfarm.conf をご
+  覧ください．
