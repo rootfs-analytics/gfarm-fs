@@ -1325,8 +1325,8 @@ gfs_statfsnode_cached_and_retry(
 				  filesp, ffreep, favailp);
 	if (e == GFARM_ERR_NO_SUCH_OBJECT && retry == 1) {
 		e = gfs_statfsnode(hostname,
-				  bsizep, blocksp, bfreep, bavailp,
-				  filesp, ffreep, favailp);
+				   bsizep, blocksp, bfreep, bavailp,
+				   filesp, ffreep, favailp);
 	}
 	if (e != NULL) {
 		if (gfarmfs_debug > 0) {
@@ -1351,7 +1351,7 @@ gfs_statfsnode_total_of_hostlist(
 	int i, ok;
 	gfarm_int32_t bsize;
 	file_offset_t blocks, bfree ,bavail, files, ffree, favail;
-	static int retry = 1;
+	static int retry = 1;   /* XXX - timeout? */
 
 	*bsizep = *blocksp = *bfreep = *bavailp
 		= *filesp = *ffreep = *favailp = 0;
@@ -1363,15 +1363,20 @@ gfs_statfsnode_total_of_hostlist(
 						    &ffree, &favail);
 		if (e == NULL) {
 			if (*bsizep == 0) {
+				if (bsize == 0)
+					continue;
 				*bsizep = bsize;
-			} else if (*bsizep != bsize) {
-				/* XXX - consider bsize (re-calculate?) */
-				continue;
 			}
 			ok = 1;
-			*blocksp += blocks;
-			*bfreep  += bfree;
-			*bavailp += bavail;
+			if (*bsizep == bsize) {
+				*blocksp += blocks;
+				*bfreep  += bfree;
+				*bavailp += bavail;
+			} else { /* revision (rough) */
+				*blocksp += blocks * bsize / *bsizep;
+				*bfreep  += bfree * bsize / *bsizep;
+				*bavailp += bavail * bsize / *bsizep;
+			}
 			*filesp  += files;
 			*ffreep  += ffree;
 			*favailp += favail;
@@ -1549,7 +1554,7 @@ gfarmfs_usage()
 "    -n, --enable-dirnlink  count nlink of a directory precisely\n"
 "    -F, --statisfstat      get correct st_size while a file is opened\n"
 #ifdef USE_GFS_STATFSNODE
-"    -S, --statfs           enable statfs(2) (total of hosts from gfhost)\n"
+"    -S, --statfs           enable statfs(2) (total of hosts from metadb server)\n"
 "    -H <hostfile>          enable statfs(2) (total of hosts in hostfile)\n"
 #endif
 "    -b, --buffered         enable buffered I/O (unset GFARM_FILE_UNBUFFERED)\n"
@@ -1777,10 +1782,10 @@ static void
 setup_options()
 {
 	char *e;
-	int lineno;
 
 	if (enable_statfs == 1) {
-		if (statfs_hosts_file != NULL) {
+		if (statfs_hosts_file != NULL) { /* use hostlist file */
+			int lineno;
 			e = gfarm_hostlist_read(statfs_hosts_file,
 						&statfs_nhosts, &statfs_hosts,
 						&lineno);
@@ -1795,8 +1800,78 @@ setup_options()
 				}
 				exit(1);
 			}
+#if 1  /* gfarm_host_info_get_all */
 		} else {
-			char buf[256];  /* XXX - MAXHOSTNAMELEN */
+			gfarm_stringlist list;
+			int nhosts, i;
+			struct gfarm_host_info *hostinfos;
+
+			e = gfarm_stringlist_init(&list);
+			if (e != NULL) {
+				fprintf(stderr, "stringlist_init: %s\n", e);
+				exit(1);
+			}
+			e = gfarm_host_info_get_all(&nhosts, &hostinfos);
+			if (e != NULL) {
+				fprintf(stderr,
+					"gfarm_host_info_get_all: %s\n", e);
+				exit(1);
+			}
+			for (i = 0; i < nhosts; i++) {
+				e = gfarm_stringlist_add(
+					&list, hostinfos[i].hostname);
+				if (e != NULL) {
+					gfarm_stringlist_free(&list);
+					fprintf(
+						stderr,
+						"gfarm_stringlist_add: %s\n",
+						e);
+					exit(1);
+				}
+			}
+			gfarm_host_info_free_all(nhosts, hostinfos);
+			statfs_nhosts = gfarm_stringlist_length(&list);
+			statfs_hosts =
+				gfarm_strings_alloc_from_stringlist(&list);
+			gfarm_stringlist_free(&list);
+			if (statfs_nhosts == 0 || statfs_hosts == NULL) {
+				enable_statfs = 0;
+				gfarmfs_oper.statfs = NULL;
+			}
+		}
+#endif
+#if 0  /* gfarm_schedule_search_idle_acyclic_by_domainname */
+		} else {
+			int nhosts, i;
+			struct gfarm_host_info *hostinfos;
+			char **hosts;
+
+			e = gfarm_host_info_get_all(&nhosts, &hostinfos);
+			if (e != NULL) {
+				fprintf(stderr,
+					"gfarm_host_info_get_all: %s\n", e);
+				exit(1);
+			}
+			gfarm_host_info_free_all(nhosts, hostinfos);
+			hosts = malloc(nhosts * sizeof(char *));
+			if (hosts == NULL) {
+				fprintf(stderr, "Not enough space\n");
+				exit(1);
+			}
+			e = gfarm_schedule_search_idle_acyclic_by_domainname(
+				"", &nhosts, hosts);
+			if (e != NULL) {
+				fprintf(stderr,
+					"gfarm_schedule_search_idle_by_domainname: %s\n", e);
+				exit(1);
+			}
+			statfs_nhosts = nhosts;
+			statfs_hosts = hosts;
+		}
+#endif
+#if 0  /* popen(gfhost) */
+		} else {
+			char buf[256];
 			FILE *pin;
 			char *p;
 			gfarm_stringlist list;
@@ -1819,7 +1894,6 @@ setup_options()
 				p = strdup(buf);
 				e = gfarm_stringlist_add(&list, p);
 				if (e != NULL) {
-					free(p);
 					gfarm_stringlist_free_deeply(&list);
 					fprintf(stderr, "gfhost: %s\n", e);
 					exit(1);
@@ -1835,6 +1909,7 @@ setup_options()
 				gfarmfs_oper.statfs = NULL;
 			}
 		}
+#endif
 	} else {
 		gfarmfs_oper.statfs = NULL;
 	}
