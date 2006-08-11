@@ -1,0 +1,438 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<HTML
+><HEAD
+><TITLE
+>gfrep</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.7"></HEAD
+><BODY
+CLASS="REFENTRY"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><H1
+><A
+NAME="GFREP.1"
+></A
+>gfrep</H1
+><DIV
+CLASS="REFNAMEDIV"
+><A
+NAME="NAME"
+></A
+><H2
+>Name</H2
+>gfrep&nbsp;--&nbsp;replicate Gfarm files</DIV
+><DIV
+CLASS="REFSYNOPSISDIV"
+><A
+NAME="SYNOPSIS"
+></A
+><H2
+>Synopsis</H2
+><P
+><B
+CLASS="COMMAND"
+>gfrep</B
+>  -H <VAR
+CLASS="REPLACEABLE"
+>hostfile</VAR
+>  [-vm]  <VAR
+CLASS="REPLACEABLE"
+>gfarm-URL</VAR
+>... </P
+><P
+><B
+CLASS="COMMAND"
+>gfrep</B
+>  -P <VAR
+CLASS="REPLACEABLE"
+>host-pair-file</VAR
+>  [-vm]  <VAR
+CLASS="REPLACEABLE"
+>gfarm-URL</VAR
+>... </P
+><P
+><B
+CLASS="COMMAND"
+>gfrep</B
+>  -d <VAR
+CLASS="REPLACEABLE"
+>destination-node</VAR
+>  [-s <VAR
+CLASS="REPLACEABLE"
+>source-node</VAR
+>] [-I <VAR
+CLASS="REPLACEABLE"
+>file-section</VAR
+>] [-vm]  <VAR
+CLASS="REPLACEABLE"
+>gfarm-URL</VAR
+>... </P
+><P
+><B
+CLASS="COMMAND"
+>gfrep</B
+> [-D <VAR
+CLASS="REPLACEABLE"
+>destination-domainname</VAR
+>] [-S <VAR
+CLASS="REPLACEABLE"
+>source-domainname</VAR
+> | -s <VAR
+CLASS="REPLACEABLE"
+>source-node</VAR
+>] [-N <VAR
+CLASS="REPLACEABLE"
+>num-of-replicas</VAR
+>] [-v]  <VAR
+CLASS="REPLACEABLE"
+>gfarm-URL</VAR
+>... </P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="DESCRIPTION"
+></A
+><H2
+>DESCRIPTION</H2
+><P
+><B
+CLASS="COMMAND"
+>gfrep</B
+> creates replicas of Gfarm files
+specified by the <TT
+CLASS="PARAMETER"
+><I
+>Gfarm-URL</I
+></TT
+>.</P
+><P
+>If the <TT
+CLASS="PARAMETER"
+><I
+>Gfarm-URL</I
+></TT
+> parameter is a directory,
+it will be copied recursively.</P
+></DIV
+><DIV
+CLASS="REFSECT1"
+><A
+NAME="OPTIONS"
+></A
+><H2
+>OPTIONS</H2
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><VAR
+CLASS="OPTION"
+>-D</VAR
+> <TT
+CLASS="PARAMETER"
+><I
+>destination-domainname</I
+></TT
+></DT
+><DD
+><P
+>specifies a domainname of destination filesystem nodes where replicas
+will be copies to.
+This option is used solely, or with the <VAR
+CLASS="OPTION"
+>-S</VAR
+>
+or <VAR
+CLASS="OPTION"
+>-s</VAR
+> option.</P
+><P
+>If neither this nor <VAR
+CLASS="OPTION"
+>-d</VAR
+> option is specified, 
+replicas may be copied to any of hosts registered in the metadata.
+Please refer the description of the <VAR
+CLASS="OPTION"
+>-N</VAR
+> option for detail.</P
+></DD
+><DT
+><VAR
+CLASS="OPTION"
+>-d</VAR
+> <TT
+CLASS="PARAMETER"
+><I
+>destination-node</I
+></TT
+></DT
+><DD
+><P
+>specifies one destination filesystem node where replicas
+will be copied to.
+This option is used solely, or with the <VAR
+CLASS="OPTION"
+>-s</VAR
+> 
+option.</P
+><P
+>If neither this nor <VAR
+CLASS="OPTION"
+>-D</VAR
+> option is specified, 
+replicas may be copied to any of hosts registered in the metadata.</P
+></DD
+><DT
+><VAR
+CLASS="OPTION"
+>-H</VAR
+> <TT
+CLASS="PARAMETER"
+><I
+>hostfile</I
+></TT
+></DT
+><DD
+><P
+>specifies a file which describes hostnames of
+destination filesystem nodes where the replica will be made on.
+The <TT
+CLASS="PARAMETER"
+><I
+>hostfile</I
+></TT
+> consists of a filesystem node name
+in each line.
+If the number of nodes listed in the <TT
+CLASS="PARAMETER"
+><I
+>hostfile</I
+></TT
+>
+is less than the total number of file fragments,
+it is treated as if the node names are specified repeatedly.</P
+><P
+>if ``-'' is specified, standard input is used to read the host list.</P
+></DD
+><DT
+><VAR
+CLASS="OPTION"
+>-I</VAR
+> <TT
+CLASS="PARAMETER"
+><I
+>file-section</I
+></TT
+></DT
+><DD
+><P
+>specifies a file section name to be copied.
+Currently, this option can be specified only with the <VAR
+CLASS="OPTION"
+>-d</VAR
+>
+option.</P
+><P
+>It is possible to omit this option.</P
+></DD
+><DT
+><VAR
+CLASS="OPTION"
+>-m</VAR
+></DT
+><DD
+><P
+>lets gfrep command do migrate/move, instead of doing replicate.
+Currently, this works only with -H, -P and -d options.</P
+></DD
+><DT
+><VAR
+CLASS="OPTION"
+>-N</VAR
+> <TT
+CLASS="PARAMETER"
+><I
+>num-of-replicas</I
+></TT
+></DT
+><DD
+><P
+>specifies necessary number of file replicas, counting already
+existing ones.
+If there are enough number of replicas in the destination nodes,
+neither any copy nor any removal will be done.
+This option is used solely, or with the <VAR
+CLASS="OPTION"
+>-D</VAR
+>,
+<VAR
+CLASS="OPTION"
+>-S</VAR
+> or <VAR
+CLASS="OPTION"
+>-s</VAR
+> option.</P
+><P
+>If this option is not specified, <VAR
+CLASS="OPTION"
+>-N 1</VAR
+> is assumed.</P
+><P
+>The source nodes specified by <VAR
+CLASS="OPTION"
+>-S</VAR
+> or <VAR
+CLASS="OPTION"
+>-s</VAR
+>
+option are excluded from the destination nodes.
+In other words, it's guaranteed that the number of replicas on
+hosts except those specified by <VAR
+CLASS="OPTION"
+>-S</VAR
+> or <VAR
+CLASS="OPTION"
+>-s</VAR
+>
+option are same or more than the number specified by the <VAR
+CLASS="OPTION"
+>-N</VAR
+>
+option.
+However, when the destination is a subset of the source,
+i.e. when the exclusion makes the destination an empty set,
+this exclusion is not applied.
+For example, if gfrep is executed with the
+``<VAR
+CLASS="OPTION"
+>-N 3 -S subdomain.example.org -D example.org</VAR
+>'' option,
+it's guaranteed that there are at least 3 replicas in the hosts belong
+to example.org but except subdomain.example.org.</P
+></DD
+><DT
+><VAR
+CLASS="OPTION"
+>-P</VAR
+> <TT
+CLASS="PARAMETER"
+><I
+>host-pair-file</I
+></TT
+></DT
+><DD
+><P
+>specifies a file which describes hostname pairs of
+source nodes and destination nodes.
+The <TT
+CLASS="PARAMETER"
+><I
+>host-pair-file</I
+></TT
+> consists of a pair
+of a source node name and a destination node name in this order in each line.
+The replica will be copied to the destination node, only if it exists
+on the source node of the pair.</P
+></DD
+><DT
+><VAR
+CLASS="OPTION"
+>-S</VAR
+> <TT
+CLASS="PARAMETER"
+><I
+>source-domainname</I
+></TT
+></DT
+><DD
+><P
+>specifies a domainname of source filesystem nodes where replicas
+will be copied from.
+This option is used solely, or with the <VAR
+CLASS="OPTION"
+>-D</VAR
+>
+option.</P
+><P
+>If neither this nor <VAR
+CLASS="OPTION"
+>-s</VAR
+> option is specified, 
+the source nodes will be selected from all nodes.</P
+><P
+>The hosts specified by this option will be excluded from
+the destination nodes.
+Please refer the description of the <VAR
+CLASS="OPTION"
+>-N</VAR
+> option for detail.</P
+></DD
+><DT
+><VAR
+CLASS="OPTION"
+>-s</VAR
+> <TT
+CLASS="PARAMETER"
+><I
+>source-node</I
+></TT
+></DT
+><DD
+><P
+>specifies a source filesystem node where replicas
+will be copied from.
+This option is used solely, or with the <VAR
+CLASS="OPTION"
+>-D</VAR
+>
+or <VAR
+CLASS="OPTION"
+>-d</VAR
+> option.</P
+><P
+>If neither this nor <VAR
+CLASS="OPTION"
+>-s</VAR
+> option is specified, 
+the source nodes will be selected from all nodes.</P
+><P
+>The host specified by this option will be excluded from
+the destination nodes.
+Please refer the description of the <VAR
+CLASS="OPTION"
+>-N</VAR
+> option for detail.</P
+></DD
+><DT
+><VAR
+CLASS="OPTION"
+>-v</VAR
+></DT
+><DD
+><P
+>displays verbose output.</P
+></DD
+><DT
+><VAR
+CLASS="OPTION"
+>-?</VAR
+></DT
+><DD
+><P
+>displays a list of command options.</P
+></DD
+></DL
+></DIV
+></DIV
+></BODY
+></HTML
+>
