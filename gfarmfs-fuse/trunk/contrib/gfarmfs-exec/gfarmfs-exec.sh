@@ -32,10 +32,13 @@ fi
 : ${GFS_STDOUT:=STDOUT.$$}
 : ${GFS_STDERR:=STDERR.$$}
 
+DELETE_MOUNTDIR=0
 if [ ! -d $GFS_MOUNTDIR ]; then
 	mkdir -p $GFS_MOUNTDIR ||
 		ABORT "cannot create a mount point: " $GFS_MOUNTDIR
+	DELETE_MOUNTDIR=1
 fi
+[ -O $GFS_MOUNTDIR ] || ABORT "$GFS_MOUNTDIR: not owned by " $LOGNAME
 
 gfarmfs -lsfu $GFS_MOUNTDIR || :
 cd $GFS_MOUNTDIR && cd $GFS_WDIR &&
@@ -43,5 +46,6 @@ cd $GFS_MOUNTDIR && cd $GFS_WDIR &&
 STATUS=$?
 cd /
 fusermount -u $GFS_MOUNTDIR || :
+[ $DELETE_MOUNTDIR = 1 ] && rmdir $GFS_MOUNTDIR
 
 exit $STATUS
