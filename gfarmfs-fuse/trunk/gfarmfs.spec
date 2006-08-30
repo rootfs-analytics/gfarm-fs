@@ -1,7 +1,7 @@
 Summary: GfarmFS-FUSE
 Name: gfarmfs-fuse
 Version: 1.3.0
-Release: 0
+Release: 1
 License: BSD
 Group: Applications/Internet
 Vendor: National Institute of Advanced Industrial Science and Technology
@@ -34,17 +34,22 @@ FUSE mechanism.
 %install
 [ "$RPM_BUILD_ROOT" != "/" ] && rm -rf $RPM_BUILD_ROOT
 make
-mkdir -p $RPM_BUILD_ROOT/usr/bin
-install -m 755 gfarmfs $RPM_BUILD_ROOT/usr/bin/gfarmfs
+mkdir -p $RPM_BUILD_ROOT%{prefix}/bin
+install -m 755 gfarmfs $RPM_BUILD_ROOT%{prefix}/bin/gfarmfs
+install -m 755 contrib/gfarmfs-exec/gfarmfs-exec.sh $RPM_BUILD_ROOT%{prefix}/bin/gfarmfs-exec.sh
 
 %clean
 [ "$RPM_BUILD_ROOT" != "/" ] && rm -rf $RPM_BUILD_ROOT
 
 %files
 %defattr(-,root,root)
-/usr/bin/gfarmfs
+%{prefix}/bin/gfarmfs
+%{prefix}/bin/gfarmfs-exec.sh
 %doc README README.ja ChangeLog ChangeLog.ja
 
 %changelog
+* Wed Aug 30 2006  <tatebe@gmail.com> 1.3.0-1
+- Add gfarmfs-exec.sh that is a wrapper script to execute a program via
+  a batch queing system.
 * Mon Jul  3 2006  <takuya@soum.co.jp> 1.3.0-0
 - Initial build.
