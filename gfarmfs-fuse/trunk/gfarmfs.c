@@ -1837,8 +1837,26 @@ check_gfarmfs_options(int *argcp, char ***argvp)
 static void
 setup_options()
 {
-	char *e;
+	char *e, *url;
+	struct gfs_stat st;
 
+	/* validate gfarm_mount_point */
+	e = add_gfarm_prefix("", &url);
+	if (e == NULL) {
+		e = gfs_stat(url, &st);
+		if (e == NULL)
+			gfs_stat_free(&st);
+		else {
+			fprintf(stderr, "%s: %s\n", url, e);
+			exit(1);
+		}
+		free(url);
+	}
+	else {
+		fprintf(stderr, "add_gfarm_prefix: %s\n", e);
+		exit(1);
+	}
+		
 	if (enable_statfs == 1) {
 		if (statfs_hosts_file != NULL) { /* use hostlist file */
 			int lineno;
