@@ -8,9 +8,10 @@
 #
 # Environment variable:
 #
-#	GFS_MOUNTDIR	mount point			 (defaut: /tmp/$LOGNAME)
-#	GFS_WDIR	working directory relative to the root directory
-#			in Gfarm file system		 (default: $LOGNAME)
+#	GFS_USERNAME	global user name in Gfarm   (defaut: $LOGNAME)
+#	GFS_MOUNTDIR	mount point		    (defaut: /tmp/$GFS_USERNAME)
+#	GFS_WDIR	working directory relative to the home directory
+#			in Gfarm file system	    (default: .)
 #	GFS_STDOUT	Filename for the standard output (default: STDOUT.$$)
 #	GFS_STDERR	Filename for the standard error  (default: STDERR.$$)
 #	
@@ -27,8 +28,9 @@ if [ X"$GFS_PROG" = X ]; then
 	shift
 	: ${GFS_ARGS:=$*}
 fi
-: ${GFS_MOUNTDIR:=/tmp/$LOGNAME}
-: ${GFS_WDIR:=$LOGNAME}
+: ${GFS_USERNAME:=$LOGNAME}
+: ${GFS_MOUNTDIR:=/tmp/$GFS_USERNAME}
+: ${GFS_WDIR:=.}
 : ${GFS_STDOUT:=STDOUT.$$}
 : ${GFS_STDERR:=STDERR.$$}
 
@@ -41,7 +43,7 @@ fi
 [ -O $GFS_MOUNTDIR ] || ABORT "$GFS_MOUNTDIR: not owned by " $LOGNAME
 
 gfarmfs -lsfu $GFS_MOUNTDIR || :
-cd $GFS_MOUNTDIR && cd $GFS_WDIR &&
+cd $GFS_MOUNTDIR/$GFS_USERNAME && cd $GFS_WDIR &&
 	$GFS_PROG $GFS_ARGS > $GFS_STDOUT 2> $GFS_STDERR
 STATUS=$?
 cd /
