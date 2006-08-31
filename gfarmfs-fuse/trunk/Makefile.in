@@ -9,7 +9,9 @@ DEFS = @DEFS@
 prefix = @prefix@
 exec_prefix = @exec_prefix@
 bindir = $(exec_prefix)/bin
-INSTALL_PROGRAM = ./install-sh
+INSTALL = @INSTALL@
+INSTALL_PROGRAM = @INSTALL_PROGRAM@
+#INSTALL_PROGRAM = ./install-sh -c
 
 CPPFLAGS = -g -Wall -O2 -DFUSE_USE_VERSION=@fuse_version@ \
 -D_FILE_OFFSET_BITS=64 @use_gfs_statfsnode@ @CPPFLAGS@
