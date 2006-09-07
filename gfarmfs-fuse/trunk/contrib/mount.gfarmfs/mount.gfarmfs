@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# mount.gfarmfs [ mount_point ]
+# mount.gfarmfs [ username mount_point options ]
 #
 # Environment variable:
 #
@@ -14,8 +14,19 @@ ABORT() {
 	exit 1
 }
 
+if [ $# -gt 0 ]; then
+	GFS_USERNAME=$1
+	shift
+fi
+if [ $# -gt 0 ]; then
+	GFS_MOUNTDIR=$1
+	shift
+fi
+if [ $# -gt 0 ]; then
+	FUSE_OPTIONS=$*
+fi
+
 : ${GFS_USERNAME:=$LOGNAME}
-: ${GFS_MOUNTDIR:=$1}
 : ${GFS_MOUNTDIR:=/gfs/home/$GFS_USERNAME}
 : ${GFARMFS_OPTIONS:=-lsfu}
 : ${FUSE_OPTIONS:=}
