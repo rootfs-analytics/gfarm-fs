@@ -1,0 +1,14 @@
+#!/bin/sh
+#
+# umount.gfarmfs [ mount_point ]
+#
+# Environment variable:
+#
+#	GFS_USERNAME	global user name in Gfarm  (default: $LOGNAME)
+#	GFS_MOUNTDIR	mount point	 (default: /gfs/home/$GFS_USERNAME)
+
+: ${GFS_USERNAME:=$LOGNAME}
+: ${GFS_MOUNTDIR:=$1}
+: ${GFS_MOUNTDIR:=/gfs/home/$GFS_USERNAME}
+
+fusermount -u $GFS_MOUNTDIR
