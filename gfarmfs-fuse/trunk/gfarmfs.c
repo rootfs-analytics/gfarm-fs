@@ -2886,7 +2886,7 @@ print_options()
 			printf("-> attention: --buffered does not need --statisfstat.\n");
 		}
 	}
-	if (gfarm_mount_point != NULL) {
+	if (strcmp(gfarm_mount_point, "") != 0) {
 		printf("mountpoint: gfarm:%s\n", gfarm_mount_point);
 	}
 }
