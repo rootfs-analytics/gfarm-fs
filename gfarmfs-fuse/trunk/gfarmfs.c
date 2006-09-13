@@ -2365,6 +2365,13 @@ static struct fuse_operations gfarmfs_oper_share_gf = {
 static char *program_name = "gfarmfs";
 static struct fuse_operations *gfarmfs_oper_p = &gfarmfs_oper_base;
 
+#define RECOMMEND_22 "-lsSuFfn"
+#define SAFE_22      "-sSFf"
+#define FAST_22      "-f"
+#define RECOMMEND_25 "-lsSubrn"
+#define SAFE_25      "-sSF"
+#define FAST_25      "-b"
+
 static void
 gfarmfs_version()
 {
@@ -2396,7 +2403,7 @@ gfarmfs_usage()
 #endif
 "    -l, --linkiscopy       enable link(2) to behave copying a file (emulation)\n"
 "    -u, --unlinkall        enable unlink(2) to remove all architecture files\n"
-"    -n, --enable-dirnlink  count nlink of a directory precisely\n"
+"    -n, --dirnlink         count nlink of a directory precisely\n"
 "    -F, --statisfstat      get correct st_size while a file is opened\n"
 #ifdef USE_GFS_STATFSNODE
 "    -S, --statfs           enable statfs(2) (total of hosts from metadb server)\n"
@@ -2414,12 +2421,13 @@ gfarmfs_usage()
 "    -v, --version          show version and exit\n"
 "\n"
 #ifdef ENABLE_FASTCREATE
-"    --safe                 equivalent to -fsFS\n"
-"    --fast                 equivalent to -f\n"
+"    --recommend            equivalent to "RECOMMEND_22"\n"
+"    --safe                 equivalent to "SAFE_22"\n"
+"    --fast                 equivalent to "FAST_22"\n"
 #else
-"    --recommend            equivalent to -brsS\n"
-"    --safe                 equivalent to -FsS\n"
-"    --fast                 equivalent to -b\n"
+"    --recommend            equivalent to "RECOMMEND_25"\n"
+"    --safe                 equivalent to "SAFE_25"\n"
+"    --fast                 equivalent to "FAST_25"\n"
 #endif
 "\n", program_name);
 
@@ -2491,6 +2499,8 @@ next_arg_set(char **valp, int *argcp, char ***argvp, int errorexit)
 	return (1);
 }
 
+static int parse_short_option(int *argcp, char ***argvp);
+
 static void
 parse_long_option(int *argcp, char ***argvp)
 {
@@ -2537,28 +2547,39 @@ parse_long_option(int *argcp, char ***argvp)
 		   is opened.  But gfs_fstat can do it.
 		*/
 		enable_statisfstat = 1;
-#ifndef ENABLE_FASTCREATE
 	else if (strcmp(&argv[0][1], "-recommend") == 0) {
-		enable_symlink = 1;     /* -s */
-		enable_gfarm_unbuf = 1; /* --unbuffered */
-		enable_correct_rename = 1; /* --correctrename */
-		enable_statfs = 1;      /* --statfs */
-	}
-#endif
-	else if (strcmp(&argv[0][1], "-safe") == 0) {
-		enable_symlink = 1;     /* -s */
-#ifdef ENABLE_FASTCREATE
-		enable_fastcreate = 1;  /* -f */
-#endif
-		enable_gfarm_unbuf = 1; /* --unbuffered */
-		enable_statisfstat = 1; /* --statisfstat */
-		enable_statfs = 1;      /* --statfs */
-	} else if (strcmp(&argv[0][1], "-fast") == 0) {
-#ifdef ENABLE_FASTCREATE
-		enable_fastcreate = 1;  /* -f */
+		char *argv[1];
+		char **a;
+		int n = 1;
+#if FUSE_USE_VERSION >= 25
+		argv[0] = RECOMMEND_25;
 #else
-		enable_gfarm_unbuf = 0; /* --buffered */
+		argv[0] = RECOMMEND_22;
 #endif
+		a = argv;
+		parse_short_option(&n, &a);
+	} else if (strcmp(&argv[0][1], "-safe") == 0) {
+		char *argv[1];
+		char **a;
+		int n = 1;
+#if FUSE_USE_VERSION >= 25
+		argv[0] = SAFE_25;
+#else
+		argv[0] = SAFE_22;
+#endif
+		a = argv;
+		parse_short_option(&n, &a);
+	} else if (strcmp(&argv[0][1], "-fast") == 0) {
+		char *argv[1];
+		char **a;
+		int n = 1;
+#if FUSE_USE_VERSION >= 25
+		argv[0] = FAST_25;
+#else
+		argv[0] = FAST_22;
+#endif
+		a = argv;
+		parse_short_option(&n, &a);
 	} else {
 		gfarmfs_usage();
 		exit(1);
@@ -2651,7 +2672,7 @@ setup_options()
 	char *e, *url;
 	struct gfs_stat st;
 
-#if FUSE_USE_VERSION >= 25
+#ifndef ENABLE_FASTCREATE  /* not define */
 	if (enable_fastcreate > 0)
 		enable_fastcreate = -1; /* ignore on FUSE 2.5 */
 #endif
@@ -2661,7 +2682,7 @@ setup_options()
 		/* functions for consistent I/O buffer */
 		gfarmfs_oper_p = &gfarmfs_oper_share_gf;
 		if (enable_fastcreate > 0)
-			enable_fastcreate = -1; /* ignore */
+			enable_fastcreate = -1; /* not supported */
 	}
 
 	/* validate gfarm_mount_point */
@@ -2846,7 +2867,6 @@ print_options()
 		printf("-> attention: fastcreate is not needed by FUSE 2.5 compatible mode.\n");
 #endif
 	}
-
 	if (enable_statfs == 1) {
 		printf("enable statfs (%d hosts)\n", statfs_nhosts);
 	}
