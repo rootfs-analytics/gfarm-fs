@@ -20,7 +20,7 @@ LDFLAGS = @LDFLAGS@
 LIBS    = @LIBS@
 
 VER   = $(TARGET)-fuse-`date +%Y%m%d`
-FILES = $(SRCS) Makefile.in configure.in configure $(DOCS) $(INSTALL_PROGRAM)
+FILES = $(SRCS) Makefile.in configure.in configure $(DOCS) install-sh
 BINS  = $(TARGET)
 
 all: $(TARGET)
