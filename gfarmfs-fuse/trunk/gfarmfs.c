@@ -737,11 +737,14 @@ gfarmfs_unlink(const char *path)
 			e = gfs_stat(url, &gs);
 		}
 #endif
-		if (e == NULL) {    /* gfs_stat succeeds */
+		if (e == GFARM_ERR_NO_FRAGMENT_INFORMATION) {
+			e = gfs_unlink(url);
+			if (e == GFARM_ERR_NO_SUCH_OBJECT)
+				e = NULL;
+		} else if (e == NULL) {    /* gfs_stat succeeds */
 			if (GFARM_S_IS_PROGRAM(gs.st_mode)) {
 				/* executable file */
 				char *arch;
-
 				e = gfarm_host_get_self_architecture(&arch);
 				if (e != NULL) {
 					e = GFARM_ERR_OPERATION_NOT_PERMITTED;
