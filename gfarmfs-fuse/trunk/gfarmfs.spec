@@ -37,9 +37,8 @@ make
 mkdir -p $RPM_BUILD_ROOT%{prefix}/bin
 install -m 755 gfarmfs $RPM_BUILD_ROOT%{prefix}/bin/gfarmfs
 install -m 755 contrib/gfarmfs-exec/gfarmfs-exec.sh $RPM_BUILD_ROOT%{prefix}/bin/gfarmfs-exec.sh
-mkdir -p $RPM_BUILD_ROOT%{prefix}/sbin
-install -m 755 contrib/mount.gfarmfs/mount.gfarmfs $RPM_BUILD_ROOT%{prefix}/sbin/mount.gfarmfs
-install -m 755 contrib/mount.gfarmfs/umount.gfarmfs $RPM_BUILD_ROOT%{prefix}/sbin/umount.gfarmfs
+install -m 755 contrib/mount.gfarmfs/mount.gfarmfs $RPM_BUILD_ROOT%{prefix}/bin/mount.gfarmfs
+install -m 755 contrib/mount.gfarmfs/umount.gfarmfs $RPM_BUILD_ROOT%{prefix}/bin/umount.gfarmfs
 
 %clean
 [ "$RPM_BUILD_ROOT" != "/" ] && rm -rf $RPM_BUILD_ROOT
@@ -48,8 +47,8 @@ install -m 755 contrib/mount.gfarmfs/umount.gfarmfs $RPM_BUILD_ROOT%{prefix}/sbi
 %defattr(-,root,root)
 %{prefix}/bin/gfarmfs
 %{prefix}/bin/gfarmfs-exec.sh
-%{prefix}/sbin/mount.gfarmfs
-%{prefix}/sbin/umount.gfarmfs
+%{prefix}/bin/mount.gfarmfs
+%{prefix}/bin/umount.gfarmfs
 %doc README README.ja ChangeLog ChangeLog.ja
 
 %changelog
