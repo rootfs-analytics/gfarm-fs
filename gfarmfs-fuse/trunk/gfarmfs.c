@@ -508,7 +508,7 @@ gfarmfs_getattr(const char *path, struct stat *buf)
 		int change_mode = 0;
 		mode_t save_mode = 0;
 
-		if (gs.st_mode & 0400) {
+		if (gs.st_mode & 0444) {
 			flags = GFARM_FILE_RDONLY;
 #if 0
 		} else if (gs.st_mode & 0200) {
@@ -1518,6 +1518,16 @@ static int
 gfarmfs_flush(const char *path, struct fuse_file_info *fi)
 {
 	char *e = gfarmfs_init();
+#if 0
+	GFS_File gf;
+
+	if (e != NULL) goto end;
+	if ((fi->flags & O_ACCMODE) != O_RDONLY) {
+		gf = gfarmfs_cast_fh(fi);
+		e = gfs_pio_sync(gf);
+	}
+end:
+#endif
 	return gfarmfs_final("(FLUSH)", e, 0, path);
 }
 #endif
@@ -1596,8 +1606,14 @@ static struct fuse_operations gfarmfs_oper_base = {
 /* new I/O functions (share GFS_File about opening the same file) */
 /* --fastcreate is not supported */
 
+#define FH_LIST_USE_INO 0  /* key: 0=path, 1=ino */
+
 struct gfarmfs_fh {
+#if FH_LIST_USE_INO == 1
 	long ino;
+#else
+	char *path;
+#endif
 	GFS_File gf;
 	int flags; /* current flag */
 	int nopen;
@@ -1614,14 +1630,45 @@ struct gfarmfs_fh {
 
 struct gfarmfs_fh  *gfarmfs_fh_list[FH_LIST_LEN];
 
+#if FH_LIST_USE_INO == 1
+#define FH_GET1(url)          gfarmfs_fh_get_key_url(url)
+#define FH_GET2(url, ino)     gfarmfs_fh_get(ino)
+#define FH_ADD1(url, fh)      gfarmfs_fh_add_key_url(url, fh)
+#define FH_ADD2(url, ino, fh) gfarmfs_fh_add(ino, fh)
+#define FH_REMOVE1(url)       gfarmfs_fh_remove_key_url(url)
+#define FH_REMOVE2(url, ino)  gfarmfs_fh_remove(ino)
+#define FH_FREE(fh)           free(fh)
+#else
+#define FH_GET1(url)          gfarmfs_fh_get(url)
+#define FH_GET2(url, ino)     gfarmfs_fh_get(url)
+#define FH_ADD1(url, fh)      gfarmfs_fh_add(url, fh)
+#define FH_ADD2(url, ino, fh) gfarmfs_fh_add(url, fh)
+#define FH_REMOVE1(url)       gfarmfs_fh_remove(url)
+#define FH_REMOVE2(url, ino)  gfarmfs_fh_remove(url)
+#define FH_FREE(fh)           gfarmfs_fh_free(fh)
+#endif
+
+#if FH_LIST_USE_INO == 1
+static char *
+gfarmfs_get_ino(char *url, long *inop)
+{
+	char *e;
+	struct gfs_stat gs;
+	e = gfs_stat(url, &gs);
+	if (e == NULL) {
+		*inop = gs.st_ino;
+		gfs_stat_free(&gs);
+		return (NULL);
+	}
+	return (e);
+}
+
 static struct gfarmfs_fh *
 gfarmfs_fh_get(long ino)
 {
 	int i;
-
 	if (ino < 0)
 		return (NULL);
-
 	for (i = 0; i < FH_LIST_LEN; i++) {
 		if (gfarmfs_fh_list[i] != NULL &&
 		    gfarmfs_fh_list[i]->ino == ino) {
@@ -1631,11 +1678,21 @@ gfarmfs_fh_get(long ino)
 	return (NULL);
 }
 
+static struct gfarmfs_fh *
+gfarmfs_fh_get_key_url(char *url)
+{
+	char *e;
+	long ino;
+	e = gfarmfs_get_ino(url, &ino);
+	if (e != NULL)
+		return (NULL);
+	return gfarmfs_fh_get(ino);
+}
+
 static char *
 gfarmfs_fh_add(long ino, struct gfarmfs_fh *fh)
 {
 	int i;
-
 #if 0
 	if (gfarmfs_fh_get(ino))
 		return (GFARM_ERR_ALREADY_EXISTS);
@@ -1649,15 +1706,24 @@ gfarmfs_fh_add(long ino, struct gfarmfs_fh *fh)
 	}
 	return (GFARM_ERR_NO_MEMORY); /* EMFILE ? */
 }
-
+#if 0
+static char *
+gfarmfs_fh_add_key_url(char *url, struct gfarmfs_fh *fh)
+{
+	char *e;
+	long ino;
+	e = gfarmfs_get_ino(url, &ino);
+	if (e != NULL)
+		return (e);
+	return gfarmfs_fh_add(ino, fh);
+}
+#endif
 static void
 gfarmfs_fh_remove(long ino)
 {
 	int i;
-
 	if (ino < 0)
 		return;
-
 	for (i = 0; i < FH_LIST_LEN; i++) {
 		if (gfarmfs_fh_list[i] != NULL &&
 		    gfarmfs_fh_list[i]->ino == ino) {
@@ -1667,6 +1733,91 @@ gfarmfs_fh_remove(long ino)
 	}
 	return;
 }
+#if 0
+static void
+gfarmfs_fh_remove_key_url(char *url)
+{
+	char *e;
+	long ino;
+	e = gfarmfs_get_ino(url, &ino);
+	if (e != NULL)
+		return;
+	return gfarmfs_fh_remove(ino);
+}
+#endif
+#else
+/* FH_LIST_USE_INO != 1 */
+
+static struct gfarmfs_fh *
+gfarmfs_fh_get(char *url)
+{
+	int i;
+	char *path;
+	if (url == NULL)
+		return (NULL);
+	path = url + 7; /* gfarm:/ */
+	for (i = 0; i < FH_LIST_LEN; i++) {
+		if (gfarmfs_fh_list[i] != NULL &&
+		    strcmp(gfarmfs_fh_list[i]->path, path) == 0) {
+			return gfarmfs_fh_list[i];
+		}
+	}
+	return (NULL);
+}
+
+static char *
+gfarmfs_fh_add(char *url, struct gfarmfs_fh *fh)
+{
+	int i;
+	char *path;
+#if 0
+	if (gfarmfs_fh_get(url))
+		return (GFARM_ERR_ALREADY_EXISTS);
+#endif
+	path = url + 7;
+	for (i = 0; i < FH_LIST_LEN; i++) {
+		if (gfarmfs_fh_list[i] == NULL) {
+			if (fh->path != NULL)
+				free(fh->path);
+			fh->path = strdup(path);
+			if (fh->path == NULL)
+				return (GFARM_ERR_NO_MEMORY);
+			gfarmfs_fh_list[i] = fh;
+			return (NULL);
+		}
+	}
+	return (GFARM_ERR_NO_MEMORY); /* EMFILE ? */
+}
+
+static void
+gfarmfs_fh_remove(char *url)
+{
+	int i;
+	char *path;
+	if (url == NULL)
+		return;
+	path = url + 7;
+	for (i = 0; i < FH_LIST_LEN; i++) {
+		if (gfarmfs_fh_list[i] != NULL &&
+		    strcmp(gfarmfs_fh_list[i]->path, path) == 0) {
+			free(gfarmfs_fh_list[i]->path);
+			gfarmfs_fh_list[i]->path = NULL;
+			gfarmfs_fh_list[i] = NULL;
+			return;
+		}
+	}
+	return;
+}
+
+static void
+gfarmfs_fh_free(struct gfarmfs_fh *fh)
+{
+	if (fh->path)
+		free(fh->path);
+	free(fh);
+}
+
+#endif /* FH_LIST_USE_INO == 1 */
 
 static char *
 gfarmfs_fh_alloc(struct gfarmfs_fh **fhp)
@@ -1679,6 +1830,11 @@ gfarmfs_fh_alloc(struct gfarmfs_fh **fhp)
 	fh->flags = 0;
 	fh->nopen = 0;
 	fh->nwrite = 0;
+#if FH_LIST_USE_INO == 1
+	/* fh->ino = -1 */
+#else
+	fh->path = NULL;
+#endif
 #if REVISE_CHMOD_UTIME == 1
 	fh->mode_changed = 0;
 	fh->utime_changed = 0;
@@ -1733,7 +1889,7 @@ gfarmfs_open_common_share_gf(char *opname,
 		ino = st.st_ino;
 		save_mode = st.st_mode;
 		gfs_stat_free(&st);
-		fh = gfarmfs_fh_get(ino);
+		fh = FH_GET2(url, ino);
 	}
 	if (fh == NULL) {  /* new gfarmfs_fh */
 		e = gfarmfs_fh_alloc(&fh);
@@ -1765,6 +1921,7 @@ gfarmfs_open_common_share_gf(char *opname,
 				fh->nwrite++;
 			}
 		}
+#if FH_LIST_USE_INO != 0  /* key is ino */
 		if (is_create && e == NULL) { /* get st_ino */
 			e = gfs_fstat(gf, &st);
 			if (e == NULL) {
@@ -1772,18 +1929,19 @@ gfarmfs_open_common_share_gf(char *opname,
 				gfs_stat_free(&st);
 			}
 		}
+#endif
 		if (e == NULL) {
-			struct gfarmfs_fh *fh2 = gfarmfs_fh_get(ino);
+			struct gfarmfs_fh *fh2 = FH_GET2(url, ino);
 			if (fh2 != NULL) {
 				printf("WARN: This must not happen.\n");
 				e = GFARM_ERR_ALREADY_EXISTS;
 			} else
-				e = gfarmfs_fh_add(ino, fh);
+				e = FH_ADD2(url, ino, fh);
 		}
 		if (e != NULL) {
 			if (fh->gf)
 				gfs_pio_close(fh->gf);
-			free(fh);
+			FH_FREE(fh);
 		}
 	} else if ((fh->flags & GFARM_FILE_ACCMODE) == GFARM_FILE_RDWR) {
 		fh->nopen++;
@@ -1850,32 +2008,66 @@ gfarmfs_create_share_gf(const char *path, mode_t mode,
 }
 #endif
 
+#if 0
 static inline char *
-gfarmfs_chmod_share_gf_internal(const char *url, mode_t mode)
+gfarmfs_chmod_share_gf_internal(char *url, mode_t mode)
 {
 	char *e;
 
 	e = gfs_chmod(url, mode);
 #if REVISE_CHMOD_UTIME == 1
 	if (e == NULL) {
-		char *e2;
-		struct gfs_stat gs;
 		struct gfarmfs_fh *fh;
-		e2 = gfs_stat(url, &gs);
-		if (e2 == NULL) {
-			fh = gfarmfs_fh_get(gs.st_ino);
-			if (fh != NULL) {
-				/* must chmod on release */
-				fh->mode_changed = 1;
-				fh->save_mode = mode;
-			}
-			gfs_stat_free(&gs);
+		fh = FH_GET1(url);
+		if (fh != NULL) {
+			/* must chmod on release */
+			fh->mode_changed = 1;
+			fh->save_mode = mode;
 		}
-		/* if (e2 != NULL): ignore */
 	}
 #endif
 	return (e);
 }
+#else
+
+#define IS_EXECUTABLE(mode)  ((mode) & 0111 ? 1 : 0)
+
+static inline char *
+gfarmfs_chmod_share_gf_internal(char *url, mode_t mode)
+{
+#if REVISE_CHMOD_UTIME == 1
+	char *e;
+	struct gfs_stat gs;
+	struct gfarmfs_fh *fh;
+	mode_t old_mode;
+
+	e = gfs_stat(url, &gs);
+	if (e != NULL)
+		goto end;
+	fh = FH_GET2(url, gs.st_ino);
+	if (fh != NULL) {
+		/* must chmod on release */
+		fh->mode_changed = 1;
+		fh->save_mode = mode;
+	}
+	old_mode = gs.st_mode;
+	gfs_stat_free(&gs);
+	if (fh == NULL /* nobody opens this file */
+	    || IS_EXECUTABLE(old_mode) == IS_EXECUTABLE(mode)) {
+		e = gfs_chmod(url, mode);
+		if (e != NULL && fh != NULL && fh->mode_changed == 1)
+			fh->mode_changed = 0;
+	}
+	/* else: somebody opens this file and change executable bit
+	   -> chmod on release only */
+	/* this always succeeeds in this case ... */
+end:
+	return (e);
+#else
+	return gfs_chmod(url, mode);
+#endif
+}
+#endif
 
 static int
 gfarmfs_chmod_share_gf(const char *path, mode_t mode)
@@ -1894,7 +2086,7 @@ end:
 }
 
 static inline char *
-gfarmfs_utime_share_gf_internal(const char *url, struct utimbuf *buf)
+gfarmfs_utime_share_gf_internal(char *url, struct utimbuf *buf)
 {
 	char *e;
 	struct gfarm_timespec gt[2];
@@ -1910,30 +2102,23 @@ gfarmfs_utime_share_gf_internal(const char *url, struct utimbuf *buf)
 	}
 #if REVISE_CHMOD_UTIME == 1
 	if (e == NULL) {
-		char *e2;
-		struct gfs_stat gs;
 		struct gfarmfs_fh *fh;
-		e2 = gfs_stat(url, &gs);
-		if (e2 == NULL) {
-			fh = gfarmfs_fh_get(gs.st_ino);
-			if (fh != NULL) {
-				/* must utime on release */
-				fh->utime_changed = 1;
-				if (buf == NULL) {
-					time_t t;
-					time(&t);
-					fh->save_utime[0].tv_sec = t;
-					fh->save_utime[0].tv_nsec = 0;
-					fh->save_utime[1].tv_sec = t;
-					fh->save_utime[1].tv_nsec = 0;
-				} else {
-					fh->save_utime[0] = gt[0];
-					fh->save_utime[1] = gt[1];
-				}
+		fh = FH_GET1(url);
+		if (fh != NULL) {
+			/* must utime on release */
+			fh->utime_changed = 1;
+			if (buf == NULL) {
+				time_t t;
+				time(&t);
+				fh->save_utime[0].tv_sec = t;
+				fh->save_utime[0].tv_nsec = 0;
+				fh->save_utime[1].tv_sec = t;
+				fh->save_utime[1].tv_nsec = 0;
+			} else {
+				fh->save_utime[0] = gt[0];
+				fh->save_utime[1] = gt[1];
 			}
-			gfs_stat_free(&gs);
 		}
-		/* if (e2 != NULL): ignore */
 	}
 #endif
 	return (e);
@@ -1962,9 +2147,19 @@ gfarmfs_rename_share_gf_correct(char *from_url, char *to_url,
 	char *e;
 	struct gfarmfs_fh *fh;
 
-	fh = gfarmfs_fh_get(from_ino);
+#if 0   /* for Gfarm version 2 or lator */
+	e = gfs_rename(from_url, to_url);
+	if (e == NULL) {
+		fh = FH_GET1(from_url);
+		if (fh != NULL) {
+			FH_REMOVE1(from_url);
+			e = FH_ADD1(to_url, fh);
+		}
+	}
+#else   /* for Gfarm version 1 */
+	fh = FH_GET2(from_url, from_ino);
 	if (fh != NULL) {
-		gfarmfs_fh_remove(from_ino);
+		FH_REMOVE2(from_url, from_ino);
 		gfs_pio_close(fh->gf);
 		/* so that gfs_pio_close can set metadata correctly */
 	}
@@ -2005,14 +2200,12 @@ gfarmfs_rename_share_gf_correct(char *from_url, char *to_url,
 			fh->gf = gf;
 			e2 = gfs_fstat(gf, &gs);
 			if (e2 == NULL) {
-				e2 = gfarmfs_fh_add(gs.st_ino, fh);
+				e2 = FH_ADD2(url, gs.st_ino, fh);
 				gfs_stat_free(&gs);
-				/* error never happens */
 			} else {
 				/* What happen ? */
 				printf("WARN: RENAME: some problem may happen later: %s\n", url);
-				e2 = NULL;
-				fh->ino = -1;
+				FH_FREE(fh);
 			}
 		} else {
 			if (retry == 0) {
@@ -2027,6 +2220,7 @@ gfarmfs_rename_share_gf_correct(char *from_url, char *to_url,
 		if (e == NULL && e2 != NULL)
 			e = e2;
 	}
+#endif
 	return (e);
 }
 static int
@@ -2072,13 +2266,12 @@ gfarmfs_rename_share_gf(const char *from, const char *to)
 	} else {
 		e = gfs_rename(from_url, to_url);
 		if (e == NULL) {
-			fh = gfarmfs_fh_get(save_ino);
+			fh = FH_GET2(from_url, save_ino);
 			if (fh != NULL) {
 				e = gfs_stat(to_url, &gs);
 				if (e == NULL) {
-					gfarmfs_fh_remove(save_ino);
-					e = gfarmfs_fh_add(gs.st_ino, fh);
-					/* error never happens */
+					FH_REMOVE2(from_url, save_ino);
+					e = FH_ADD2(to_url, gs.st_ino, fh);
 					gfs_stat_free(&gs);
 				}
 			}
@@ -2121,8 +2314,12 @@ gfarmfs_getattr_share_gf(const char *path, struct stat *stbuf)
 	gfs_stat_free(&gs1);
 	if (e != NULL)
 		goto free_url;
-	fh = gfarmfs_fh_get(gs1.st_ino);
+	fh = FH_GET2(url, gs1.st_ino);
 	if (fh != NULL) {  /* somebody opens this file. */
+#if REVISE_CHMOD_UTIME == 1
+		if (fh->mode_changed)
+			stbuf->st_mode = fh->save_mode;
+#endif
 		/* On Gfarm version 1.3 (or earlier), gfs_stat
 		   cannot get the correct st_size while a file
 		   is opened.  But gfs_fstat can do it.
@@ -2163,27 +2360,31 @@ gfarmfs_release_share_gf(const char *path, struct fuse_file_info *fi)
 	fh = (struct gfarmfs_fh *)(unsigned long) fi->fh;
 	fh->nopen--;
 	if (fh->nopen <= 0) {
+		char *url;
+		char *e2;
 		if (fh->gf)
 			e = gfs_pio_close(fh->gf);
 		else
 			e = NULL; /* GFARM_ERR_INPUT_OUTPUT ? */
+		e2 = add_gfarm_prefix(path, &url);
+		if (e2 != NULL) {
+			if (e == NULL)
+				e = e2;
+			goto end;
+		}
 #if REVISE_CHMOD_UTIME == 1
-		if (fh->mode_changed || fh->utime_changed) {
-			char *url;
-			e = add_gfarm_prefix(path, &url);
-			if (e == NULL) {
-				if (fh->mode_changed) {
-					e = gfs_chmod(url, fh->save_mode);
-				}
-				if (fh->utime_changed) {
-					e = gfs_utimes(url, fh->save_utime);
-				}
-				free(url);
+		else if (fh->mode_changed || fh->utime_changed) {
+			if (fh->mode_changed) {
+				e = gfs_chmod(url, fh->save_mode);
+			}
+			if (fh->utime_changed) {
+				e = gfs_utimes(url, fh->save_utime);
 			}
 		}
 #endif
-		gfarmfs_fh_remove(fh->ino);
-		free(fh);
+		FH_REMOVE2(url, fh->ino);
+		free(url);
+		FH_FREE(fh);
 	} else {   /* nopen > 0 */
 		if ((fi->flags & O_ACCMODE) != O_RDONLY)
 			fh->nwrite--;
@@ -2219,18 +2420,22 @@ gfarmfs_fgetattr_share_gf(const char *path, struct stat *stbuf,
 			  struct fuse_file_info *fi)
 {
 	char *e;
-	GFS_File gf;
 	struct gfs_stat gs;
+	struct gfarmfs_fh *fh;
 
 	if ((e = gfarmfs_init()) != NULL) goto end;
-	gf = gfarmfs_cast_fh_share_gf(fi);
-	if (gf == NULL)
+	fh = (struct gfarmfs_fh *)(unsigned long) fi->fh;
+	if (fh->gf == NULL)
 		e = GFARM_ERR_INPUT_OUTPUT;
 	else
-		e = gfs_fstat(gf, &gs);
+		e = gfs_fstat(fh->gf, &gs);
 	if (e == NULL) {
 		e = convert_gfs_stat_to_stat(NULL, &gs, stbuf, 0);
 		gfs_stat_free(&gs);
+#if REVISE_CHMOD_UTIME == 1
+		if (fh->mode_changed)
+			stbuf->st_mode = fh->save_mode;
+#endif
 	}
 end:
 	return gfarmfs_final("FGETATTR", e, 0, path);
