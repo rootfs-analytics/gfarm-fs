@@ -1969,6 +1969,7 @@ gfarmfs_open_common_share_gf(char *opname,
 				fh->save_mode = save_mode;
 #endif
 				e2 = gfs_chmod(url, save_mode);
+				/* gfs_fchmod cannot work in global view. */
 				if (e2 != NULL) {
 					/* What happen ? */
 					printf("WARN: gfs_chmod failed at OPEN: %o: %s: %s\n", save_mode, path, e2);
@@ -2055,12 +2056,15 @@ gfarmfs_chmod_share_gf_internal(char *url, mode_t mode)
 	if (fh == NULL /* nobody opens this file */
 	    || IS_EXECUTABLE(old_mode) == IS_EXECUTABLE(mode)) {
 		e = gfs_chmod(url, mode);
+		/* gfs_fchmod cannot work in global view. */
 		if (e != NULL && fh != NULL && fh->mode_changed == 1)
 			fh->mode_changed = 0;
 	}
-	/* else: somebody opens this file and change executable bit
-	   -> chmod on release only */
-	/* this always succeeeds in this case ... */
+	/* (else): somebody opens this file and changes executable bit.
+	   -> gfs_chmod on RELEASE only
+	   In Gfarm v1, gfs_pio_close fails at replacing section info
+	   in this case. */
+	/* always succeeed ... (e == NULL) */
 end:
 	return (e);
 #else
