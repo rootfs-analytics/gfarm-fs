@@ -2898,21 +2898,19 @@ setup_options()
 	}
 
 	/* validate gfarm_mount_point */
-	if (strcmp(gfarm_mount_point, "") != 0) {
-		e = add_gfarm_prefix("", &url);
-		if (e == NULL) {
-			e = gfs_stat(url, &st);
-			if (e == NULL)
-				gfs_stat_free(&st);
-			else {
-				fprintf(stderr, "%s: %s\n", url, e);
-				exit(1);
-			}
-			free(url);
-		} else {
-			fprintf(stderr, "add_gfarm_prefix: %s\n", e);
+	e = add_gfarm_prefix("/", &url);
+	if (e == NULL) {
+		e = gfs_stat(url, &st);
+		if (e == NULL)
+			gfs_stat_free(&st);
+		else {
+			fprintf(stderr, "%s: %s\n", url, e);
 			exit(1);
 		}
+		free(url);
+	} else {
+		fprintf(stderr, "add_gfarm_prefix: %s\n", e);
+		exit(1);
 	}
 	
 	/* get hostlist for statfs */
@@ -3119,7 +3117,7 @@ print_options()
 			printf("-> attention: --buffered does not need --statisfstat.\n");
 		}
 	}
-	if (strcmp(gfarm_mount_point, "") != 0) {
+	if (*gfarm_mount_point != '\0') {
 		printf("mountpoint: gfarm:%s\n", gfarm_mount_point);
 	}
 }
