@@ -35,7 +35,9 @@
 #include <fcntl.h>
 #include <dirent.h>
 #include <errno.h>
+#ifdef USE_GFS_STATFSNODE
 #include <sys/statfs.h>
+#endif
 #ifdef HAVE_SETXATTR
 #include <sys/xattr.h>
 #endif
@@ -83,17 +85,17 @@ static int enable_count_dir_nlink = 0; /* default: disable */
 static int enable_print_enoent = 0; /* default: do not print ENOENT */
 static FILE *enable_trace = NULL;
 static char *trace_out = "gfarmfs.trace"; /* default filename */
-static int enable_statfs = 0;
-static char **statfs_hosts = NULL;
+#ifdef USE_GFS_STATFSNODE
+static int enable_statfs = 1; /* default: enable */
 static int statfs_nhosts;
-static char *statfs_hosts_file = NULL;
+#endif
 static int enable_statisfstat = 0;  /* gfs_fstat instead of gfs_stat */
 static char *gfarm_mount_point = "";
 static int enable_correct_rename = 0;
 
 /* ################################################################### */
 
-static int gmplen = -1; 
+static int gmplen = -1;
 
 static inline char *
 add_gfarm_prefix(const char *path, char **urlp)
@@ -1468,47 +1470,71 @@ gfs_statfsnode_total_of_hostlist(
 	}
 }
 
+static inline int
+gfarmfs_statfs_common(
+	const char *path, gfarm_int32_t *bsizep,
+	file_offset_t *blocksp, file_offset_t *bfreep, file_offset_t *bavailp,
+	file_offset_t *filesp, file_offset_t *ffreep, file_offset_t *favailp)
+{
+	char *e;
+	int nhosts = statfs_nhosts, i;
+	static char **hosts = NULL;
+
+	if ((e = gfarmfs_init()) != NULL) goto end;
+
+	if (hosts == NULL) {
+		hosts = malloc(nhosts * sizeof(char *));
+		if (hosts == NULL) {
+			e = GFARM_ERR_NO_MEMORY;
+			goto end;
+		}
+	}
+	e = gfarm_schedule_search_idle_acyclic_by_domainname(
+		"", &nhosts, hosts);
+	if (e != NULL)
+		goto end;
+	e = gfs_statfsnode_total_of_hostlist(
+		hosts, nhosts, bsizep, blocksp,
+		bfreep, bavailp, filesp, ffreep, favailp);
+	for (i = 0; i < nhosts; i++) {
+		if (hosts[i]) {
+			free(hosts[i]);
+			hosts[i] = NULL;
+		}
+	}
+end:
+	return gfarmfs_final("STATFS", e, 0, path);
+}
+
 #if FUSE_USE_VERSION == 22
 static int
 gfarmfs_statfs(const char *path, struct statfs *stfs)
 {
-	char *e;
 	file_offset_t favail;
-
-	if ((e = gfarmfs_init()) != NULL) goto end;
-
-	e = gfs_statfsnode_total_of_hostlist(statfs_hosts, statfs_nhosts,
-					     (gfarm_int32_t*)&stfs->f_bsize,
-					     (file_offset_t*)&stfs->f_blocks,
-					     (file_offset_t*)&stfs->f_bfree,
-					     (file_offset_t*)&stfs->f_bavail,
-					     (file_offset_t*)&stfs->f_files,
-					     (file_offset_t*)&stfs->f_ffree,
-					     (file_offset_t*)&favail);
-
-end:
-	return gfarmfs_final("STATFS", e, 0, path);
+	return gfarmfs_statfs_common(path,
+				     (gfarm_int32_t*)&stfs->f_bsize,
+				     (file_offset_t*)&stfs->f_blocks,
+				     (file_offset_t*)&stfs->f_bfree,
+				     (file_offset_t*)&stfs->f_bavail,
+				     (file_offset_t*)&stfs->f_files,
+				     (file_offset_t*)&stfs->f_ffree,
+				     (file_offset_t*)&favail);
 }
 #elif FUSE_USE_VERSION >= 25
 static int
 gfarmfs_statfs(const char *path, struct statvfs *stvfs)
 {
-	char *e;
-	gfarm_int32_t bsize;
-
-	if ((e = gfarmfs_init()) != NULL) goto end;
-
-	e = gfs_statfsnode_total_of_hostlist(statfs_hosts, statfs_nhosts,
-					     &bsize,
-					     (file_offset_t*)&stvfs->f_blocks,
-					     (file_offset_t*)&stvfs->f_bfree,
-					     (file_offset_t*)&stvfs->f_bavail,
-					     (file_offset_t*)&stvfs->f_files,
-					     (file_offset_t*)&stvfs->f_ffree,
-					     (file_offset_t*)&stvfs->f_favail);
+	int res;
+	gfarm_int32_t bsize = 0;
+	res = gfarmfs_statfs_common(path, &bsize,
+				    (file_offset_t*)&stvfs->f_blocks,
+				    (file_offset_t*)&stvfs->f_bfree,
+				    (file_offset_t*)&stvfs->f_bavail,
+				    (file_offset_t*)&stvfs->f_files,
+				    (file_offset_t*)&stvfs->f_ffree,
+				    (file_offset_t*)&stvfs->f_favail);
 	stvfs->f_bsize = (unsigned long) bsize;
-end:
-	return gfarmfs_final("STATFS", e, 0, path);
+	return (res);
 }
 #endif /* FUSE_USE_VERSION */
 #endif /* USE_GFS_STATFSNODE */
@@ -1518,9 +1544,8 @@ static int
 gfarmfs_flush(const char *path, struct fuse_file_info *fi)
 {
 	char *e = gfarmfs_init();
-#if 0
+#if 0 /* TODO */
 	GFS_File gf;
-
 	if (e != NULL) goto end;
 	if ((fi->flags & O_ACCMODE) != O_RDONLY) {
 		gf = gfarmfs_cast_fh(fi);
@@ -2577,11 +2602,11 @@ static struct fuse_operations gfarmfs_oper_share_gf = {
 static char *program_name = "gfarmfs";
 static struct fuse_operations *gfarmfs_oper_p = &gfarmfs_oper_base;
 
-#define RECOMMEND_22 "-lsSuFfn"
-#define SAFE_22      "-sSFf"
+#define RECOMMEND_22 "-lsuFfn"
+#define SAFE_22      "-sFf"
 #define FAST_22      "-f"
-#define RECOMMEND_25 "-lsSubrn"
-#define SAFE_25      "-sSF"
+#define RECOMMEND_25 "-lsubrn"
+#define SAFE_25      "-sF"
 #define FAST_25      "-b"
 
 static void
@@ -2618,8 +2643,7 @@ gfarmfs_usage()
 "    -n, --dirnlink         count nlink of a directory precisely\n"
 "    -F, --statisfstat      get correct st_size while a file is opened\n"
 #ifdef USE_GFS_STATFSNODE
-"    -S, --statfs           enable statfs(2) (total of hosts from metadb server)\n"
-"    -H <hostfile>          enable statfs(2) (total of hosts in hostfile)\n"
+"    -S, --disable-statfs   disable statfs(2)\n"
 #endif
 "    -m <dir on Gfarm>      set mount point on Gfarm.\n"
 "                           (ex. -m /username cut gfarm:/username)\n"
@@ -2732,8 +2756,10 @@ parse_long_option(int *argcp, char ***argvp)
 		enable_gfarm_unbuf = 1;
 	else if (strcmp(&argv[0][1], "-buffered") == 0)
 		enable_gfarm_unbuf = 0;
-	else if (strcmp(&argv[0][1], "-statfs") == 0)
-		enable_statfs = 1;
+#ifdef USE_GFS_STATFSNODE
+	else if (strcmp(&argv[0][1], "-disable-statfs") == 0)
+		enable_statfs = 0;
+#endif
 	else if (strcmp(&argv[0][1], "-correctrename") == 0)
 		enable_correct_rename = 1;
 	else if (strcmp(&argv[0][1], "-print-enoent") == 0)
@@ -2820,13 +2846,11 @@ parse_short_option(int *argcp, char ***argvp)
 		case 'f':
 			enable_fastcreate = 1;
 			break;
+#ifdef USE_GFS_STATFSNODE
 		case 'S':
-			enable_statfs = 1;
+			enable_statfs = 0;
 			break;
-		case 'H':
-			enable_statfs = 1;
-			return (next_arg_set(
-					&statfs_hosts_file, argcp, argvp, 1));
+#endif
 		case 'm':
 			return (next_arg_set(
 					&gfarm_mount_point, argcp, argvp, 1));
@@ -2912,141 +2936,24 @@ setup_options()
 		fprintf(stderr, "add_gfarm_prefix: %s\n", e);
 		exit(1);
 	}
-	
-	/* get hostlist for statfs */
+
+#ifdef USE_GFS_STATFSNODE
+	/* count hosts for statfs */
 	if (enable_statfs == 1) {
-		if (statfs_hosts_file != NULL) { /* use hostlist file */
-			int lineno;
-			e = gfarm_hostlist_read(statfs_hosts_file,
-						&statfs_nhosts, &statfs_hosts,
-						&lineno);
-			if (e != NULL) {
-				if (lineno != -1) {
-					fprintf(stderr,
-						"%s: line %d: %s\n",
-						statfs_hosts_file, lineno, e);
-				} else {
-					fprintf(stderr, "%s: %s\n",
-						statfs_hosts_file, e);
-				}
-				exit(1);
-			}
-#if 1  /* gfarm_host_info_get_all */
-		} else {
-			gfarm_stringlist list;
-			int nhosts, i;
-			struct gfarm_host_info *hostinfos;
-
-			e = gfarm_stringlist_init(&list);
-			if (e != NULL) {
-				fprintf(stderr, "stringlist_init: %s\n", e);
-				exit(1);
-			}
-			e = gfarm_host_info_get_all(&nhosts, &hostinfos);
-			if (e != NULL) {
-				fprintf(stderr,
-					"gfarm_host_info_get_all: %s\n", e);
-				exit(1);
-			}
-			for (i = 0; i < nhosts; i++) {
-				char *h = strdup(hostinfos[i].hostname);
-				if (h != NULL)
-					e = gfarm_stringlist_add(
-						&list, h);
-				else
-					e = GFARM_ERR_NO_MEMORY;
-				if (e != NULL) {
-					fprintf(
-						stderr,
-						"gfarm_stringlist_add: %s\n",
-						e);
-					exit(1);
-				}
-			}
-			gfarm_host_info_free_all(nhosts, hostinfos);
-			statfs_nhosts = gfarm_stringlist_length(&list);
-			statfs_hosts =
-				gfarm_strings_alloc_from_stringlist(&list);
-			gfarm_stringlist_free(&list);
-			if (statfs_nhosts == 0 || statfs_hosts == NULL) {
-				enable_statfs = 0;
-				gfarmfs_oper_p->statfs = NULL;
-			}
+		int nhosts;
+		struct gfarm_host_info *hostinfos;
+		e = gfarm_host_info_get_all(&nhosts, &hostinfos);
+		if (e != NULL) {
+			fprintf(stderr,
+				"gfarm_host_info_get_all: %s\n", e);
+			exit(1);
 		}
-#endif
-#if 0  /* gfarm_schedule_search_idle_acyclic_by_domainname */
-		} else {
-			int nhosts, i;
-			struct gfarm_host_info *hostinfos;
-			char **hosts;
-
-			e = gfarm_host_info_get_all(&nhosts, &hostinfos);
-			if (e != NULL) {
-				fprintf(stderr,
-					"gfarm_host_info_get_all: %s\n", e);
-				exit(1);
-			}
-			gfarm_host_info_free_all(nhosts, hostinfos);
-			hosts = malloc(nhosts * sizeof(char *));
-			if (hosts == NULL) {
-				fprintf(stderr, "Not enough space\n");
-				exit(1);
-			}
-			e = gfarm_schedule_search_idle_acyclic_by_domainname(
-				"", &nhosts, hosts);
-			if (e != NULL) {
-				fprintf(stderr,
-					"gfarm_schedule_search_idle_by_domainname: %s\n", e);
-				exit(1);
-			}
-			statfs_nhosts = nhosts;
-			statfs_hosts = hosts;
-		}
-#endif
-#if 0  /* popen(gfhost) */
-		} else {
-			char buf[256];
-			FILE *pin;
-			char *p;
-			gfarm_stringlist list;
-
-			e = gfarm_stringlist_init(&list);
-			if (e != NULL) {
-				fprintf(stderr, "stringlist_init: %s\n", e);
-				exit(1);
-			}
-			pin = popen("gfhost", "r");
-			if (pin == NULL) {
-				gfarm_stringlist_free(&list);
-				perror("popen(gfhost)");
-				exit(1);
-			}
-			while (fgets(buf, 256, pin) != NULL) {
-				p = strchr(buf, '\n');
-				if (p != NULL)
-					*p = '\0';
-				p = strdup(buf);
-				e = gfarm_stringlist_add(&list, p);
-				if (e != NULL) {
-					gfarm_stringlist_free_deeply(&list);
-					fprintf(stderr, "gfhost: %s\n", e);
-					exit(1);
-				}
-			}
-			pclose(pin);
-			statfs_nhosts = gfarm_stringlist_length(&list);
-			statfs_hosts =
-				gfarm_strings_alloc_from_stringlist(&list);
-			gfarm_stringlist_free(&list);
-			if (statfs_nhosts == 0 || statfs_hosts == NULL) {
-				enable_statfs = 0;
-				gfarmfs_oper_p->statfs = NULL;
-			}
-		}
-#endif
+		gfarm_host_info_free_all(nhosts, hostinfos);
+		statfs_nhosts = nhosts;
 	} else {
-		gfarmfs_oper_p->statfs = NULL;
+		gfarmfs_oper_p->statfs = NULL; /* disable */
 	}
+#endif
 }
 
 static void
@@ -3078,17 +2985,11 @@ print_options()
 		printf("-> attention: fastcreate is not needed by FUSE 2.5 compatible mode.\n");
 #endif
 	}
+#ifdef USE_GFS_STATFSNODE
 	if (enable_statfs == 1) {
 		printf("enable statfs (%d hosts)\n", statfs_nhosts);
 	}
-	if (statfs_hosts_file != NULL) {
-		if (strcmp(statfs_hosts_file, "-") == 0) {
-			printf("statfs (hostlist: stdin)\n");
-		} else {
-			printf("statfs (hostlist: %s)\n",
-			       statfs_hosts_file);
-		}
-	}
+#endif
 	if (enable_trace != NULL) {
 		printf("enable trace (output file: %s)\n", trace_out);
 	}
