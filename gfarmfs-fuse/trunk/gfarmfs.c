@@ -77,21 +77,28 @@ static int gfarmfs_debug = 0;  /* 1: error, 2: debug */
 static int enable_symlink = 0;
 static int enable_linkiscopy = 0;
 static int enable_unlinkall = 0;
-static int enable_fastcreate = 0;  /* can be used on FUSE version 2.2 only */
-                                   /* >0: enable, 0: disable, <0: ignore */
-static int enable_gfarm_unbuf = 1; /* default: GFARM_FILE_UNBUFFERED */
 static char *arch_name = NULL;
 static int enable_count_dir_nlink = 0; /* default: disable */
 static int enable_print_enoent = 0; /* default: do not print ENOENT */
 static FILE *enable_trace = NULL;
 static char *trace_out = "gfarmfs.trace"; /* default filename */
+static char *gfarm_mount_point = "";
+
+/* 0: use gfarmfs_*_share_gf() operations (new)
+   1: use normal I/O operations (old)
+*/
+static int enable_gfarm_unbuf = 0; /* about GFARM_FILE_UNBUFFERED */
+
+/* default: enable */
+static int enable_fastcreate = 1;  /* can be used on FUSE version 2.2 only */
+                                   /* >0: enable, 0: disable, <0: ignore */
+static int enable_statisfstat = 1;  /* gfs_fstat instead of gfs_stat */
+static int enable_correct_rename = 1;
+
 #ifdef USE_GFS_STATFSNODE
 static int enable_statfs = 1; /* default: enable */
 static int statfs_nhosts;
 #endif
-static int enable_statisfstat = 0;  /* gfs_fstat instead of gfs_stat */
-static char *gfarm_mount_point = "";
-static int enable_correct_rename = 0;
 
 /* ################################################################### */
 
@@ -2605,13 +2612,6 @@ static struct fuse_operations gfarmfs_oper_share_gf = {
 static char *program_name = "gfarmfs";
 static struct fuse_operations *gfarmfs_oper_p = &gfarmfs_oper_base;
 
-#define RECOMMEND_22 "-lsuFfbn"
-#define SAFE_22      "-sFfb"
-#define FAST_22      "-fb"
-#define RECOMMEND_25 "-lsubrn"
-#define SAFE_25      "-sF"
-#define FAST_25      "-b"
-
 static void
 gfarmfs_version()
 {
@@ -2634,40 +2634,23 @@ gfarmfs_usage()
 "Usage: %s [GfarmFS options] <mountpoint> [FUSE options]\n"
 "\n"
 "GfarmFS options:\n"
-#ifdef ENABLE_FASTCREATE
-"    -f, --fastcreate       improve performance of file creation\n"
-"                           (MKNOD does not flush the meta data)\n"
-#endif
 #ifdef SYMLINK_MODE
 "    -s, --symlink          enable symlink(2) to work (emulation)\n"
 #endif
 "    -l, --linkiscopy       enable link(2) to behave copying a file (emulation)\n"
 "    -u, --unlinkall        enable unlink(2) to remove all architecture files\n"
 "    -n, --dirnlink         count nlink of a directory precisely\n"
-"    -F, --statisfstat      get correct st_size while a file is opened\n"
 #ifdef USE_GFS_STATFSNODE
 "    -S, --disable-statfs   disable statfs(2)\n"
 #endif
 "    -m <dir on Gfarm>      set mount point on Gfarm.\n"
 "                           (ex. -m /username cut gfarm:/username)\n"
-"    -b, --buffered         enable buffered I/O (unset GFARM_FILE_UNBUFFERED)\n"
-"    -r, --correctrename    enable to rename correctly while opening the file\n"
-"                           (need -b option)\n"
+"    --unbuffered           disable buffered I/O (set GFARM_FILE_UNBUFFERED)\n"
 "    -a <architecture>      for a client not registered by gfhost\n"
 "    --trace <filename>     record FUSE operations called by processes\n"
 "    --print-enoent         do not ignore to print ENOENT to stderr\n"
 "                           (in -f or -d of FUSE option) (default: ignore)\n"
 "    -v, --version          show version and exit\n"
-"\n"
-#ifdef ENABLE_FASTCREATE
-"    --recommend            equivalent to "RECOMMEND_22"\n"
-"    --safe                 equivalent to "SAFE_22"\n"
-"    --fast                 equivalent to "FAST_22"\n"
-#else
-"    --recommend            equivalent to "RECOMMEND_25"\n"
-"    --safe                 equivalent to "SAFE_25"\n"
-"    --fast                 equivalent to "FAST_25"\n"
-#endif
 "\n", program_name);
 
 	fuse_main(2, (char **) fusehelp, gfarmfs_oper_p);
@@ -2753,8 +2736,6 @@ parse_long_option(int *argcp, char ***argvp)
 		next_arg_set(&arch_name, argcp, argvp, 1);
 	else if (strcmp(&argv[0][1], "-unlinkall") == 0)
 		enable_unlinkall = 1;
-	else if (strcmp(&argv[0][1], "-fastcreate") == 0)
-		enable_fastcreate = 1;
 	else if (strcmp(&argv[0][1], "-unbuffered") == 0)
 		enable_gfarm_unbuf = 1;
 	else if (strcmp(&argv[0][1], "-buffered") == 0)
@@ -2763,8 +2744,6 @@ parse_long_option(int *argcp, char ***argvp)
 	else if (strcmp(&argv[0][1], "-disable-statfs") == 0)
 		enable_statfs = 0;
 #endif
-	else if (strcmp(&argv[0][1], "-correctrename") == 0)
-		enable_correct_rename = 1;
 	else if (strcmp(&argv[0][1], "-print-enoent") == 0)
 		enable_print_enoent = 1;
 	else if (strcmp(&argv[0][1], "-trace") == 0) {
@@ -2782,46 +2761,7 @@ parse_long_option(int *argcp, char ***argvp)
 		exit(0);
 	} else if (strcmp(&argv[0][1], "-dirnlink") == 0)
 		enable_count_dir_nlink = 1;
-	else if (strcmp(&argv[0][1], "-statisfstat") == 0)
-		/* On Gfarm version 1.3 (or earlier), gfs_stat
-		   cannot get the correct st_size while a file
-		   is opened.  But gfs_fstat can do it.
-		*/
-		enable_statisfstat = 1;
-	else if (strcmp(&argv[0][1], "-recommend") == 0) {
-		char *argv[1];
-		char **a;
-		int n = 1;
-#if FUSE_USE_VERSION >= 25
-		argv[0] = RECOMMEND_25;
-#else
-		argv[0] = RECOMMEND_22;
-#endif
-		a = argv;
-		parse_short_option(&n, &a);
-	} else if (strcmp(&argv[0][1], "-safe") == 0) {
-		char *argv[1];
-		char **a;
-		int n = 1;
-#if FUSE_USE_VERSION >= 25
-		argv[0] = SAFE_25;
-#else
-		argv[0] = SAFE_22;
-#endif
-		a = argv;
-		parse_short_option(&n, &a);
-	} else if (strcmp(&argv[0][1], "-fast") == 0) {
-		char *argv[1];
-		char **a;
-		int n = 1;
-#if FUSE_USE_VERSION >= 25
-		argv[0] = FAST_25;
-#else
-		argv[0] = FAST_22;
-#endif
-		a = argv;
-		parse_short_option(&n, &a);
-	} else {
+	else {
 		gfarmfs_usage();
 		exit(1);
 	}
@@ -2846,9 +2786,6 @@ parse_short_option(int *argcp, char ***argvp)
 		case 'u':
 			enable_unlinkall = 1;
 			break;
-		case 'f':
-			enable_fastcreate = 1;
-			break;
 #ifdef USE_GFS_STATFSNODE
 		case 'S':
 			enable_statfs = 0;
@@ -2859,15 +2796,6 @@ parse_short_option(int *argcp, char ***argvp)
 					&gfarm_mount_point, argcp, argvp, 1));
 		case 'n':
 			enable_count_dir_nlink = 1;
-			break;
-		case 'b':
-			enable_gfarm_unbuf = 0;
-			break;
-		case 'F':
-			enable_statisfstat = 1;
-			break;
-		case 'r':
-			enable_correct_rename = 1;
 			break;
 		case 'v':
 			gfarmfs_version();
@@ -2911,7 +2839,7 @@ setup_options()
 	char *e, *url;
 	struct gfs_stat st;
 
-#ifndef ENABLE_FASTCREATE  /* not define */
+#ifndef ENABLE_FASTCREATE  /* not defined */
 	if (enable_fastcreate > 0)
 		enable_fastcreate = -1; /* ignore on FUSE 2.5 */
 #endif
@@ -2976,16 +2904,6 @@ print_options()
 	if (enable_unlinkall == 1) {
 		printf("enable unlinkall\n");
 	}
-	if (enable_fastcreate > 0) {
-		printf("enable fastcreate\n");
-	} else if (enable_fastcreate < 0) {
-		printf("ignore fastcreate\n");
-#ifdef ENABLE_FASTCREATE
-		printf("-> attention: There is a something reason.\n");
-#else
-		printf("-> attention: fastcreate is not needed by FUSE 2.5 compatible mode.\n");
-#endif
-	}
 #ifdef USE_GFS_STATFSNODE
 	if (enable_statfs == 1) {
 		printf("enable statfs (%d hosts)\n", statfs_nhosts);
@@ -2998,26 +2916,9 @@ print_options()
 		printf("enable count_dir_nlink\n");
 	}
 	if (enable_gfarm_unbuf == 0) {
-		printf("enable buffered I/O (unset GFARM_FILE_UNBUFFERED)\n");
-		printf("-> I/O buffer is shared by plural open(2)|creat(2)\n");
-#ifdef ENABLE_FASTCREATE
-		if (enable_fastcreate < 0) {
-			printf("-> warning: --fastcreate can not work with --buffered. (fastcreate is ignored)\n");
-		}
-#endif
-	}
-	if (enable_correct_rename == 1) {
-		if (enable_gfarm_unbuf == 0) { /* buffered I/O */
-			printf("enable correct_rename\n");
-		} else {
-			printf("ignore correct_rename (-r requires -b)\n");
-		}
-	}
-	if (enable_statisfstat == 1) {
-		printf("enable statisfstat\n");
-		if (enable_gfarm_unbuf == 0) {
-			printf("-> attention: --buffered does not need --statisfstat.\n");
-		}
+		printf("unset GFARM_FILE_UNBUFFERED (use new I/O operations)\n");
+	} else {
+		printf("set GFARM_FILE_UNBUFFERED (use old I/O operations)\n");
 	}
 	if (*gfarm_mount_point != '\0') {
 		printf("mountpoint: gfarm:%s\n", gfarm_mount_point);
