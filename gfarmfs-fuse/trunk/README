@@ -1,7 +1,9 @@
 Copyright (c) 2005 National Institute of Advanced Industrial Science
 and Technology (AIST).  All Rights Reserved.
 
-*** GfarmFS-FUSE
+============
+GfarmFS-FUSE
+============
 
 GfarmFS-FUSE enables you to mount a Gfarm filesystem in userspace.
 
@@ -12,12 +14,40 @@ GfarmFS-FUSE enables you to mount a Gfarm filesystem in userspace.
       http://fuse.sourceforge.net/
 
 
-*** Installation
+===========
+Quick start
+===========
+
+Example on Fedora Core 5 :
+
+    # yum install fuse fuse-libs fuse-devel
+    # (belong user who can use FUSE to `fuse' group)
+    # rpm -ivh gfarm-libs-1.3-0.i386.rpm gfarm-client-1.3-0.i386.rpm \
+      gfarm-devel-1.3-0.i386.rpm
+
+    $ (check your Gfarm configuration file )(ex.: ~/.gfarmrc)
+    $ (check your Gfarm authenticaion )(ex.: gfhost, gfkey, grid-proxy-init)
+    $ tar zxvf gfarmfs-fuse-1.3.tar.gz
+    $ cd gfarmfs-fuse-1.3
+    $ ./configure
+    $ make
+    $ mkdir ~/mountpoint
+    $ ./gfarmfs ~/mountpoint
+    $ cd ~/mountpoint
+
+
+============
+Installation
+============
 
 To build GfarmFS-FUSE, development packages of Gfarm version 1.1.1 (or
 later) and FUSE version 2.2 (or later) are required.  When you install
 Gfarm using RPM binary packages, it is necessary to install
 gfarm-gsi-devel (or gfarm-devel) package also.
+
+On FUSE version 2.5 (or later) and Linux Kernel 2.6.15 (or later),
+GfarmFS-FUSE works with FUSE 2.5 compatible mode.
+Otherwise GfarmFS-FUSE works with FUSE 2.2 compatible mode.
 
 Installation steps of GfarmFS-FUSE:
 
@@ -27,7 +57,7 @@ Installation steps of GfarmFS-FUSE:
 
 Options for configure:
 
-  --prefix=<directory>
+--prefix=<directory>
 
   specifies a destination directory for installation.  The 'gfarmfs'
   command is installed in 'directory'/bin.  Default is /usr/local.
@@ -43,7 +73,9 @@ In the case of csh or tcsh,
     $ env CPPFLAGS='-I/usr/local/include' LDFLAGS='-L/usr/local/lib -Wl,-R,/usr/local/lib' ./configure
 
 
-*** Mount
+=====
+Mount
+=====
 
 Make sure your Gfarm environment is set. (see INSTALL.en of Gfarm)
 
@@ -59,9 +91,64 @@ point.  'gfarmfs' is executed in a single thread by specifying the
 '-s' FUSE option.  For other FUSE options, refer to README included in
 FUSE package.
 
+
+=======
+Unmount
+=======
+
+Run the 'fusermount' command (of FUSE. see README of FUSE):
+
+    $ fusermount -u <mountpoint>
+
+
+=======
+Options
+=======
+
 GfarmFS options:
 
-  -a <architecture>
+-h
+
+  print help.
+
+-s, --symlink
+
+  enables symlink(2) emulation.  With this option, a symbolic link is
+  emulated using an invisible file whose suffix is '.gfarmfs-symlink'
+  to manage the target path.  You can use this option until Gfarm does
+  support it.
+
+-l, --linkiscopy
+
+  enables link(2) emulation.  With this option, link(2) is emulated by
+  copying a target file instead of creating a hardlink.  You can use
+  this option until Gfarm does support it.
+
+-u, --unlinkall
+
+  With this option, unlink(2) removes all binaries for different
+  architectures of the specified file that has execution bits.  This
+  was the default feature of GfarmFS-FUSE version 1.0.
+
+  Since GfarmFS-FUSE version 1.1, unlink(2) removes just a binary that
+  corresponds to the client architecture of the specified file that
+  has execution bits, which is the same behavior as the Gfarm syscall
+  hooking library since Gfarm version 1.2.
+
+-n, --dirnlink
+
+  count the nlink of a directory precisely.
+  Default nlink of a directory is 32000.
+
+--unbuffered
+
+  disable buffered I/O. (perform slowly)
+  Since GfarmFS-FUSE version 1.3, new I/O functions of gfarmfs are
+  used.  Therefore, without this option, Applications can avoid
+  limitations of libgfarm.  With this option, use old I/O functions
+  and disable these new feautures.
+
+-a <architecture>
 
   specifies the architecture name of the client host.
   However, chmod(2) is not supported.
@@ -80,56 +167,47 @@ GfarmFS options:
   GFARM_ARCHITECTURE can also specify the architecture name of the
   client host. (see man gfarm.conf)
 
-  -s, --symlink
+==============
+KNOWN PROBLEMS
+==============
 
-  enables symlink(2) emulation.  With this option, a symbolic link is
-  emulated using an invisible file whose suffix is '.gfarmfs-symlink'
-  to manage the target path.  You can use this option until Gfarm does
-  support it.
+First, please see doc/KNOWN_PROBLEMS included in Gfarm.
 
-  -l, --linkiscopy
+But, these limitations are avoided on GfarmFS-FUSE.
 
-  enables link(2) emulation.  With this option, link(2) is emulated by
-  copying a target file instead of creating a hardlink.  You can use
-  this option until Gfarm does support it.
+  * stat(2) can return a correct st_size during open(2).
+  * utime(2) and chmod(2) is effective during open(2).
+  * rename(2) and chmod(2) do not destroy the metadata during open(2).
+  * Thanks to FUSE, Applications using fork(2) or multithread have no
+    problem on gfarmfs.
 
-  -u, --unlinkall
+Peculiar PROBLEMS of GfarmFS-FUSE:
 
-  With this option, unlink(2) removes all binaries for different
-  architectures of the specified file that has execution bits.  This
-  was the default feature of GfarmFS-FUSE version 1.0.
+*** "-l" option of gfarmfs is not the hardlink behavior.
 
-  Since GfarmFS-FUSE version 1.1, unlink(2) removes just a binary that
-  corresponds to the client architecture of the specified file that
-  has execution bits, which is the same behavior as the Gfarm syscall
-  hooking library since Gfarm version 1.2.
+  The hardlink emulation creates a copy instead of a hardlink.
+  Applications which expect the hardlink behavior cannot work
+  correctly.
 
-  -f, --fastcreate
+  The hardlink behavior will be supported in the first release of the
+  Gfarm v2 branch.
+  GfarmFS-FUSE will support it too on that occasion.
 
-  improves performance of file creation.  If you create and use empty
-  files, some problem may occur.
-  This option is needless for FUSE 2.5 (or later) and Linux Kernel
-  2.6.15 (or later).
+*** close(2) cannot notice the error of gfs_pio_close().
 
-  -S, --statfs, -H <hostfile>
+  Even if close(2) succeeded, the I/O buffer and the metadata of Gfarm
+  may not be written correctly.
 
-  enables statfs(2).  This statfs(2) returns values of total of
-  filesystem nodes.  -S or --statfs option uses filesystem nodes from
-  gfhost command.  The hostfile with -H option consists of a hostname
-  of a filesystem node in each line.  If ``-'' is specified as hostfile,
-  standard input is used to read hostnames.
-  This works on Gfarm version 1.3 (or later).
+  We don't have a plan to fix this problem.
 
-  --buffered
+*** limitations on FUSE 2.2 compatible mode
 
-  enables buffered I/O mode.  If you open the same file more than
-  two at the same time, some problem may occur.
-  Since GfarmFS-FUSE version 1.3, it was changed so that unbuffered
-  I/O mode is default.
+  open(2), open(2), creat(2), access(2), ftruncate(2) cannot work
+  correctly by the situation.  This is a limitation of FUSE 2.2.
 
+  Using gfarmfs compiled on FUSE version 2.5 (or later) and Linux
+  Kernel 2.6.15 (or later), this is not matter.
 
-*** Unmount
+*** "svn co" command may not work on gfarmfs.
 
-Run the 'fusermount' command (see README of FUSE):
-
-    $ fusermount -u <mountpoint>
+  Now investigating.

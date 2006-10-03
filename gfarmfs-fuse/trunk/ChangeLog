@@ -2,14 +2,40 @@ GfarmFS-FUSE - ChangeLog
 
 [2006.06.06] Version 1.3
 
-* add FUSE 2.5 compatible mode. (auto configuration)
-* add -S/--statfs options
-* do not count nlink of a directory by default setting
-* add -n/--dirnlink options
-* add -b/--buffered option.s (GFARM_FILE_UNBUFFERED mode is default)
-* add -F/--statisfstat options
-* add --trace option
-* fix a bug such that gfs_pio_create can create invalid FIFO.
+New Features
+
+  * add FUSE 2.5 compatible mode. (auto configuration)
+    This mode can works correctly about open(2), creat(2), access(2),
+    fgetattr(2), ftruncate(2).
+    And, --fastcreate become needless.
+  * statfs(2) can works.
+  * add -S and --disable-statfs options.
+  * add --unbuffered option.
+  * add --trace option.
+  * add -n and --dirnlink options.
+  * add KNOWN_PROBLEMS in README.
+
+Update Features
+
+  * new usage of short options. (ex. -lsu)
+  * do not count nlink of a directory by default setting.
+    (default is 32000.) (-d option can count nlink of a directory.)
+  * remove -f and --fastcreate options.
+    (change default behavior on FUSE 2.2)
+  * "file section" in the case of one is opened in index view. 
+
+Avoid limitations of libgfarm
+
+  * stat(2) can return a correct st_size during open(2).
+  * utime(2) and chmod(2) is effective during open(2).
+  * rename(2) and chmod(2) do not destroy the metadata during open(2).
+  
+Bug fix
+
+  * maintain mtime and atime at hard link emulation.
+  * When the file is not readable, hard link emulation will work,
+    if possible.
+  * fix a bug such that gfs_pio_create can create invalid FIFO.
 
 [2006.02.01] Version 1.2.1
 
