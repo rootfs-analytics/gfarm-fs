@@ -29,13 +29,14 @@ Avoid limitations of libgfarm
   * stat(2) can return a correct st_size during open(2).
   * utime(2) and chmod(2) is effective during open(2).
   * rename(2) and chmod(2) do not destroy the metadata during open(2).
-  
+
 Bug fix
 
   * maintain mtime and atime at hard link emulation.
   * When the file is not readable, hard link emulation will work,
     if possible.
   * fix a bug such that gfs_pio_create can create invalid FIFO.
+  * fix a bug such that chown(2) for a symlink entry become an error.
 
 [2006.02.01] Version 1.2.1
 
