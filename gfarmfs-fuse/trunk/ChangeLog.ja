@@ -17,7 +17,7 @@ GfarmFS-FUSE - ChangeLog
 
 仕様変更
 
-  * ショートオプションをまとめて指定できるようになりました．
+  * ショートオプションをまとめて指定できるようになりました．(例: -lsu)
   * デフォルトではディレクトリの nlink が常に 32000 に変更になります．
     -n, --dirnlink で正確な nlink 数を数えるようになります．
   * -f オプションを廃止しました．
@@ -27,7 +27,7 @@ GfarmFS-FUSE - ChangeLog
 
 libgfarm の制限回避
 
-  * open(2) 中の stat(2) で st_size が正確なサイズを返すようにしました．
+  * open(2) 中の stat(2) が，正確な st_size を返すようにしました．
   * open(2) 中に utime(2) や chmod(2) をしても有効になります．
   * open(2) 中に rename(2) や chmod(2) をしてもメタデータが壊れないよ
     うにしました．
