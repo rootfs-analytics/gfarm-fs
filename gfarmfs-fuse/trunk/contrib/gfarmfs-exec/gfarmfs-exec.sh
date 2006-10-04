@@ -43,7 +43,7 @@ fi
 [ -O $GFS_MOUNTDIR ] || ABORT "$GFS_MOUNTDIR: not owned by " $LOGNAME
 
 cd /
-gfarmfs -lsfu $GFS_MOUNTDIR || :
+gfarmfs -lsu $GFS_MOUNTDIR || :
 cd $GFS_MOUNTDIR/$GFS_USERNAME && cd $GFS_WDIR &&
 	$GFS_PROG $GFS_ARGS > $GFS_STDOUT 2> $GFS_STDERR
 STATUS=$?
