@@ -6,7 +6,7 @@
 #
 #	GFS_USERNAME	global user name in Gfarm  (default: $LOGNAME)
 #	GFS_MOUNTDIR	mount point	 (default: /gfs/home/$GFS_USERNAME)
-#	GFARMFS_OPTIONS gfarmfs mount options	   (default: -lsfu)
+#	GFARMFS_OPTIONS gfarmfs mount options	   (default: -lsu)
 #	FUSE_OPTIONS	fuse mount options
 
 ABORT() {
@@ -28,7 +28,7 @@ fi
 
 : ${GFS_USERNAME:=$LOGNAME}
 : ${GFS_MOUNTDIR:=/gfs/home/$GFS_USERNAME}
-: ${GFARMFS_OPTIONS:=-lsfu}
+: ${GFARMFS_OPTIONS:=-lsu}
 : ${FUSE_OPTIONS:=}
 
 if [ ! -d $GFS_MOUNTDIR ]; then
