@@ -1,5 +1,5 @@
-Copyright (c) 2005 National Institute of Advanced Industrial Science
-and Technology (AIST).  All Rights Reserved.
+Copyright (c) 2005-2006 National Institute of Advanced Industrial
+Science and Technology (AIST).  All Rights Reserved.
 
 ============
 GfarmFS-FUSE
@@ -47,8 +47,8 @@ Gfarm の開発パッケージは，RPM の場合は gfarm-gsi-devel（あるいは
 gfarm-devel）となります．
 
 FUSE version 2.5 以降で，かつ Linux Kernel 2.6.15 以降を使用している場
-合は FUSE version 2.5 互換モードでコンパイルされます．そうでない場合は
-FUES version 2.2 互換モードでコンパイルされます．
+合は FUSE version 2.5 互換モードで gfarmfs コマンドがコンパイルされます．
+そうでない場合は FUSE version 2.2 互換モードでコンパイルされます．
 
 GfarmFS-FUSE を構築するには，下記のようにします．
 
@@ -173,17 +173,24 @@ FUSE のオプションについては，-h オプションのヘルプと FUSE の README を
   GfarmFS-FUSE version 1.3 から，このオプションを指定しない場合は，
   ディレクトリの nlink が常に 32000 となります．
 
+-F, --exactfilesize
+
+  ファイルを open(2) 中に，それとは別の gfarmfs クライアントから，stat(2)
+  をした場合に，正確なファイルサイズを返せるようになります．
+  同一の gfarmfs 上で，open(2) 中に stat(2) をする場合は，このオプションは
+  必要ありません．
+
 -S, --disable-statfs
 
   statfs(2) と statvfs(2) を無効にします．
 
---unbuffered
+-b, --buffered
 
-  I/O バッファを使わなくなり，読み書きが遅くなります．
+  I/O バッファを使ようになり，読み書きが速くなります．(特に遠隔の場合)
 
-  Gfarm version 1.3 からは，I/O 関係の関数を新たに実装して使用しており，
-  いくつかの libgfarm の制限事項を回避しています．
-  このオプションを使用すると，古い実装を利用します．
+  複数の gfarmfs クライアントから同じファイルにアクセスする際，ファイ
+  ルの変更が他のクライアントにすぐには反映されなくなります．
+  (同一 gfarmfs クライアント上ではすぐに反映されます．)
 
 -a <architecture>
 
@@ -213,12 +220,16 @@ FUSE のオプションについては，-h オプションのヘルプと FUSE の README を
 
 まず，Gfarm パッケージに含まれる doc/KNOWN_PROBLEMS.ja をご覧ください．
 
-これらのうち，いくつかの制限を，GfarmFS-FUSE では解決しています．
+これらのうち，いくつかの制限を，GfarmFS-FUSE では回避しています．
 
-  * open(2) 中に stat(2) で正確なファイルサイズを取得できます．
-  * open(2) 中に utime(2) や chmod(2) をしても有効になります．
-  * open(2) 中に rename(2) や chmod(2) をしてもメタデータが壊れないよ
-    うにしています．
+  * open(2) 中に，同一の gfarmfs 上で stat(2) をしても，正確なファイル
+    サイズを取得できます．
+  * -F オプションを指定すれば，open(2) 中に，それとは別の gfarmfs クラ
+    イアントから stat(2) をしても，正確なファイルサイズを取得できます．
+  * open(2) 中に，同一の gfarmfs 上で utime(2) や chmod(2) をしても有効
+    になります．
+  * open(2) 中に，同一の gfarmfs 上で rename(2) や chmod(2) をしてもメ
+    タデータが壊れません．
   * FUSE のおかげで，gfarmfs 上で fork(2) や multithread を使ったプロ
     グラムを実行しても問題ありません．
 
@@ -241,8 +252,9 @@ FUSE のオプションについては，-h オプションのヘルプと FUSE の README を
 
 *** FUSE 2.2 互換モードで gfarmfs コンパイルした場合に制限がある．
 
-  状況によっては open(2), creat(2), access(2), ftruncate(2) が正しく
-  動きません．これは FUSE 2.2 の制限事項です．
+  FUSE 2.2 互換で gfarmfs がコンパイルされた場合は，open(2), creat(2),
+  access(2), ftruncate(2) が正しく動かないことがあります．
+  これは FUSE 2.2 の制限事項です．
 
   Linux Kernel 2.6.15 以降かつ，FUSE 2.5 以降の環境の場合は，この問題は
   ありません．
