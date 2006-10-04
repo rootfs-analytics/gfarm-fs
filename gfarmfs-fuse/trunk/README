@@ -91,6 +91,18 @@ point.  'gfarmfs' is executed in a single thread by specifying the
 '-s' FUSE option.  For other FUSE options, refer to README included in
 FUSE package.
 
+If you cannot mount, please check whether FUSE module is loaded, and
+whether you are permitted about using FUSE.
+
+You can also specify the mountpoint in /etc/fstab.
+
+Examble of /etc/fstab:
+
+  gfarmfs#-lsu  <mountpoint>  fuse  noauto,user,exec  0  0
+
+How to mount in this case:
+
+  $ mount <mountpoint>
 
 =======
 Unmount
