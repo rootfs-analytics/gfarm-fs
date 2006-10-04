@@ -105,11 +105,19 @@ Run the 'fusermount' command (of FUSE. see README of FUSE):
 Options
 =======
 
+About FUSE options, please print help by '-h' option and see README
+of FUSE.
+
 GfarmFS options:
 
 -h
 
   print help.
+
+-m <directory on Gfarm>
+
+  The mountpoint shows the directory specified here instead of the
+  root directory of Gfarm.  (ex. -m /username)
 
 -s, --symlink
 
@@ -137,12 +145,16 @@ GfarmFS options:
 
 -n, --dirnlink
 
-  count the nlink of a directory precisely.
+  counts the nlink of a directory precisely.
   Default nlink of a directory is 32000.
+
+-S, --disable-statfs
+
+  disables statfs(2) and statvfs(2).
 
 --unbuffered
 
-  disable buffered I/O. (perform slowly)
+  disables buffered I/O. (perform slowly)
   Since GfarmFS-FUSE version 1.3, new I/O functions of gfarmfs are
   used.  Therefore, without this option, Applications can avoid
   limitations of libgfarm.  With this option, use old I/O functions
@@ -173,7 +185,7 @@ KNOWN PROBLEMS
 
 First, please see doc/KNOWN_PROBLEMS included in Gfarm.
 
-But, these limitations are avoided on GfarmFS-FUSE.
+But, some limitations are avoided on GfarmFS-FUSE.
 
   * stat(2) can return a correct st_size during open(2).
   * utime(2) and chmod(2) is effective during open(2).
@@ -183,7 +195,7 @@ But, these limitations are avoided on GfarmFS-FUSE.
 
 Peculiar PROBLEMS of GfarmFS-FUSE:
 
-*** "-l" option of gfarmfs is not the hardlink behavior.
+*** '-l' option of gfarmfs is not the hardlink behavior.
 
   The hardlink emulation creates a copy instead of a hardlink.
   Applications which expect the hardlink behavior cannot work
@@ -208,6 +220,6 @@ Peculiar PROBLEMS of GfarmFS-FUSE:
   Using gfarmfs compiled on FUSE version 2.5 (or later) and Linux
   Kernel 2.6.15 (or later), this is not matter.
 
-*** "svn co" command may not work on gfarmfs.
+*** 'svn co' command may not work on gfarmfs.
 
   Now investigating.
