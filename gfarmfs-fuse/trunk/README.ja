@@ -129,7 +129,10 @@ single thread で実行されます．その他，FUSE のオプションの詳細は FUSE
 オプション
 ==========
 
-gfarmfs コマンドには，以下のオプションがあります．
+FUSE のオプションについては，-h オプションのヘルプと FUSE の README を
+ご覧ください．
+
+以下は GfarmFS のオプションです．
 
 -h
 
@@ -138,7 +141,7 @@ gfarmfs コマンドには，以下のオプションがあります．
 -m <directory on Gfarm>
 
   Gfarm 上に存在するディレクトリを指定して，それ以下がマウントポイ
-  ント以下として見えるようになります．
+  ント以下として見えるようになります．(例: -m /username)
 
 -s, --symlink
 
@@ -169,6 +172,10 @@ gfarmfs コマンドには，以下のオプションがあります．
   ディレクトリの nlink を正確に数えます．
   GfarmFS-FUSE version 1.3 から，このオプションを指定しない場合は，
   ディレクトリの nlink が常に 32000 となります．
+
+-S, --disable-statfs
+
+  statfs(2) と statvfs(2) を無効にします．
 
 --unbuffered
 
@@ -206,7 +213,7 @@ gfarmfs コマンドには，以下のオプションがあります．
 
 まず，Gfarm パッケージに含まれる doc/KNOWN_PROBLEMS.ja をご覧ください．
 
-しかし，これらいくつかの制限を，GfarmFS-FUSE では解決しています．
+これらのうち，いくつかの制限を，GfarmFS-FUSE では解決しています．
 
   * open(2) 中に stat(2) で正確なファイルサイズを取得できます．
   * open(2) 中に utime(2) や chmod(2) をしても有効になります．
@@ -240,7 +247,7 @@ gfarmfs コマンドには，以下のオプションがあります．
   Linux Kernel 2.6.15 以降かつ，FUSE 2.5 以降の環境の場合は，この問題は
   ありません．
 
-*** gfarmfs 上で "svn co" コマンドに失敗することがある．
+*** gfarmfs 上で 'svn co' コマンドに失敗することがある．
 
   原因を調査中です．
 
