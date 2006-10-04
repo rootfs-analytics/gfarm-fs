@@ -17,7 +17,7 @@
   and Technology (AIST).  All Rights Reserved.
 */
 #define GFARMFS_VER "1.3"
-#define GFARMFS_VER_DATE "6 June 2006"
+#define GFARMFS_VER_DATE "? October 2006"
 
 #if FUSE_USE_VERSION >= 25
 /* #  warning FUSE 2.5 compatible mode. */
@@ -84,16 +84,17 @@ static FILE *enable_trace = NULL;
 static char *trace_out = "gfarmfs.trace"; /* default filename */
 static char *gfarm_mount_point = "";
 
-/* 0: use gfarmfs_*_share_gf() operations (new)
+/*
+   0: use gfarmfs_*_share_gf() operations (new)
    1: use normal I/O operations (old)
 */
 static int enable_gfarm_unbuf = 0; /* about GFARM_FILE_UNBUFFERED */
 
 /* default: enable */
-static int enable_fastcreate = 1;  /* can be used on FUSE version 2.2 only */
+static int enable_fastcreate = 1;  /* used on FUSE version 2.2 only */
                                    /* >0: enable, 0: disable, <0: ignore */
-static int enable_statisfstat = 1;  /* gfs_fstat instead of gfs_stat */
-static int enable_correct_rename = 1;
+static int enable_statisfstat = 1;  /* no option */
+static int enable_correct_rename = 1;  /* no option */
 
 #ifdef USE_GFS_STATFSNODE
 static int enable_statfs = 1; /* default: enable */
@@ -231,18 +232,11 @@ ends_with_and_delete(char *str, char *suffix)
 #endif
 
 static char *
-gfarmfs_set_view_using_url(GFS_File gf, char *url)
+gfarmfs_set_view(GFS_File gf)
 {
 	char *e;
 	int nf;
 
-	if (arch_name != NULL) {
-		e = gfs_access(url, X_OK);
-		if (e == NULL) {
-			e = gfs_pio_set_view_section(gf, arch_name, NULL, 0);
-			return (e);
-		}
-	}
 	e = gfs_pio_get_nfragment(gf, &nf);
 	if (e == NULL && nf <= 1)
 		e = gfs_pio_set_view_index(gf, 1, 0, NULL, 0);
@@ -252,21 +246,30 @@ gfarmfs_set_view_using_url(GFS_File gf, char *url)
 }
 
 static char *
+gfarmfs_set_view_using_url(GFS_File gf, char *url)
+{
+	char *e;
+
+	if (arch_name != NULL) {
+		e = gfs_access(url, X_OK);
+		if (e == NULL) {
+			e = gfs_pio_set_view_section(gf, arch_name, NULL, 0);
+			return (e);
+		}
+	}
+	return gfarmfs_set_view(gf);
+}
+
+static char *
 gfarmfs_set_view_using_mode(GFS_File gf, mode_t mode)
 {
 	char *e;
-	int nf;
 
 	if (arch_name != NULL && GFARM_S_IS_PROGRAM(mode)) {
 		e = gfs_pio_set_view_section(gf, arch_name, NULL, 0);
 		return (e);
 	}
-	e = gfs_pio_get_nfragment(gf, &nf);
-	if (e == NULL && nf <= 1)
-		e = gfs_pio_set_view_index(gf, 1, 0, NULL, 0);
-	else
-		e = gfs_pio_set_view_global(gf, 0);
-	return (e);
+	return gfarmfs_set_view(gf);
 }
 
 static char *
@@ -1629,7 +1632,6 @@ static struct fuse_operations gfarmfs_oper_base = {
 
 /* ################################################################### */
 /* new I/O functions (share GFS_File about opening the same file) */
-/* --fastcreate is not supported */
 
 #define FH_LIST_USE_INO 0  /* key: 0=path, 1=ino */
 
@@ -1873,7 +1875,7 @@ gfs_pio_open_common(char *url, int flags, GFS_File *gfp, mode_t *create_modep)
 {
 	char *e;
 #ifdef ENABLE_FASTCREATE
-	/* not use create_mode == create a file on MKNOD */
+	/* created a file on MKNOD */
 	if (enable_fastcreate > 0) {
 		e = gfarmfs_fastcreate_open(url, flags, gfp);
 	} else {
@@ -2084,8 +2086,8 @@ gfarmfs_chmod_share_gf_internal(char *url, mode_t mode)
 	gfs_stat_free(&gs);
 	if (fh == NULL /* nobody opens this file */
 	    || IS_EXECUTABLE(old_mode) == IS_EXECUTABLE(mode)) {
-		e = gfs_chmod(url, mode);
 		/* gfs_fchmod cannot work in global view. */
+		e = gfs_chmod(url, mode);
 		if (e != NULL && fh != NULL && fh->mode_changed == 1)
 			fh->mode_changed = 0;
 	}
@@ -2634,6 +2636,8 @@ gfarmfs_usage()
 "Usage: %s [GfarmFS options] <mountpoint> [FUSE options]\n"
 "\n"
 "GfarmFS options:\n"
+"    -m <dir on Gfarm>      set mount point on Gfarm.\n"
+"                           (ex. -m /username cut gfarm:/username)\n"
 #ifdef SYMLINK_MODE
 "    -s, --symlink          enable symlink(2) to work (emulation)\n"
 #endif
@@ -2643,8 +2647,6 @@ gfarmfs_usage()
 #ifdef USE_GFS_STATFSNODE
 "    -S, --disable-statfs   disable statfs(2)\n"
 #endif
-"    -m <dir on Gfarm>      set mount point on Gfarm.\n"
-"                           (ex. -m /username cut gfarm:/username)\n"
 "    --unbuffered           disable buffered I/O (set GFARM_FILE_UNBUFFERED)\n"
 "    -a <architecture>      for a client not registered by gfhost\n"
 "    --trace <filename>     record FUSE operations called by processes\n"
@@ -2721,8 +2723,6 @@ next_arg_set(char **valp, int *argcp, char ***argvp, int errorexit)
 	return (1);
 }
 
-static int parse_short_option(int *argcp, char ***argvp);
-
 static void
 parse_long_option(int *argcp, char ***argvp)
 {
@@ -2740,6 +2740,8 @@ parse_long_option(int *argcp, char ***argvp)
 		enable_gfarm_unbuf = 1;
 	else if (strcmp(&argv[0][1], "-buffered") == 0)
 		enable_gfarm_unbuf = 0;
+	else if (strcmp(&argv[0][1], "-dirnlink") == 0)
+		enable_count_dir_nlink = 1;
 #ifdef USE_GFS_STATFSNODE
 	else if (strcmp(&argv[0][1], "-disable-statfs") == 0)
 		enable_statfs = 0;
@@ -2759,9 +2761,7 @@ parse_long_option(int *argcp, char ***argvp)
 	} else if (strcmp(&argv[0][1], "-version") == 0) {
 		gfarmfs_version();
 		exit(0);
-	} else if (strcmp(&argv[0][1], "-dirnlink") == 0)
-		enable_count_dir_nlink = 1;
-	else {
+	} else {
 		gfarmfs_usage();
 		exit(1);
 	}
