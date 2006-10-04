@@ -20,7 +20,11 @@ LDFLAGS = @LDFLAGS@
 LIBS    = @LIBS@
 
 VER   = $(TARGET)-fuse-`date +%Y%m%d`
-FILES = $(SRCS) Makefile.in configure.in configure $(DOCS) install-sh
+CONTRIB = contrib/gfarmfs-exec/gfarmfs-exec.sh \
+contrib/mount.gfarmfs/umount.gfarmfs \
+contrib/mount.gfarmfs/mount.gfarmfs
+FILES = $(SRCS) Makefile.in configure.in configure $(DOCS) install-sh \
+gfarmfs.spec $(CONTRIB)
 BINS  = $(TARGET)
 
 all: $(TARGET)
