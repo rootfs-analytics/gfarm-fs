@@ -70,9 +70,11 @@
 #define GFARM_USE_VERSION 1
 
 #if GFARM_USE_VERSION == 1
-#define REVISE_CHMOD 1  /* chmod problem of gfarm v1 */
-#define REVISE_UTIME 1  /* utime problem of gfarm v1 */
+#define REVISE_UTIME 1  /* problem of gfarm v1 */
 #endif
+
+#define REVISE_CHMOD 0  /* limitation in global view
+			   of gfarm v1.3.1 or earlier */
 
 #define NOFLAGMENTINFO_AUTO_DELETE 0  /* 1: enable */
 
@@ -100,8 +102,6 @@ static int use_old_functions = 0;
 /* default: enable */
 static int enable_fastcreate = 1;  /* used on FUSE version 2.2 only */
                                    /* >0: enable, 0: disable, <0: ignore */
-static int enable_correct_rename = 1;  /* no option */
-
 #ifdef USE_GFS_STATFSNODE
 static int enable_statfs = 1; /* default: enable */
 static int statfs_nhosts;
@@ -2043,12 +2043,16 @@ gfarmfs_open_common_share_gf(char *opname,
 				/* must chmod on release */
 				fh->mode_changed = 1;
 				fh->save_mode = save_mode;
-#endif
 				e2 = gfs_chmod(url, save_mode);
-				/* gfs_fchmod cannot work in global view. */
+#else
+				/* gfs_fchmod cannot work in global view
+				   (the case of nsection >= 2)
+				   on gfarm v1.3.1 or earlier */
+				e2 = gfs_fchmod(gf, save_mode);
+#endif
 				if (e2 != NULL) {
 					/* What happen ? */
-					printf("WARN: gfs_chmod failed at OPEN: %o: %s: %s\n", save_mode, path, e2);
+					printf("WARN: chmod failed at OPEN: %o: %s: %s\n", save_mode, path, e2);
 				}
 			}
 		}
@@ -2084,12 +2088,13 @@ gfarmfs_create_share_gf(const char *path, mode_t mode,
 }
 #endif
 
+#if REVISE_CHMOD == 1
 #define IS_EXECUTABLE(mode)  ((mode) & 0111 ? 1 : 0)
+#endif
 
 static inline char *
 gfarmfs_chmod_share_gf_internal(char *url, mode_t mode)
 {
-#if REVISE_CHMOD == 1
 	char *e;
 	struct gfs_stat gs;
 	struct gfarmfs_fh *fh;
@@ -2099,30 +2104,41 @@ gfarmfs_chmod_share_gf_internal(char *url, mode_t mode)
 	if (e != NULL)
 		goto end;
 	fh = FH_GET2(url, gs.st_ino);
+#if REVISE_CHMOD == 1
 	if (fh != NULL) {
 		/* must chmod on release */
 		fh->mode_changed = 1;
 		fh->save_mode = mode;
 	}
+#endif
 	old_mode = gs.st_mode;
 	gfs_stat_free(&gs);
-	if (fh == NULL /* nobody opens this file */
-	    || IS_EXECUTABLE(old_mode) == IS_EXECUTABLE(mode)) {
-		/* gfs_fchmod cannot work in global view. */
+#if REVISE_CHMOD == 1
+	if (fh != NULL) { /* somebody opens this open */
+		if (IS_EXECUTABLE(old_mode) == IS_EXECUTABLE(mode)) {
+			e = gfs_chmod(url, mode);
+			if (e != NULL && fh->mode_changed == 1)
+				fh->mode_changed = 0;
+		}
+		/* (else): somebody opens this file and changes executable bit.
+		   -> gfs_chmod on RELEASE only
+		   In Gfarm v1, gfs_pio_close fails at replacing section info
+		   in this case. */
+		/* always succeeed ... (e == NULL) */
+	} else {
+		/* nobody opens this file */
 		e = gfs_chmod(url, mode);
-		if (e != NULL && fh != NULL && fh->mode_changed == 1)
-			fh->mode_changed = 0;
 	}
-	/* (else): somebody opens this file and changes executable bit.
-	   -> gfs_chmod on RELEASE only
-	   In Gfarm v1, gfs_pio_close fails at replacing section info
-	   in this case. */
-	/* always succeeed ... (e == NULL) */
+#else
+	if (fh != NULL) /* somebody opens this open */
+		/* gfs_fchmod cannot work in global view
+		   (the case of nsection >= 2) on gfarm v1.3.1 or earlier */
+		e = gfs_fchmod(fh->gf, mode);
+	else
+		e = gfs_chmod(url, mode);
+#endif
 end:
 	return (e);
-#else
-	return gfs_chmod(url, mode);
-#endif
 }
 
 static int
@@ -2199,8 +2215,8 @@ end:
 }
 
 static char *
-gfarmfs_rename_share_gf_correct(char *from_url, char *to_url,
-				long from_ino, mode_t from_mode)
+gfarmfs_rename_share_gf_check_open(char *from_url, char *to_url,
+				   long from_ino, mode_t from_mode)
 {
 	char *e;
 	struct gfarmfs_fh *fh;
@@ -2239,11 +2255,19 @@ gfarmfs_rename_share_gf_correct(char *from_url, char *to_url,
 			/* must chmod on release */
 			fh->mode_changed = 1;
 			fh->save_mode = from_mode;
-#endif
 			e3 = gfs_chmod(url, from_mode);
+#else
+			if (e2 == NULL)
+				/* gfs_fchmod cannot work in global view
+				   (the case of nsection >= 2)
+				   on gfarm v1.3.1 or earlier */
+				e3 = gfs_fchmod(gf, from_mode);
+			else
+				e3 = gfs_chmod(url, from_mode);
+#endif
 			if (e3 != NULL) {
 				/* What happen ? */
-				printf("WARN: RENAME: gfs_chmod failed: %o: %s: %s\n", from_mode, url, e3);
+				printf("WARN: RENAME: chmod failed: %o: %s: %s\n", from_mode, gfarm_url2path(url), e3);
 			}
 		}
 		if (e2 == NULL) { /* open succeeeded */
@@ -2255,7 +2279,7 @@ gfarmfs_rename_share_gf_correct(char *from_url, char *to_url,
 				gfs_stat_free(&gs);
 			} else {
 				/* What happen ? */
-				printf("WARN: RENAME: some problem may happen later: %s\n", url);
+				printf("WARN: RENAME: some problem may happen later: %s\n", gfarm_url2path(url));
 				FH_FREE(fh);
 			}
 		} else { /* somebody changes st_mode */
@@ -2265,7 +2289,7 @@ gfarmfs_rename_share_gf_correct(char *from_url, char *to_url,
 			}
 			/* fatal situation ! */
 			fh->gf = NULL;
-			printf("FATAL: RENAME: can't read/write more than this: %s: %s\n", url, e2);
+			printf("FATAL: RENAME: can't read/write more than this: %s: %s\n", gfarm_url2path(url), e2);
 			/* ignore e2 */
 		}
 	}
@@ -2291,7 +2315,6 @@ gfarmfs_rename_share_gf(const char *from, const char *to)
 	char *from_url;
 	char *to_url;
 	struct gfs_stat gs;
-	struct gfarmfs_fh *fh;
 	long save_ino;
 	mode_t save_mode;
 
@@ -2322,23 +2345,8 @@ gfarmfs_rename_share_gf(const char *from, const char *to)
 	save_ino = gs.st_ino;
 	save_mode = gs.st_mode;
 	gfs_stat_free(&gs);
-	if (enable_correct_rename) {
-		e = gfarmfs_rename_share_gf_correct(from_url, to_url,
-						    save_ino, save_mode);
-	} else {
-		e = gfs_rename(from_url, to_url);
-		if (e == NULL) {
-			fh = FH_GET2(from_url, save_ino);
-			if (fh != NULL) {
-				e = gfs_stat(to_url, &gs);
-				if (e == NULL) {
-					FH_REMOVE2(from_url, save_ino);
-					e = FH_ADD2(to_url, gs.st_ino, fh);
-					gfs_stat_free(&gs);
-				}
-			}
-		}
-	}
+	e = gfarmfs_rename_share_gf_check_open(from_url, to_url,
+					       save_ino, save_mode);
 free_to_url:
 	free(to_url);
 free_from_url:
@@ -2445,14 +2453,12 @@ gfarmfs_release_share_gf(const char *path, struct fuse_file_info *fi)
 			goto end;
 		} else {
 #if REVISE_CHMOD == 1
-			if (fh->mode_changed) {
+			if (fh->mode_changed)
 				e = gfs_chmod(url, fh->save_mode);
-			}
 #endif
 #if REVISE_UTIME == 1
-			if (fh->utime_changed) {
+			if (fh->utime_changed)
 				e = gfs_utimes(url, fh->save_utime);
-			}
 #endif
 		}
 		FH_REMOVE2(url, fh->ino);
