@@ -499,7 +499,7 @@ gfarmfs_exact_filesize(char *url, file_offset_t *sizep, mode_t mode)
 		flags = GFARM_FILE_WRONLY;
 #endif
 	} else {
-		save_mode = gs.st_mode;
+		save_mode = mode;
 		e = gfs_chmod(url, mode|0400);
 		if (e != NULL) {
 			printf("GETATTR: cancel fstat: %s: %s\n",
