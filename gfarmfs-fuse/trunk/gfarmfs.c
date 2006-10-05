@@ -67,7 +67,12 @@
 #define SYMLINK_SUFFIX_LEN (sizeof(SYMLINK_SUFFIX)-1)
 #endif
 
-#define REVISE_CHMOD_UTIME 1  /* revise problems of gfarm v1 */
+#define GFARM_USE_VERSION 1
+
+#if GFARM_USE_VERSION == 1
+#define REVISE_CHMOD 1  /* chmod problem of gfarm v1 */
+#define REVISE_UTIME 1  /* utime problem of gfarm v1 */
+#endif
 
 #define NOFLAGMENTINFO_AUTO_DELETE 0  /* 1: enable */
 
@@ -83,17 +88,18 @@ static int enable_print_enoent = 0; /* default: do not print ENOENT */
 static FILE *enable_trace = NULL;
 static char *trace_out = "gfarmfs.trace"; /* default filename */
 static char *gfarm_mount_point = "";
+static int enable_gfarm_iobuf = 0; /* about GFARM_FILE_UNBUFFERED */
+static int enable_exact_filesize = 0;
 
 /*
    0: use gfarmfs_*_share_gf() operations (new)
    1: use normal I/O operations (old)
 */
-static int enable_gfarm_unbuf = 0; /* about GFARM_FILE_UNBUFFERED */
+static int use_old_functions = 0;
 
 /* default: enable */
 static int enable_fastcreate = 1;  /* used on FUSE version 2.2 only */
                                    /* >0: enable, 0: disable, <0: ignore */
-static int enable_statisfstat = 1;  /* no option */
 static int enable_correct_rename = 1;  /* no option */
 
 #ifdef USE_GFS_STATFSNODE
@@ -470,6 +476,81 @@ convert_gfs_stat_to_stat(const char *url,
 	return (NULL);
 }
 
+static char *
+gfarmfs_exact_filesize(char *url, file_offset_t *sizep, mode_t mode)
+{
+	/* get st_size using gfs_fstat */
+	/* On Gfarm version 1.3 (or earlier), gfs_stat cannot
+	   get the exact st_size while a file is opened.
+	   But gfs_fstat can do it.
+	*/
+	GFS_File gf;
+	int flags, nf, i;
+	char *e;
+	struct gfs_stat gs;
+	file_offset_t st_size;
+	int change_mode = 0;
+	mode_t save_mode = 0;
+
+	if (mode & 0444) {
+		flags = GFARM_FILE_RDONLY;
+#if 0
+	} else if (mode & 0200) {
+		flags = GFARM_FILE_WRONLY;
+#endif
+	} else {
+		save_mode = gs.st_mode;
+		e = gfs_chmod(url, mode|0400);
+		if (e != NULL) {
+			printf("GETATTR: cancel fstat: %s: %s\n",
+			       gfarm_url2path(url), e);
+			return (e); /* not my modifiable file */
+		}
+		change_mode = 1;
+		flags = GFARM_FILE_RDONLY;
+	}
+	e = gfs_pio_open(url, flags, &gf);
+	if (e != NULL) goto revert_mode;
+	if (GFARM_S_IS_PROGRAM(mode)) {
+		if (arch_name == NULL) {
+			e = gfs_pio_set_view_global(gf, 0);
+			if (e != NULL) goto fstat_close;
+		} else {
+			e = gfs_pio_set_view_section(gf, arch_name, NULL, 0);
+		}
+		if (e != NULL) goto fstat_close;
+		e = gfs_fstat(gf, &gs);
+		if (e != NULL) goto fstat_close;
+		st_size = gs.st_size;
+		gfs_stat_free(&gs);
+	} else {
+		e = gfs_pio_get_nfragment(gf, &nf);
+		if (e != NULL) goto fstat_close;
+		st_size = 0;
+		for (i = 0; i < nf; i++) {
+			e = gfs_pio_set_view_index(gf, nf, i, NULL, 0);
+			if (e != NULL) goto fstat_close;
+			e = gfs_fstat(gf, &gs);
+			if (e != NULL) goto fstat_close;
+			st_size += gs.st_size;
+			gfs_stat_free(&gs);
+		}
+	}
+	*sizep = st_size;
+fstat_close:
+	gfs_pio_close(gf);
+	if (e != NULL && gfarmfs_debug > 0)
+		printf("GETATTR: fstat: %s: %s\n", gfarm_url2path(url), e);
+revert_mode:
+	if (change_mode == 1) {
+		e = gfs_chmod(url, save_mode);
+		if (e != NULL)
+			printf("GETATTR: revert st_mode...: %s: %s\n",
+			       gfarm_url2path(url), e);
+	}
+	return (e);
+}
+
 static int
 gfarmfs_getattr(const char *path, struct stat *buf)
 {
@@ -479,7 +560,6 @@ gfarmfs_getattr(const char *path, struct stat *buf)
 	int symlinkmode = 0;
 
 	if ((e = gfarmfs_init()) != NULL) goto end;
-
 #ifdef ENABLE_FASTCREATE
 	if (enable_fastcreate > 0 && gfarmfs_fastcreate_getattr(path, buf)) {
 		goto end;
@@ -502,84 +582,13 @@ gfarmfs_getattr(const char *path, struct stat *buf)
 		symlinkmode = 1;
 	}
 #endif
-	while (enable_statisfstat == 1 && e == NULL &&
-	       GFARM_S_ISREG(gs.st_mode)) {
-		/* get st_size using gfs_fstat */
-		/* On Gfarm version 1.3 (or earlier), gfs_stat cannot
-		   get the correct st_size while a file is opened.
-		   But gfs_fstat can do it.
-		*/
-		GFS_File gf;
-		int flags, nf, i;
+	if (enable_exact_filesize == 1 && e == NULL &&
+	    GFARM_S_ISREG(gs.st_mode)) {
 		char *e2;
-		struct gfs_stat gs2;
-		file_offset_t st_size;
-		int change_mode = 0;
-		mode_t save_mode = 0;
-
-		if (gs.st_mode & 0444) {
-			flags = GFARM_FILE_RDONLY;
-#if 0
-		} else if (gs.st_mode & 0200) {
-			flags = GFARM_FILE_WRONLY;
-#endif
-		} else {
-			save_mode = gs.st_mode;
-			e2 = gfs_chmod(url, gs.st_mode|0400);
-			if (e2 != NULL) {
-				printf("GETATTR: cancel fstat: %s: %s\n",
-				       path, e2);
-				break; /* not my modifiable file */
-			}
-			change_mode = 1;
-			flags = GFARM_FILE_RDONLY;
-		}
-		e2 = gfs_pio_open(url, flags, &gf);
-		if (e2 != NULL) goto revert_mode;
-		if (GFARM_S_IS_PROGRAM(gs.st_mode)) {
-			if (arch_name == NULL) {
-				e2 = gfs_pio_set_view_global(gf, 0);
-				if (e2 != NULL) goto fstat_close;
-			} else {
-				e2 = gfs_pio_set_view_section(
-					gf, arch_name, NULL, 0);
-			}
-			if (e2 != NULL) goto fstat_close;
-			e2 = gfs_fstat(gf, &gs2);
-			if (e2 != NULL) goto fstat_close;
-			gs.st_size = gs2.st_size;
-			gfs_stat_free(&gs2);
-		} else {
-			e2 = gfs_pio_get_nfragment(gf, &nf);
-			if (e2 != NULL) goto fstat_close;
-			st_size = 0;
-			for (i = 0; i < nf; i++) {
-				e2 = gfs_pio_set_view_index(
-					gf, nf, i, NULL, 0);
-				if (e2 != NULL) goto fstat_close;
-				e2 = gfs_fstat(gf, &gs2);
-				if (e2 != NULL) goto fstat_close;
-				st_size += gs2.st_size;
-				gfs_stat_free(&gs2);
-			}
-			if (e2 == NULL) {
-				gs.st_size = st_size;
-			}
-		}
-	fstat_close:
-		gfs_pio_close(gf);
-		if (e2 != NULL && gfarmfs_debug > 0) {
-			printf("GETATTR: fstat: %s: %s\n", path, e2);
-		}
-	revert_mode:
-		if (change_mode == 1) {
-			e2 = gfs_chmod(url, save_mode);
-			if (e2 != NULL) {
-				printf("GETATTR: revert st_mode...: %s: %s\n",
-				       path, e2);
-			}
-		}
-		break;
+		file_offset_t size;
+		e2 = gfarmfs_exact_filesize(url, &size, gs.st_mode);
+		if (e2 == NULL)
+			gs.st_size = size;
 	}
 #if NOFLAGMENTINFO_AUTO_DELETE == 1 /* to delete invalid path_info */
 	if (e == NULL &&
@@ -1192,7 +1201,7 @@ gfarmfs_open(const char *path, struct fuse_file_info *fi)
 	} else if ((fi->flags & O_ACCMODE) == O_RDWR) {
 		flags = GFARM_FILE_RDWR;
 	}
-	if (enable_gfarm_unbuf == 1) {
+	if (enable_gfarm_iobuf == 0) {
 		flags |= GFARM_FILE_UNBUFFERED;
 	}
 #ifdef ENABLE_FASTCREATE
@@ -1240,7 +1249,7 @@ gfarmfs_create(const char *path, mode_t mode, struct fuse_file_info *fi)
 		} else if ((fi->flags & O_ACCMODE) == O_RDWR) {
 			flags = GFARM_FILE_RDWR;
 		}
-		if (enable_gfarm_unbuf == 1) {
+		if (enable_gfarm_iobuf == 0) {
 			flags |= GFARM_FILE_UNBUFFERED;
 		}
 
@@ -1645,9 +1654,11 @@ struct gfarmfs_fh {
 	int flags; /* current flag */
 	int nopen;
 	int nwrite;
-#if REVISE_CHMOD_UTIME == 1
+#if REVISE_CHMOD == 1
 	int mode_changed;
 	mode_t save_mode;
+#endif
+#if REVISE_UTIME == 1
 	int utime_changed;
 	struct gfarm_timespec save_utime[2];
 #endif
@@ -1676,6 +1687,7 @@ struct gfarmfs_fh  *gfarmfs_fh_list[FH_LIST_LEN];
 #endif
 
 #if FH_LIST_USE_INO == 1
+/* key is ino */
 static char *
 gfarmfs_get_ino(char *url, long *inop)
 {
@@ -1774,7 +1786,7 @@ gfarmfs_fh_remove_key_url(char *url)
 #endif
 #else
 /* FH_LIST_USE_INO != 1 */
-
+/* key is url  */
 static struct gfarmfs_fh *
 gfarmfs_fh_get(char *url)
 {
@@ -1862,8 +1874,10 @@ gfarmfs_fh_alloc(struct gfarmfs_fh **fhp)
 #else
 	fh->path = NULL;
 #endif
-#if REVISE_CHMOD_UTIME == 1
+#if REVISE_CHMOD == 1
 	fh->mode_changed = 0;
+#endif
+#if REVISE_UTIME == 1
 	fh->utime_changed = 0;
 #endif
 	*fhp = fh;
@@ -1874,6 +1888,10 @@ static inline char *
 gfs_pio_open_common(char *url, int flags, GFS_File *gfp, mode_t *create_modep)
 {
 	char *e;
+
+	if (enable_gfarm_iobuf == 0) {
+		flags |= GFARM_FILE_UNBUFFERED;
+	}
 #ifdef ENABLE_FASTCREATE
 	/* created a file on MKNOD */
 	if (enable_fastcreate > 0) {
@@ -2016,7 +2034,7 @@ gfarmfs_open_common_share_gf(char *opname,
 				char *e2;
 				e = gfs_pio_open_common(
 					url, GFARM_FILE_RDWR, &gf, NULL);
-#if REVISE_CHMOD_UTIME == 1
+#if REVISE_CHMOD == 1
 				/* must chmod on release */
 				fh->mode_changed = 1;
 				fh->save_mode = save_mode;
@@ -2067,7 +2085,7 @@ gfarmfs_create_share_gf(const char *path, mode_t mode,
 static inline char *
 gfarmfs_chmod_share_gf_internal(char *url, mode_t mode)
 {
-#if REVISE_CHMOD_UTIME == 1
+#if REVISE_CHMOD == 1
 	char *e;
 	struct gfs_stat gs;
 	struct gfarmfs_fh *fh;
@@ -2135,7 +2153,7 @@ gfarmfs_utime_share_gf_internal(char *url, struct utimbuf *buf)
 		gt[1].tv_nsec= 0;
 		e = gfs_utimes(url, gt);
 	}
-#if REVISE_CHMOD_UTIME == 1
+#if REVISE_UTIME == 1
 	if (e == NULL) {
 		struct gfarmfs_fh *fh;
 		fh = FH_GET1(url);
@@ -2183,16 +2201,7 @@ gfarmfs_rename_share_gf_correct(char *from_url, char *to_url,
 	char *e;
 	struct gfarmfs_fh *fh;
 
-#if 0   /* for Gfarm version 2 or lator */
-	e = gfs_rename(from_url, to_url);
-	if (e == NULL) {
-		fh = FH_GET1(from_url);
-		if (fh != NULL) {
-			FH_REMOVE1(from_url);
-			e = FH_ADD1(to_url, fh);
-		}
-	}
-#else   /* for Gfarm version 1 */
+#if GFARM_USE_VERSION == 1   /* for Gfarm version 1 */
 	fh = FH_GET2(from_url, from_ino);
 	if (fh != NULL) {
 		FH_REMOVE2(from_url, from_ino);
@@ -2220,7 +2229,7 @@ gfarmfs_rename_share_gf_correct(char *from_url, char *to_url,
 		e2 = gfs_pio_open_common(url, fh->flags, &gf, NULL);
 		if (retry) {
 			char *e3;
-#if REVISE_CHMOD_UTIME == 1
+#if REVISE_CHMOD == 1
 			/* must chmod on release */
 			fh->mode_changed = 1;
 			fh->save_mode = from_mode;
@@ -2256,9 +2265,21 @@ gfarmfs_rename_share_gf_correct(char *from_url, char *to_url,
 		if (e == NULL && e2 != NULL)
 			e = e2;
 	}
+#else   /* for Gfarm version 2 or lator */
+	fh = FH_GET2(from_url, from_ino);
+	if (fh != NULL) {
+		FH_REMOVE2(from_url, from_ino);
+	}
+	e = gfs_rename(from_url, to_url);
+	if (e == NULL) {
+		e = FH_ADD1(to_url, fh);
+	} else {
+		e = FH_ADD2(from_url, from_ino, fh);
+	}
 #endif
 	return (e);
 }
+
 static int
 gfarmfs_rename_share_gf(const char *from, const char *to)
 {
@@ -2355,21 +2376,27 @@ gfarmfs_getattr_share_gf(const char *path, struct stat *stbuf)
 	if (e != NULL)
 		goto free_url;
 	fh = FH_GET2(url, gs1.st_ino);
+	/* On Gfarm version 1.3 (or earlier), gfs_stat
+	   cannot get the exact st_size while a file
+	   is opened.  But gfs_fstat can do it.
+	*/
 	if (fh != NULL) {  /* somebody opens this file. */
-#if REVISE_CHMOD_UTIME == 1
+#if REVISE_CHMOD == 1
 		if (fh->mode_changed)
 			stbuf->st_mode = fh->save_mode;
 #endif
-		/* On Gfarm version 1.3 (or earlier), gfs_stat
-		   cannot get the correct st_size while a file
-		   is opened.  But gfs_fstat can do it.
-		*/
 		e = gfs_fstat(fh->gf, &gs2);
 		if (e == NULL) {
 			stbuf->st_size = gs2.st_size;
 			gfs_stat_free(&gs2);
 		}
 		/* else: e = NULL (need?) */
+	} else if (enable_exact_filesize == 1 && S_ISREG(stbuf->st_mode)) {
+		char *e2;
+		file_offset_t size;
+		e2 = gfarmfs_exact_filesize(url, &size, stbuf->st_mode);
+		if (e2 == NULL)
+			stbuf->st_size = size;
 	}
 free_url:
 	free(url);
@@ -2412,17 +2439,18 @@ gfarmfs_release_share_gf(const char *path, struct fuse_file_info *fi)
 			if (e == NULL)
 				e = e2;
 			goto end;
-		}
-#if REVISE_CHMOD_UTIME == 1
-		else if (fh->mode_changed || fh->utime_changed) {
+		} else {
+#if REVISE_CHMOD == 1
 			if (fh->mode_changed) {
 				e = gfs_chmod(url, fh->save_mode);
 			}
+#endif
+#if REVISE_UTIME == 1
 			if (fh->utime_changed) {
 				e = gfs_utimes(url, fh->save_utime);
 			}
-		}
 #endif
+		}
 		FH_REMOVE2(url, fh->ino);
 		free(url);
 		FH_FREE(fh);
@@ -2473,7 +2501,7 @@ gfarmfs_fgetattr_share_gf(const char *path, struct stat *stbuf,
 	if (e == NULL) {
 		e = convert_gfs_stat_to_stat(NULL, &gs, stbuf, 0);
 		gfs_stat_free(&gs);
-#if REVISE_CHMOD_UTIME == 1
+#if REVISE_CHMOD == 1
 		if (fh->mode_changed)
 			stbuf->st_mode = fh->save_mode;
 #endif
@@ -2495,7 +2523,7 @@ gfarmfs_ftruncate_share_gf(const char *path, off_t size,
 		e = GFARM_ERR_INPUT_OUTPUT;
 	else
 		e = gfs_pio_truncate(fh->gf, size);
-#if REVISE_CHMOD_UTIME == 1
+#if REVISE_UTIME == 1
 	if (e == NULL)
 		fh->utime_changed = 0; /* reset */
 #endif
@@ -2521,7 +2549,7 @@ gfarmfs_read_share_gf(const char *path, char *buf, size_t size, off_t offset,
 		e = gfs_pio_seek(fh->gf, offset, 0, &off);
 	if (e != NULL) goto end;
 	e = gfs_pio_read(fh->gf, buf, size, &n);
-#if REVISE_CHMOD_UTIME == 1
+#if REVISE_UTIME == 1
 	if (n > 0)
 		fh->utime_changed = 0; /* reset */
 #endif
@@ -2546,7 +2574,7 @@ gfarmfs_write_share_gf(const char *path, const char *buf, size_t size,
 		e = gfs_pio_seek(fh->gf, offset, 0, &off);
 	if (e != NULL) goto end;
 	e = gfs_pio_write(fh->gf, buf, size, &n);
-#if REVISE_CHMOD_UTIME == 1
+#if REVISE_UTIME == 1
 	if (n > 0)
 		fh->utime_changed = 0; /* reset */
 #endif
@@ -2612,7 +2640,7 @@ static struct fuse_operations gfarmfs_oper_share_gf = {
 /* ################################################################### */
 
 static char *program_name = "gfarmfs";
-static struct fuse_operations *gfarmfs_oper_p = &gfarmfs_oper_base;
+static struct fuse_operations *gfarmfs_oper_p = &gfarmfs_oper_share_gf;
 
 static void
 gfarmfs_version()
@@ -2643,11 +2671,12 @@ gfarmfs_usage()
 #endif
 "    -l, --linkiscopy       enable link(2) to behave copying a file (emulation)\n"
 "    -u, --unlinkall        enable unlink(2) to remove all architecture files\n"
+"    -b, --buffered         enable buffered I/O (unset GFARM_FILE_UNBUFFERED)\n"
+"    -F, --exactfilesize    during open(2), exact st_size for other clients\n"
 "    -n, --dirnlink         count nlink of a directory precisely\n"
 #ifdef USE_GFS_STATFSNODE
 "    -S, --disable-statfs   disable statfs(2)\n"
 #endif
-"    --unbuffered           disable buffered I/O (set GFARM_FILE_UNBUFFERED)\n"
 "    -a <architecture>      for a client not registered by gfhost\n"
 "    --trace <filename>     record FUSE operations called by processes\n"
 "    --print-enoent         do not ignore to print ENOENT to stderr\n"
@@ -2737,15 +2766,19 @@ parse_long_option(int *argcp, char ***argvp)
 	else if (strcmp(&argv[0][1], "-unlinkall") == 0)
 		enable_unlinkall = 1;
 	else if (strcmp(&argv[0][1], "-unbuffered") == 0)
-		enable_gfarm_unbuf = 1;
+		enable_gfarm_iobuf = 0;
 	else if (strcmp(&argv[0][1], "-buffered") == 0)
-		enable_gfarm_unbuf = 0;
+		enable_gfarm_iobuf = 1;
 	else if (strcmp(&argv[0][1], "-dirnlink") == 0)
 		enable_count_dir_nlink = 1;
+	else if (strcmp(&argv[0][1], "--exactfilesize") == 0)
+		enable_exact_filesize = 1;
 #ifdef USE_GFS_STATFSNODE
 	else if (strcmp(&argv[0][1], "-disable-statfs") == 0)
 		enable_statfs = 0;
 #endif
+	else if (strcmp(&argv[0][1], "-oldio") == 0)
+		use_old_functions = 1;
 	else if (strcmp(&argv[0][1], "-print-enoent") == 0)
 		enable_print_enoent = 1;
 	else if (strcmp(&argv[0][1], "-trace") == 0) {
@@ -2786,9 +2819,15 @@ parse_short_option(int *argcp, char ***argvp)
 		case 'u':
 			enable_unlinkall = 1;
 			break;
+		case 'b':
+			enable_gfarm_iobuf = 1;
+			break;
+		case 'F':
+			enable_exact_filesize = 1;
+			break;
 #ifdef USE_GFS_STATFSNODE
 		case 'S':
-			enable_statfs = 0;
+			enable_statfs = 0; /* disable */
 			break;
 #endif
 		case 'm':
@@ -2844,10 +2883,9 @@ setup_options()
 		enable_fastcreate = -1; /* ignore on FUSE 2.5 */
 #endif
 
-	/* setup for buffered I/O */
-	if (enable_gfarm_unbuf == 0) {
-		/* functions for consistent I/O buffer */
-		gfarmfs_oper_p = &gfarmfs_oper_share_gf;
+	/* setup old I/O functions */
+	if (use_old_functions == 1) {
+		gfarmfs_oper_p = &gfarmfs_oper_base;
 	}
 
 	/* validate gfarm_mount_point */
@@ -2915,10 +2953,16 @@ print_options()
 	if (enable_count_dir_nlink == 1) {
 		printf("enable count_dir_nlink\n");
 	}
-	if (enable_gfarm_unbuf == 0) {
-		printf("unset GFARM_FILE_UNBUFFERED (use new I/O operations)\n");
+	if (enable_gfarm_iobuf == 1) {
+		printf("enable buffered I/O (unset GFARM_FILE_UNBUFFERED)\n");
 	} else {
-		printf("set GFARM_FILE_UNBUFFERED (use old I/O operations)\n");
+		printf("disable buffered I/O (set GFARM_FILE_UNBUFFERED)\n");
+	}
+	if (enable_exact_filesize == 1) {
+		printf("enable exact filesize\n");
+	}
+	if (use_old_functions == 1) {
+		printf("use old I/O functions\n");
 	}
 	if (*gfarm_mount_point != '\0') {
 		printf("mountpoint: gfarm:%s\n", gfarm_mount_point);
