@@ -539,7 +539,7 @@ gfarmfs_exact_filesize(char *url, file_offset_t *sizep, mode_t mode)
 	*sizep = st_size;
 fstat_close:
 	gfs_pio_close(gf);
-	if (e != NULL && gfarmfs_debug > 0)
+	if (gfarmfs_debug > 0 && e != NULL && e != GFARM_ERR_NO_SUCH_OBJECT)
 		printf("GETATTR: fstat: %s: %s\n", gfarm_url2path(url), e);
 revert_mode:
 	if (change_mode == 1) {
@@ -2029,7 +2029,12 @@ gfarmfs_open_common_share_gf(char *opname,
 		e = gfs_pio_open_common(url, GFARM_FILE_RDWR, &gf, NULL);
 		if (e != NULL) {
 			/* retry */
-			e = gfs_chmod(url, save_mode|0600);
+			if ((fi->flags & O_ACCMODE) == O_RDONLY)
+				e = gfs_access(url, R_OK);
+			else if ((fi->flags & O_ACCMODE) == O_WRONLY)
+				e = gfs_access(url, W_OK);
+			if (e == NULL)
+				e = gfs_chmod(url, save_mode|0600);
 			if (e == NULL) {
 				char *e2;
 				e = gfs_pio_open_common(
@@ -2045,7 +2050,6 @@ gfarmfs_open_common_share_gf(char *opname,
 					/* What happen ? */
 					printf("WARN: gfs_chmod failed at OPEN: %o: %s: %s\n", save_mode, path, e2);
 				}
-
 			}
 		}
 		if (e == NULL) {
@@ -2214,7 +2218,6 @@ gfarmfs_rename_share_gf_correct(char *from_url, char *to_url,
 		char *url;
 		GFS_File gf;
 		int retry;
-
 		if (e == NULL)
 			url = to_url; /* renamed */
 		else
@@ -2222,9 +2225,12 @@ gfarmfs_rename_share_gf_correct(char *from_url, char *to_url,
 		retry = 0;
 	retry:
 		if (retry) {
-			e2 = gfs_chmod(url, from_mode|0600);
-			if (e == NULL)
+			char *e3;
+			e3 = gfs_chmod(url, from_mode|0600);
+			if (e3 == NULL)
 				fh->flags = GFARM_FILE_RDWR;
+			else
+				return (e);
 		}
 		e2 = gfs_pio_open_common(url, fh->flags, &gf, NULL);
 		if (retry) {
@@ -2252,7 +2258,7 @@ gfarmfs_rename_share_gf_correct(char *from_url, char *to_url,
 				printf("WARN: RENAME: some problem may happen later: %s\n", url);
 				FH_FREE(fh);
 			}
-		} else {
+		} else { /* somebody changes st_mode */
 			if (retry == 0) {
 				retry = 1;
 				goto retry;
@@ -2260,10 +2266,8 @@ gfarmfs_rename_share_gf_correct(char *from_url, char *to_url,
 			/* fatal situation ! */
 			fh->gf = NULL;
 			printf("FATAL: RENAME: can't read/write more than this: %s: %s\n", url, e2);
-			e2 = NULL;
+			/* ignore e2 */
 		}
-		if (e == NULL && e2 != NULL)
-			e = e2;
 	}
 #else   /* for Gfarm version 2 or lator */
 	fh = FH_GET2(from_url, from_ino);
