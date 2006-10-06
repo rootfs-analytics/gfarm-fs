@@ -576,7 +576,7 @@ gfarmfs_getattr(const char *path, struct stat *buf)
 		if (e != NULL)
 			goto end;
 		if (gfarmfs_debug >= 2) {
-			printf("GETATTR: for symlink: %s\n", url);
+			printf("GETATTR: for symlink: %s\n", gfarm_url2path(url));
 		}
 		e = gfs_stat(url, &gs);
 		symlinkmode = 1;
@@ -1098,7 +1098,7 @@ gfarmfs_chown(const char *path, uid_t uid, gid_t gid)
 			free(url);
 			e = add_gfarm_prefix_symlink_suffix(path, &url);
 			if (gfarmfs_debug >= 2) {
-				printf("CHOWN: for symlink: %s\n", url);
+				printf("CHOWN: for symlink: %s\n", gfarm_url2path(url));
 			}
 			if (e == NULL) {
 				e = gfs_stat(url, &s);
@@ -2905,7 +2905,7 @@ setup_options()
 		if (e == NULL)
 			gfs_stat_free(&st);
 		else {
-			fprintf(stderr, "%s: %s\n", url, e);
+			fprintf(stderr, "%s: %s\n", gfarm_url2path(url), e);
 			exit(1);
 		}
 		free(url);
