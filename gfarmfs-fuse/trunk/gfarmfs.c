@@ -3003,12 +3003,16 @@ main(int argc, char *argv[])
 	print_options();
 
 	ret = fuse_main(newargc, newargv, gfarmfs_oper_p);
+
 	free(newargv);
-
 	gfarmfs_fastcreate_check();
-
 	if (enable_trace != NULL) {
 		fclose(enable_trace);
+	}
+	e = gfarm_terminate();
+	if (e != NULL) {
+		fprintf(stderr, "%s: %s\n", program_name, e);
+		exit(-1);
 	}
 
 	return (ret);
