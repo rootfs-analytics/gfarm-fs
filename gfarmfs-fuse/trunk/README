@@ -1,5 +1,5 @@
-Copyright (c) 2005 National Institute of Advanced Industrial Science
-and Technology (AIST).  All Rights Reserved.
+Copyright (c) 2005-2006 National Institute of Advanced Industrial
+Science and Technology (AIST).  All Rights Reserved.
 
 ============
 GfarmFS-FUSE
@@ -21,7 +21,7 @@ Quick start
 Example on Fedora Core 5 :
 
     # yum install fuse fuse-libs fuse-devel
-    # (belong user who can use FUSE to `fuse' group)
+    # (you belong to 'fuse' group)
     # rpm -ivh gfarm-libs-1.3-0.i386.rpm gfarm-client-1.3-0.i386.rpm \
       gfarm-devel-1.3-0.i386.rpm
 
@@ -79,6 +79,11 @@ Mount
 
 Make sure your Gfarm environment is set. (see INSTALL.en of Gfarm)
 
+Make sure your FUSE environment is ready to use.  For examale, 
+on Fedora Core 5, fuse and fuse-libs RPM packages is installed, and
+you belong to 'fuse' group which is permitted to execute the
+'fusermount' command.
+
 Run the 'gfarmfs' command as a normal user to mount a Gfarm
 filesystem:
 
@@ -87,12 +92,13 @@ filesystem:
 <mountpoint> needs to be a directory where a user can access in read
 and write mode.  By default, other users than a user that mounts a
 Gfarm file system cannot access files or directories under the mount
-point.  'gfarmfs' is executed in a single thread by specifying the
-'-s' FUSE option.  For other FUSE options, refer to README included in
-FUSE package.
+point.  
 
-If you cannot mount, please check whether FUSE module is loaded, and
-whether you are permitted about using FUSE.
+If you cannot mount, make sure the 'fuse' kernel module is loaded, and
+you are the user(group) which is permitted to use FUSE.
+
+In addition, about the details of FUSE, please refer to README included
+in FUSE package.
 
 You can also specify the mountpoint in /etc/fstab.
 
@@ -119,6 +125,11 @@ Options
 
 About FUSE options, please print help by '-h' option and see README
 of FUSE.
+
+Specifying the 'kernel_cache' FUSE option, the performance of reading
+a file more than twice.  But, changing the file by the another gfarmfs
+cannot be noticed.  So please use the 'kernel_cache' FUSE option
+carefully.
 
 GfarmFS options:
 
@@ -160,17 +171,23 @@ GfarmFS options:
   counts the nlink of a directory precisely.
   Default nlink of a directory is 32000.
 
+-F, --exactfilesize
+
+  While open(2)ing the file, stat(2) can return a exact st_size from
+  the another gfarmfs client.
+  This option is not needed in doing it on the same gfarmfs client.
+
 -S, --disable-statfs
 
   disables statfs(2) and statvfs(2).
 
---unbuffered
+-b, --buffered
 
-  disables buffered I/O. (perform slowly)
-  Since GfarmFS-FUSE version 1.3, new I/O functions of gfarmfs are
-  used.  Therefore, without this option, Applications can avoid
-  limitations of libgfarm.  With this option, use old I/O functions
-  and disable these new feautures.
+  enables buffered I/O. (perform especially faster in remote access)
+
+  Accessing the same file from many gfarmfs clients, the changed
+  data is not noticed immediately by the another gfarmfs client.
+  (noticed immediately on the same gfarmfs client.)
 
 -a <architecture>
 
@@ -199,9 +216,14 @@ First, please see doc/KNOWN_PROBLEMS included in Gfarm.
 
 But, some limitations are avoided on GfarmFS-FUSE.
 
-  * stat(2) can return a correct st_size during open(2).
-  * utime(2) and chmod(2) is effective during open(2).
-  * rename(2) and chmod(2) do not destroy the metadata during open(2).
+  * stat(2) can return a exact st_size during open(2) on the same
+    gfarmfs client.
+  * Using -F option, stat(2) can return a exact st_size during open(2)
+    from the another gfarmfs client.
+  * utime(2) and chmod(2) is effective during open(2) on the same
+    gfarmfs client.
+  * rename(2) and chmod(2) do not destroy the metadata during open(2)
+    on the same gfarmfs client.
   * Thanks to FUSE, Applications using fork(2) or multithread have no
     problem on gfarmfs.
 
@@ -222,7 +244,14 @@ Peculiar PROBLEMS of GfarmFS-FUSE:
   Even if close(2) succeeded, the I/O buffer and the metadata of Gfarm
   may not be written correctly.
 
-  We don't have a plan to fix this problem.
+  A plan to fix this problem has not yet been decided.
+
+*** While open(2)ing the file which have two or more fragments,
+    chmod(2) and fchmod(2) cannot work on the same gfarmfs client.
+
+  This problem will be fixed in the Gfarm v1.4.
+  (But we don't have a plan that executable bits of the file which
+   have two or more fragments is changeable.)
 
 *** limitations on FUSE 2.2 compatible mode
 
