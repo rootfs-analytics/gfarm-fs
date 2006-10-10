@@ -11,15 +11,7 @@ BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
 
 %define prefix   %{_prefix}
 
-%define gfarm_gsi %(rpm -q gfarm-gsi-libs 2>&1 > /dev/null && echo 1 || echo 0)
-
-%if %{gfarm_gsi}
-%define libgfarm_name    gfarm-gsi-libs
-%else
-%define libgfarm_name    gfarm-libs
-%endif
-
-Requires: fuse >= 2.5, fuse-libs >= 2.5, %{libgfarm_name} >= 1.3
+Requires: fuse >= 2.5, fuse-libs >= 2.5
 
 %description
 GfarmFS-FUSE enables you to mount a Gfarm filesystem in userspace via
