@@ -4,10 +4,10 @@ GfarmFS-FUSE - ChangeLog
 
 New Features
 
-  * add FUSE 2.5 compatible mode. (auto configuration)
+  * add FUSE 2.5 compatible mode. (auto configuration by ./configure)
     This mode can works correctly about open(2), creat(2), access(2),
     fgetattr(2), ftruncate(2).
-    And, --fastcreate become needless.
+    In this mode, previous fastcreate behavior was needless.
   * enable statfs(2) to work.
   * add -S and --disable-statfs options.
   * add -b and --buffered options.
@@ -22,9 +22,12 @@ Update Features
   * do not count nlink of a directory by default setting.
     (default is 32000.) (-d option can count nlink of a directory.)
   * remove -f and --fastcreate options.
-    (change default behavior on FUSE 2.2)
+    (fastcreate behavior is always selected on FUSE 2.4 or earlier.)
   * "file section" in the case of one is opened in index view. 
-  * do not use I/O buffer.  (-b option use I/O buffer.)
+  * By default, not use I/O buffer.  I/O performance is worse than
+    previous version.  Specifying the -b option, I/O buffer is used
+    and I/O performance will be the same as previous version. 
+    (especially in remote access)
   * When the file is not readable, hard link emulation will work,
     if possible.
 
