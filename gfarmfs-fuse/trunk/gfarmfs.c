@@ -237,6 +237,13 @@ ends_with_and_delete(char *str, char *suffix)
 }
 #endif
 
+#ifdef USE_GFARM_SCRAMBLE
+/* for scramble version */
+#define gfarmfs_set_view_using_url(gf, url)   gfs_pio_set_view_scramble(gf, 0)
+#define gfarmfs_set_view_using_mode(gf, mode) gfs_pio_set_view_scramble(gf, 0)
+
+#else
+/* for normal version */
 static char *
 gfarmfs_set_view(GFS_File gf)
 {
@@ -277,6 +284,7 @@ gfarmfs_set_view_using_mode(GFS_File gf, mode_t mode)
 	}
 	return gfarmfs_set_view(gf);
 }
+#endif
 
 static char *
 gfarmfs_create_empty_file(const char *path, mode_t mode)
@@ -485,7 +493,7 @@ gfarmfs_exact_filesize(char *url, file_offset_t *sizep, mode_t mode)
 	   But gfs_fstat can do it.
 	*/
 	GFS_File gf;
-	int flags, nf, i;
+	int flags;
 	char *e;
 	struct gfs_stat gs;
 	file_offset_t st_size;
@@ -511,6 +519,14 @@ gfarmfs_exact_filesize(char *url, file_offset_t *sizep, mode_t mode)
 	}
 	e = gfs_pio_open(url, flags, &gf);
 	if (e != NULL) goto revert_mode;
+#ifdef USE_GFARM_SCRAMBLE
+	e = gfs_pio_set_view_scramble(gf, 0);
+	if (e != NULL) goto fstat_close;
+	e = gfs_fstat(gf, &gs);
+	if (e != NULL) goto fstat_close;
+	st_size = gs.st_size;
+	gfs_stat_free(&gs);
+#else
 	if (GFARM_S_IS_PROGRAM(mode)) {
 		if (arch_name == NULL) {
 			e = gfs_pio_set_view_global(gf, 0);
@@ -524,6 +540,7 @@ gfarmfs_exact_filesize(char *url, file_offset_t *sizep, mode_t mode)
 		st_size = gs.st_size;
 		gfs_stat_free(&gs);
 	} else {
+		int nf, i;
 		e = gfs_pio_get_nfragment(gf, &nf);
 		if (e != NULL) goto fstat_close;
 		st_size = 0;
@@ -536,6 +553,8 @@ gfarmfs_exact_filesize(char *url, file_offset_t *sizep, mode_t mode)
 			gfs_stat_free(&gs);
 		}
 	}
+#endif
+	/* success */
 	*sizep = st_size;
 fstat_close:
 	gfs_pio_close(gf);
