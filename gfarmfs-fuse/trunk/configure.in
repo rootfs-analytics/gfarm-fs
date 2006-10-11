@@ -88,15 +88,19 @@ AC_SUBST(fuse_version)
 
 ### Checks for Gfarm functions
 
-AC_TRY_CPP([
-#include <gfarm/gfarm.h>
-int main(){
-gfs_statfsnode();
-gfs_statfsnode_cached();
-}
-],use_gfs_statfsnode=-DUSE_GFS_STATFSNODE,)
+AC_TRY_LINK([
+#include <stdio.h>
+#include <gfarm/gfarm.h>],[
+gfs_statfsnode(NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);],
+[use_gfs_statfsnode=-DUSE_GFS_STATFSNODE],[])
 AC_SUBST(use_gfs_statfsnode)
 
+AC_TRY_LINK([
+#include <stdio.h>
+#include <gfarm/gfarm.h>],[
+gfs_pio_set_view_scramble(NULL, 0);],
+[use_gfarm_scramble=-DUSE_GFARM_SCRAMBLE],[])
+AC_SUBST(use_gfarm_scramble)
 
 AC_CONFIG_FILES(Makefile)
 AC_OUTPUT
