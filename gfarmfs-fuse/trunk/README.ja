@@ -28,8 +28,8 @@ Fedora Core 5 の例です．
 
     $ Gfarm のクライアント設定ファイル確認 (~/.gfarmrc など)
     $ Gfarm の認証関係確認 (gfhost, gfkey, grid-proxy-init など)
-    $ tar zxvf gfarmfs-fuse-1.3.tar.gz
-    $ cd gfarmfs-fuse-1.3
+    $ tar zxvf gfarmfs-fuse-1.3.0.tar.gz
+    $ cd gfarmfs-fuse-1.3.0
     $ ./configure
     $ make
     $ mkdir ~/mountpoint
@@ -179,7 +179,7 @@ gfarmfs でファイルを更新しても，もう一方には見えないことがあるので，注
 
 -F, --exactfilesize
 
-  ファイルを open(2) 中に，それとは別の gfarmfs クライアントから，stat(2)
+  ファイルを open(2) 中に，それとは別の gfarmfs クライアントから stat(2)
   をした場合に，正確なファイルサイズを返せるようになります．
   同一の gfarmfs 上で，open(2) 中に stat(2) をする場合は，このオプションは
   必要ありません．
@@ -259,12 +259,12 @@ gfarmfs でファイルを更新しても，もう一方には見えないことがあるので，注
   対処は未定です．
 
 *** フラグメント数が 2 個以上の場合，そのファイルを open(2) 中に，同一
-    の gfarmfs 上で，chmod(2) や fchmod(2) ができない
+    の gfarmfs 上で，chmod(2) や fchmod(2) ができない．
 
   Gfarm v1.4 で可能になる予定です．
   (実行ビットの付加はできるようにはなりません．)
 
-*** FUSE 2.2 互換モードで gfarmfs コンパイルした場合の制限事項．
+*** FUSE 2.2 互換モードで gfarmfs をコンパイルした場合の制限事項．
 
   FUSE 2.2 互換で gfarmfs がコンパイルされた場合は，open(2), creat(2),
   access(2), ftruncate(2) が正しく動かないことがあります．
