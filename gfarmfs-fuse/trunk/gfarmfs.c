@@ -17,7 +17,7 @@
   and Technology (AIST).  All Rights Reserved.
 */
 #define GFARMFS_VER "1.3"
-#define GFARMFS_VER_DATE "? October 2006"
+#define GFARMFS_VER_DATE "October 12, 2006"
 
 #if FUSE_USE_VERSION >= 25
 /* #  warning FUSE 2.5 compatible mode. */
