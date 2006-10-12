@@ -1,0 +1,279 @@
+Copyright (c) 2005-2006 National Institute of Advanced Industrial
+Science and Technology (AIST).  All Rights Reserved.
+
+============
+GfarmFS-FUSE
+============
+
+GfarmFS-FUSE は，Gfarm ファイルシステムをユーザ権限でマウントすること
+を可能にします．
+
+  Gfarm:
+      http://datafarm.apgrid.org/
+
+  FUSE:
+      http://fuse.sourceforge.net/
+
+
+================
+クイックスタート
+================
+
+Fedora Core 5 の例です．
+
+    # yum install fuse fuse-libs fuse-devel
+    # vigr コマンドで fuse グループに FUSE 利用許可ユーザを所属させる
+    # rpm -ivh gfarm-libs-1.3-0.i386.rpm gfarm-client-1.3-0.i386.rpm \
+      gfarm-devel-1.3-0.i386.rpm
+
+    $ Gfarm のクライアント設定ファイル確認 (~/.gfarmrc など)
+    $ Gfarm の認証関係確認 (gfhost, gfkey, grid-proxy-init など)
+    $ tar zxvf gfarmfs-fuse-1.3.0.tar.gz
+    $ cd gfarmfs-fuse-1.3.0
+    $ ./configure
+    $ make
+    $ mkdir ~/mountpoint
+    $ ./gfarmfs ~/mountpoint
+    $ cd ~/mountpoint
+
+
+========
+構築方法
+========
+
+GfarmFS-FUSE の構築には，Gfarm version 1.1.1 以降の開発パッケージ，およ
+び FUSE version 2.2 以降の開発パッケージが導入されている必要があります．
+Gfarm の開発パッケージは，RPM の場合は gfarm-gsi-devel（あるいは
+gfarm-devel）となります．
+
+FUSE version 2.5 以降で，かつ Linux Kernel 2.6.15 以降を使用している場
+合は FUSE version 2.5 互換モードで gfarmfs コマンドがコンパイルされます．
+そうでない場合は FUSE version 2.2 互換モードでコンパイルされます．
+
+GfarmFS-FUSE を構築するには，下記のようにします．
+
+    $ ./configure [オプション]
+    $ make
+    $ make install
+
+configure コマンドには，下記のオプションがあります．
+
+--prefix=<directory>
+
+  インストール先のディレクトリを指定します．このオプションを省略した場
+  合は /usr/local ディレクトリの下にインストールします．
+
+Gfarm あるいは FUSE が，/usr など標準的な場所にインストールされていない
+場合は，以下のように CPPFLAGS および LDFLAGS 環境変数によりインストール
+先を明示的に指定します．
+
+Bourne Shell の場合：
+
+    $ CPPFLAGS='-I/usr/local/include' LDFLAGS='-L/usr/local/lib -Wl,-R,/usr/local/lib' ./configure
+
+csh の場合：
+
+    $ env CPPFLAGS='-I/usr/local/include' LDFLAGS='-L/usr/local/lib -Wl,-R,/usr/local/lib' ./configure
+
+
+========
+マウント
+========
+
+最初に，クライアントとして Gfarm を利用する設定がなされていることを確
+認します．詳細は Gfarm パッケージに含まれる INSTALL.ja，INSTALL.RPM.ja 
+を参照してください．
+
+次に，FUSE が利用できる状態になっていることを確認します．例えば，
+Fedora Core 5 の場合，fuse, fuse-libs パッケージが導入されいて，
+fusermount コマンドを実行できる権限のある fuse グループに，利用するユー
+ザが所属している必要があります．
+
+Gfarm ファイルシステムをマウントするためには gfarmfs コマンドを利用しま
+す．
+
+    $ gfarmfs [GfarmFS のオプション] <マウントポイント> [FUSE のオプション]
+
+マウントポイントは，利用者が読み書き可能なディレクトリを指定します．通
+常はマウントした利用者以外はマウントポイント以下にアクセスできません．
+
+もし，マウントできなかった場合は，fuse カーネルモジュールがロードされ
+ているかどうか，FUSE が利用できるユーザかどうか確認してください．
+
+その他，FUSE の詳細は FUSE パッケージに含まれる README を参照してくだ
+さい．
+
+また，/etc/fstab に記述して mount することもできます．
+このとき「gfarmfs#GfarmFS のショートオプション」のような指定ができます.
+
+/etc/fstab の例：
+
+    gfarmfs#-lsu  <マウントポイント>  fuse  noauto,user,exec  0  0
+
+この場合は，以下のようにして一般ユーザ権限でマウントできます.
+
+    $ mount <マウントポイント>
+
+
+============
+アンマウント
+============
+
+アンマウントするためには FUSE 付属の fusermount コマンドを利用します．
+
+    $ fusermount -u <マウントポイント>
+
+
+==========
+オプション
+==========
+
+FUSE のオプションについては，-h オプションのヘルプと FUSE の README を
+ご覧ください．
+
+FUSE の kernel_cache オプションを指定した場合，2 度目以降の読み込みが
+速くなります．しかし，複数の gfarmfs を利用している場合には，一方の
+gfarmfs でファイルを更新しても，もう一方には見えないことがあるので，注
+意して kernel_cache オプションを使用してください．
+
+以下は GfarmFS のオプションです．
+
+-h
+
+  ヘルプを表示します．
+
+-m <directory on Gfarm>
+
+  Gfarm 上に存在するディレクトリを指定して，それ以下がマウントポイ
+  ント以下として見えるようになります．(例: -m /username)
+
+-s, --symlink
+
+  symlink(2) をエミュレートします．作成されたシンボリックリンクは，実
+  際には '.gfarmfs-symlink' という拡張子が付き，Gfarm 上で管理されます．
+  このオプションは，Gfarm がシンボリックリンクをサポートするまで使用で
+  きます．
+
+-l, --linkiscopy
+
+  link(2) をエミュレートします．ハードリンクを作る代わりにコピーするこ
+  とでエミュレートします．このオプションは，Gfarm がハードリンクをサポー
+  トするまで使用できます．
+
+-u, --unlinkall
+
+  unlink(2) は，実行ビットのついたファイルが複数アーキテクチャのバイナ
+  リをもつ場合に，それらすべてを削除するようになります．
+  このオプションを付けない場合は，すべて削除しません．
+
+  GfarmFS-FUSE version 1.1 からは，unlink(2) は，実行ビットがついたファ
+  イルを削除する場合，クライアントアーキテクチャと一致するバイナリだけ
+  を削除します．これは，Gfarm version 1.2 以降でのシステムコールフック
+  ライブラリの挙動と同じです．
+
+-n, --dirnlink
+
+  ディレクトリの nlink を正確に数えます．
+  GfarmFS-FUSE version 1.3 から，このオプションを指定しない場合は，
+  ディレクトリの nlink が常に 32000 となります．
+
+-F, --exactfilesize
+
+  ファイルを open(2) 中に，それとは別の gfarmfs クライアントから stat(2)
+  をした場合に，正確なファイルサイズを返せるようになります．
+  同一の gfarmfs 上で，open(2) 中に stat(2) をする場合は，このオプションは
+  必要ありません．
+
+-S, --disable-statfs
+
+  statfs(2) と statvfs(2) を無効にします．
+
+  gfarmfs は，要求されたシステムコールを一つずつ順番に処理するので，例
+  えばこの statfs 部分の処理に時間がかかると，他のプロセスやスレッドは，
+  それを待つことになります．
+
+-b, --buffered
+
+  I/O バッファを使ようになり，読み書きが速くなります．(特に遠隔の場合)
+
+  複数の gfarmfs クライアントから同じファイルにアクセスする際，ファイ
+  ルの変更が他のクライアントにすぐには反映されなくなります．
+  (同一 gfarmfs クライアント上ではすぐに反映されます．)
+
+-a <architecture>
+
+  クライアントホストのアーキテクチャ名を指定します．
+  しかし chmod(2) に対応していません．
+
+  Gfarm version 1.2 以降では，クライアントホストのアーキテクチャ名を指
+  定するために，設定ファイルで 'client_architecture' を指定したり，環
+  境変数で GFARM_ARCHITECTURE を指定できるようにもなっています．
+  これらで指定することをおすすめします．詳しくは man gfarm.conf をご
+  覧ください．
+
+  Gfarm ファイルシステムを使用する場合，実行ビットがついたファイルにア
+  クセスするためには，アーキテクチャ名が必要です．そのファイルは，アー
+  キテクチャごとに多数のバイナリを所有する場合があるからです．クライア
+  ントホストがファイルシステムノードである場合，アーキテクチャはメタデー
+  タデータベースの情報から自動的に決定します．そうでなければ，実行ビッ
+  トが付加されたファイルにアクセスするために，明示的にアーキテクチャを
+  指定しなければなりません．<architecture> には通常，
+  sparc-sun-solaris8 のような計算機アーキテクチャを表す名称を指定しま
+  す．詳しくは man gfarm.conf をご覧ください．
+
+
+==========
+既知の問題
+==========
+
+まず，Gfarm パッケージに含まれる doc/KNOWN_PROBLEMS.ja をご覧ください．
+
+これらのうち，いくつかの制限を，GfarmFS-FUSE では回避しています．
+
+  * open(2) 中に，同一の gfarmfs 上で stat(2) をしても，正確なファイル
+    サイズを取得できます．
+  * -F オプションを指定すれば，open(2) 中に，それとは別の gfarmfs クラ
+    イアントから stat(2) をしても，正確なファイルサイズを取得できます．
+  * open(2) 中に，同一の gfarmfs 上ならば utime(2) や chmod(2) をして
+    も有効になります．
+  * open(2) 中に，同一の gfarmfs 上ならば rename(2) や chmod(2) をして
+    もメタデータが壊れません．
+  * FUSE のおかげで，gfarmfs 上で fork(2) や multithread を使ったプロ
+    グラムを実行しても問題ありません．
+
+以下は，GfarmFS-FUSE 特有の問題です．
+
+*** -l オプションを使っても，ハードリンクの挙動にならない．
+
+  コピーで代用し，エラーにしないようにしているだけなので，ハードリンク
+  の挙動を期待したアプリケーションは正常に動きません．
+
+  Gfarm v2 では，ハードリンクをサポートする予定があります．
+  その際には GfarmFS-FUSE も対応する予定です．
+
+*** gfs_pio_close() で起きたエラーがわからない．
+
+  close(2) が成功したようにみえても，きちんと I/O バッファの内容や，
+  メタデータが書き込まれていない可能性があります．
+
+  対処は未定です．
+
+*** フラグメント数が 2 個以上の場合，そのファイルを open(2) 中に，同一
+    の gfarmfs 上で，chmod(2) や fchmod(2) ができない．
+
+  Gfarm v1.4 で可能になる予定です．
+  (実行ビットの付加はできるようにはなりません．)
+
+*** FUSE 2.2 互換モードで gfarmfs をコンパイルした場合の制限事項．
+
+  FUSE 2.2 互換で gfarmfs がコンパイルされた場合は，open(2), creat(2),
+  access(2), ftruncate(2) が正しく動かないことがあります．
+  これは FUSE 2.2 の制限事項です．
+
+  Linux Kernel 2.6.15 以降かつ，FUSE 2.5 以降の環境の場合は，この問題は
+  ありません．
+
+*** gfarmfs 上で 'svn co' コマンドに失敗することがある．
+
+  原因を調査中です．
+

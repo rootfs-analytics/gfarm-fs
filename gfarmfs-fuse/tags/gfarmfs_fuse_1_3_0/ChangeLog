@@ -1,0 +1,63 @@
+GfarmFS-FUSE - ChangeLog
+
+[2006.10.12] Version 1.3
+
+New Features
+
+  * add FUSE 2.5 compatible mode. (auto configuration by ./configure)
+    This mode can work correctly for open(2), creat(2), access(2),
+    fgetattr(2), ftruncate(2).
+    In this mode, fastcreate behavior was not necessary anymore.
+  * support statfs(2).
+  * add -S and --disable-statfs options.
+  * add -b and --buffered options.
+  * add -F and --exactfilesize options.
+  * add -n and --dirnlink options.
+  * add --trace option.
+  * add KNOWN_PROBLEMS in README.
+
+Update Features
+
+  * Each short option can be one string. (ex. -lsu)
+  * do not count nlink of a directory by default setting.
+    (default is 32000.) (Enables to count nlink of a directory by -d option)
+  * remove -f and --fastcreate options.
+    (fastcreate behavior is always selected on FUSE 2.4 or earlier.)
+  * In the case of "file section" is one, the file will be opened in the
+    index view. 
+  * By default, do not use I/O buffer.  So, I/O performance is worse
+    than the previous version.  By specifying the -b option so that
+    I/O buffer is used, I/O performance will be the same as the
+    previous version.  (I/O buffer is useful especially in remote
+    access.)
+  * When a file is not readable, hard link emulation will work
+    if possible.
+
+Avoid limitations of libgfarm
+
+  * stat(2) can return an exact st_size in the process of open(2)
+    on the same gfarmfs client.
+  * Using -F option, stat(2) can return an exact st_size while
+    open(2) is being processed on another gfarmfs client.
+  * utime(2) and chmod(2) will work in the process of open(2) on
+    the same gfarmfs client.
+  * rename(2) and chmod(2) do not destroy metadata in the process
+    of open(2) on the same gfarmfs client.
+
+Bug fix
+
+  * keep mtime and atime at hard link emulation.
+  * fixed a bug such that gfs_pio_create can create an invalid FIFO descriptor.
+  * fixed a bug such that chown(2) for a symlink entry becomes ENOENT.
+
+[2006.02.01] Version 1.2.1
+
+* bugfix
+
+[2006.01.30] Version 1.2
+
+* add --fastcreate (-f) option.
+
+[2005.10.17] Version 1.1
+
+* add -u option.
