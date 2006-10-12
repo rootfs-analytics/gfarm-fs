@@ -1,0 +1,106 @@
+### Process this file with autoconf to produce a configure script.
+AC_INIT(gfarmfs.c)
+AC_CONFIG_SRCDIR(gfarmfs.c)
+
+AC_PROG_CC
+AC_PROG_INSTALL
+
+### Checks for libraries.
+AC_CHECK_LIB(fuse, fuse_main,,
+[
+echo "Please install the libraries of FUSE."
+exit 1
+])
+
+AC_CHECK_LIB(gfarm, gfarm_initialize,,
+[
+echo "Please install the libraries of Gfarm."
+exit 1
+])
+
+### Checks for header files.
+
+AC_TRY_CPP([
+#define _FILE_OFFSET_BITS 64
+#include <fuse.h>
+],,
+[
+echo "Please install the headers of FUSE."
+exit 1
+])
+
+AC_CHECK_HEADER(gfarm/gfarm.h,,
+[
+echo "Please install the headers of Gfarm."
+exit 1
+])
+
+### Check for FUSE version
+
+fuse_version=0
+
+if test $fuse_version = 0; then
+AC_TRY_CPP([
+#define _FILE_OFFSET_BITS 64
+#define FUSE_USE_VERSION 25
+#include <fuse.h>
+],fuse_version=25,)
+fi
+
+if test $fuse_version = 0; then
+AC_TRY_CPP([
+#define _FILE_OFFSET_BITS 64
+#define FUSE_USE_VERSION 22
+#include <fuse.h>
+],fuse_version=22,)
+fi
+
+if test $fuse_version = 0; then
+  echo "Please install FUSE 2.2 or later."
+  exit 1
+fi
+
+if test $fuse_version = 25; then
+  fuse_version=22
+  KERNEL_NAME=`uname -s`
+  KERNEL_RELEASE=`uname -r`
+  KLEN=`expr length $KERNEL_NAME`
+  RLEN=`expr length $KERNEL_RELEASE`
+  if test $KLEN -ne 0 -a $RLEN -ne 0 -a x"$KERNEL_NAME" = x"Linux"; then
+    MAJVER=`echo $KERNEL_RELEASE | cut -f-2 -d.`
+    if test x"$MAJVER" = x"2.6"; then
+      MINVER=`echo $KERNEL_RELEASE | cut -f 3 -d. | cut -f 1 -d. | cut -f 1 -d- `
+      if test $MINVER -ge 15; then
+        fuse_version=25
+      fi
+    fi
+  fi
+fi
+
+if test $fuse_version = 25; then
+  echo "found Linux Kernel version 2.6.15 or later"
+  echo "enable FUSE version 2.5 compatible mode"
+else
+  echo "enable FUSE version 2.2 compatible mode"
+fi
+
+AC_SUBST(fuse_version)
+
+### Checks for Gfarm functions
+
+AC_TRY_LINK([
+#include <stdio.h>
+#include <gfarm/gfarm.h>],[
+gfs_statfsnode(NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);],
+[use_gfs_statfsnode=-DUSE_GFS_STATFSNODE],[])
+AC_SUBST(use_gfs_statfsnode)
+
+AC_TRY_LINK([
+#include <stdio.h>
+#include <gfarm/gfarm.h>],[
+gfs_pio_set_view_scramble(NULL, 0);],
+[use_gfarm_scramble=-DUSE_GFARM_SCRAMBLE],[])
+AC_SUBST(use_gfarm_scramble)
+
+AC_CONFIG_FILES(Makefile)
+AC_OUTPUT

@@ -1,0 +1,73 @@
+TARGET	= gfarmfs
+SRCS	= gfarmfs.c
+OBJS	= gfarmfs.o
+DOCS	= LICENSE README README.ja ChangeLog ChangeLog.ja
+
+CC   = @CC@
+DEFS = @DEFS@
+
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+bindir = $(exec_prefix)/bin
+INSTALL = @INSTALL@
+INSTALL_PROGRAM = @INSTALL_PROGRAM@
+#INSTALL_PROGRAM = ./install-sh -c
+
+CPPFLAGS = -g -Wall -O2 -DFUSE_USE_VERSION=@fuse_version@ \
+-D_FILE_OFFSET_BITS=64 @use_gfs_statfsnode@ @use_gfarm_scramble@ @CPPFLAGS@
+
+LDFLAGS = @LDFLAGS@
+LIBS    = @LIBS@
+
+VER   = $(TARGET)-fuse-`date +%Y%m%d`
+CONTRIB = contrib/gfarmfs-exec/gfarmfs-exec.sh \
+contrib/mount.gfarmfs/umount.gfarmfs \
+contrib/mount.gfarmfs/mount.gfarmfs
+FILES = $(SRCS) Makefile.in configure.in configure $(DOCS) install-sh \
+gfarmfs.spec $(CONTRIB)
+BINS  = $(TARGET)
+
+all: $(TARGET)
+
+$(TARGET): $(OBJS)
+	$(CC) $(LDFLAGS) -o $@ $(OBJS) $(LIBS)
+
+.c.o:
+	$(CC) $(CPPFLAGS) -c -o $@ $<
+
+$(OBJS): Makefile
+
+install: $(BINS)
+	@for i in -- $(BINS); do \
+		case $$i in --) continue;; esac; \
+		( set -x; $(INSTALL_PROGRAM) $${i} $(bindir)/$${i} ); \
+	done
+
+clean:
+	-$(RM) $(OBJS) $(TARGET)
+
+distclean: clean
+	-$(RM) Makefile config.log config.status
+
+tar:
+	@echo $(VER) > .package
+	@$(RM) -r `cat .package`
+	@mkdir `cat .package`
+	cp --parents $(FILES) `cat .package`
+	tar cvf - `cat .package` | gzip -9 > `cat .package`.tar.gz
+	@$(RM) -r `cat .package` .package
+
+testurl = 'http://fuse.cvs.sourceforge.net/*checkout*/fuse/fuse/test/test.c'
+testprog = fusetest
+testobj = $(testprog).o
+testsrc = $(testprog).c
+
+test-get:
+	wget $(testurl) -O $(testsrc)
+
+test-build:
+	$(CC) -Wall -O2 -c -o $(testobj) $(testsrc)
+	$(CC) -o $(testprog) $(testobj)
+
+test-clean:
+	-$(RM) $(testprog) $(testobj)

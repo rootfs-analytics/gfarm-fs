@@ -1,0 +1,43 @@
+#!/bin/sh
+#
+# mount.gfarmfs [ username mount_point options ]
+#
+# Environment variable:
+#
+#	GFS_USERNAME	global user name in Gfarm  (default: $LOGNAME)
+#	GFS_MOUNTDIR	mount point	 (default: /gfs/home/$GFS_USERNAME)
+#	GFARMFS_OPTIONS gfarmfs mount options	   (default: -lsu)
+#	FUSE_OPTIONS	fuse mount options
+
+ABORT() {
+	[ $# -gt 0 ] && echo 1>&2 $*
+	exit 1
+}
+
+if [ $# -gt 0 ]; then
+	GFS_USERNAME=$1
+	shift
+fi
+if [ $# -gt 0 ]; then
+	GFS_MOUNTDIR=$1
+	shift
+fi
+if [ $# -gt 0 ]; then
+	FUSE_OPTIONS=$*
+fi
+
+: ${GFS_USERNAME:=$LOGNAME}
+: ${GFS_MOUNTDIR:=/gfs/home/$GFS_USERNAME}
+: ${GFARMFS_OPTIONS:=-lsu}
+: ${FUSE_OPTIONS:=}
+
+if [ ! -d $GFS_MOUNTDIR ]; then
+	mkdir -p $GFS_MOUNTDIR ||
+		ABORT "cannot create a mount point: " $GFS_MOUNTDIR
+fi
+[ -O $GFS_MOUNTDIR ] || ABORT "$GFS_MOUNTDIR: not owned by " $LOGNAME
+
+gfarmfs -m /$GFS_USERNAME $GFARMFS_OPTIONS $GFS_MOUNTDIR $FUSE_OPTIONS &&
+echo Mount GfarmFS on $GFS_MOUNTDIR
+
+exit $?

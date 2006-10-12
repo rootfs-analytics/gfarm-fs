@@ -1,0 +1,273 @@
+Copyright (c) 2005-2006 National Institute of Advanced Industrial
+Science and Technology (AIST).  All Rights Reserved.
+
+============
+GfarmFS-FUSE
+============
+
+GfarmFS-FUSE enables you to mount a Gfarm filesystem in userspace.
+
+  Gfarm:
+      http://datafarm.apgrid.org/
+
+  FUSE:
+      http://fuse.sourceforge.net/
+
+
+===========
+Quick start
+===========
+
+For example, on Fedora Core 5 :
+
+    # yum install fuse fuse-libs fuse-devel
+    # (GfarmFS-FUSE users should belong to 'fuse' group.)
+    # rpm -ivh gfarm-libs-1.3-0.i386.rpm gfarm-client-1.3-0.i386.rpm \
+      gfarm-devel-1.3-0.i386.rpm
+
+    $ (Check if your Gfarm configuration file (ex.: ~/.gfarmrc) is correct.)
+    $ (Check if your authenticaion to a Gfarm filesystem is successful by commands (ex.: gfhost, gfkey or grid-proxy-init).)
+    $ tar zxvf gfarmfs-fuse-1.3.0.tar.gz
+    $ cd gfarmfs-fuse-1.3.0
+    $ ./configure
+    $ make
+    $ mkdir ~/mountpoint
+    $ ./gfarmfs ~/mountpoint
+    $ cd ~/mountpoint
+
+
+============
+Installation
+============
+
+To build GfarmFS-FUSE, development packages of Gfarm (later than
+version 1.1.1) and FUSE (later than version 2.2) are required.
+When you install Gfarm using RPM binary packages, you should
+install gfarm-gsi-devel (or gfarm-devel) package together.
+
+On FUSE version 2.5 (or later) and Linux Kernel 2.6.15 (or later),
+GfarmFS-FUSE works with FUSE 2.5 compatible mode.
+Otherwise GfarmFS-FUSE works with FUSE 2.2 compatible mode.
+
+Installation steps of GfarmFS-FUSE:
+
+    $ ./configure [options]
+    $ make
+    $ make install
+
+Configure options:
+
+--prefix=<directory>
+
+  Specifies a destination directory for installation.  The 'gfarmfs'
+  command is installed in 'directory'/bin.  Default <directory> is
+  /usr/local.
+
+If Gfarm and/or FUSE are not installed to a default location, you may
+need to specify the location by CPPFLAGS and LDFLAGS environment
+variables in configure.  In the case of sh or bash,
+
+    $ CPPFLAGS='-I/usr/local/include' LDFLAGS='-L/usr/local/lib -Wl,-R,/usr/local/lib' ./configure
+
+In the case of csh or tcsh,
+
+    $ env CPPFLAGS='-I/usr/local/include' LDFLAGS='-L/usr/local/lib -Wl,-R,/usr/local/lib' ./configure
+
+
+=====
+Mount
+=====
+
+Make sure your Gfarm environment is set. (See INSTALL.en of Gfarm.)
+
+Make sure your FUSE environment is ready to use.  For examale, 
+on Fedora Core 5, when fuse and fuse-libs RPM packages are installed,
+users must belong to 'fuse' group which is permitted to execute the
+'fusermount' command.
+
+Run the 'gfarmfs' command as a normal user to mount a Gfarm
+filesystem:
+
+    $ gfarmfs [GfarmFS options] <mountpoint> [FUSE options]
+
+<mountpoint> needs to be a directory where a user can access in read
+and write mode.  By default, other users who are not a user that
+mounts a Gfarm file system cannot access files or directories under
+the mountpoint.  
+
+If you cannot mount a Gfarm filesystem, make sure the 'fuse' kernel
+module is loaded, and you are the user(group) which is permitted to
+use FUSE.
+
+Please read README included in FUSE package which explains details
+of FUSE.
+
+You can also specify the mount point in /etc/fstab.
+
+Examble of /etc/fstab:
+
+  gfarmfs#-lsu  <mountpoint>  fuse  noauto,user,exec  0  0
+
+How to mount in this case:
+
+  $ mount <mountpoint>
+
+=======
+Unmount
+=======
+
+Run the 'fusermount' command of FUSE. (See README of FUSE.):
+
+    $ fusermount -u <mountpoint>
+
+
+=======
+Options
+=======
+
+Please print help message by '-h' option and see README of FUSE in
+order to get information of FUSE options.
+
+By specifying the 'kernel_cache' option of FUSE, speed of reading a
+file will be more than double but update of the file will not be
+reflected to another gfarmfs's cache.  Please be aware of this risk
+in using the 'kernel_cache' option.
+
+GfarmFS options:
+
+-h
+
+  Print help message.
+
+-m <directory on a Gfarm filesystem>
+
+  The specified directory on a Gfarm filesystem will be a top
+  directory under the mount point.  (ex. -m /username)  If this
+  option is not given, the root directory of the Gfarm filesystem
+  will be used.
+
+-s, --symlink
+
+  Enables symlink(2) emulation.  The emulation is implemented by
+  copying a target file to another invisible file whose suffix is
+  '.gfarmfs-symlink'  You can use this option until Gfarm does
+  support symlink(2).
+
+-l, --linkiscopy
+
+  Enables link(2) emulation.  The emulated is implemented by
+  copying a target file to another file, instead of creating
+  hardlink.  You can use this option until Gfarm does support
+  link(2).
+
+-u, --unlinkall
+
+  With this option, unlink(2) removes all binaries for different
+  architectures of the specified file that has execution bits.  This
+  was a default behavior in the GfarmFS-FUSE version 1.0.
+
+  Since GfarmFS-FUSE version 1.1, unlink(2) removes just a binary that
+  corresponds to the client architecture of the specified file that
+  has execution bits, which is the same behavior as the Gfarm syscall
+  hooking library since Gfarm version 1.2.
+
+-n, --dirnlink
+
+  Counts the nlink of a directory precisely.  If this option is not
+  specified, the nlink of a directory is always 32000.
+
+-F, --exactfilesize
+
+  While one gfarmfs client is open(2)ing a file, another gfarmfs
+  client can get an exact st_size by stat(2).  This option is useful
+  if you launch multiple gfarmfs clients on different hosts.
+
+-S, --disable-statfs
+
+  Disables statfs(2) and statvfs(2).
+
+-b, --buffered
+
+  Enables buffered I/O.
+
+  Remote access will be faster by using this option.  Accessing the
+  same file from multiple gfarmfs clients, however, the updated data
+  is not immediately reflected to another gfarmfs client.
+
+-a <architecture>
+
+  Specifies the architecture name of the client host.
+  However, chmod(2) is not supported.
+
+  In a Gfarm file system, an architecture name is required to access
+  a file that has execution bits since the file can consists of
+  multiple binaries for each different architecture.  When the client
+  host is a filesystem node, the architecture is automatically
+  determined by the Gfarm meta database.  Otherwise, you need to
+  specify a client architecture explicitly to access a file that
+  has execution bits.  <architecture> is typically a canonical
+  system name like sparc-sun-solaris8. (See man page of gfhost.)
+
+  Since Gfarm version 1.2, an architecture name can be specified
+  in 'client_architecture' directive in the configuration file or
+  the environment variable, GFARM_ARCHITECTURE. 
+  (See man page of gfarm.conf.)
+
+==============
+KNOWN PROBLEMS
+==============
+
+First, please see doc/KNOWN_PROBLEMS included in the Gfarm source
+distribution.
+
+Some limitations of Gfarm are avoided in GfarmFS-FUSE.
+
+  * stat(2) can return an exact st_size during open(2) on the same
+    gfarmfs client.
+  * Using -F option, stat(2) can return an exact st_size during open(2)
+    from another gfarmfs client.
+  * utime(2) and chmod(2) is effective during open(2) on the same
+    gfarmfs client.
+  * rename(2) and chmod(2) do not destroy metadata during open(2)
+    on the same gfarmfs client.
+  * Thanks to FUSE, applications which are using fork(2) or
+    multithread have no problem on gfarmfs.
+
+Peculiar PROBLEMS of GfarmFS-FUSE:
+
+*** '-l' option of gfarmfs is not a hardlink behavior.
+
+  The hardlink emulation creates a copy instead of a hardlink.
+  Applications which expect the hardlink behavior cannot work
+  correctly.
+
+  The hardlink behavior will be supported in the first release of the
+  Gfarm v2 branch.  GfarmFS-FUSE will support this emulation until
+  the v2 branch is released.
+
+*** close(2) cannot notice an error of gfs_pio_close().
+
+  Success of close(2) does not mean that I/O buffer and metadata
+  of Gfarm has been written to the Gfarm filesystem correctly.
+  Sometimes, there is an error.
+
+  A plan to fix this problem has not been decided yet.
+
+*** While open(2)ing a file which has two or more fragments,
+    chmod(2) and fchmod(2) cannot work on the same gfarmfs client.
+
+  This problem will be fixed in the Gfarm v1.4.
+  (However, we don't have a plan that executable bits of the file
+   which has two or more fragments can be changed safely.)
+
+*** Limitations on FUSE 2.2 compatible mode.
+
+  open(2), open(2), creat(2), access(2), ftruncate(2) cannot work
+  correctly in some cases.  This is a limitation of FUSE 2.2.
+
+  When you use gfarmfs compiled on FUSE version 2.5 (or later) with
+  Linux Kernel 2.6.15 (or later), you will not have this problem.
+
+*** 'svn co' command does not work on gfarmfs.
+
+  Now investigating.
