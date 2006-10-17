@@ -43,11 +43,16 @@ fi
 [ -O $GFS_MOUNTDIR ] || ABORT "$GFS_MOUNTDIR: not owned by " $LOGNAME
 
 cd /
-gfarmfs -lsu $GFS_MOUNTDIR || :
+# mount Gfarm file system
+if ! grep $GFS_MOUNTDIR /etc/mtab > /dev/null; then
+	gfarmfs -lsu $GFS_MOUNTDIR || :
+fi
+# change directory and execute $GFS_PROG with $GFS_ARGS
 cd $GFS_MOUNTDIR/$GFS_USERNAME && cd $GFS_WDIR &&
 	$GFS_PROG $GFS_ARGS > $GFS_STDOUT 2> $GFS_STDERR
 STATUS=$?
 cd /
+# unmount Gfarm file system
 fusermount -u $GFS_MOUNTDIR || :
 [ $DELETE_MOUNTDIR = 1 ] && rmdir $GFS_MOUNTDIR
 
