@@ -31,13 +31,26 @@ fi
 : ${GFARMFS_OPTIONS:=-lsu}
 : ${FUSE_OPTIONS:=}
 
+# XXX - need sanity check for GFS_USERNAME
+
+DELETE_MOUNTDIR_ON_ERROR=0
 if [ ! -d $GFS_MOUNTDIR ]; then
 	mkdir -p $GFS_MOUNTDIR ||
 		ABORT "cannot create a mount point: " $GFS_MOUNTDIR
+	DELETE_MOUNTDIR_ON_ERROR=1
 fi
 [ -O $GFS_MOUNTDIR ] || ABORT "$GFS_MOUNTDIR: not owned by " $LOGNAME
 
-gfarmfs -m /$GFS_USERNAME $GFARMFS_OPTIONS $GFS_MOUNTDIR $FUSE_OPTIONS &&
-echo Mount GfarmFS on $GFS_MOUNTDIR
+# if already mounted, exit
+grep $GFS_MOUNTDIR /etc/mtab > /dev/null && exit 0
 
-exit $?
+gfarmfs -m /$GFS_USERNAME $GFARMFS_OPTIONS $GFS_MOUNTDIR $FUSE_OPTIONS
+STATUS=$?
+
+if [ $STATUS = 0 ]; then
+	echo Mount GfarmFS on $GFS_MOUNTDIR
+else
+	[ $DELETE_MOUNTDIR_ON_ERROR = 1 ] && rmdir $GFS_MOUNTDIR
+fi
+
+exit $STATUS
