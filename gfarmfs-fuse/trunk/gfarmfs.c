@@ -2183,7 +2183,7 @@ emsg:
 #endif
 
 static void
-gfarmfs_async_child_exec(char *url, FH fh)
+gfarmfs_async_child_exec(char *url)
 {
 	int p;
 
@@ -2209,8 +2209,6 @@ gfarmfs_async_child_exec(char *url, FH fh)
 	} else if (p > 0)
 		waitpid(p, NULL, 0);
 #endif
-	(void)gfarmfs_async_fork_count_decrement();
-	*fh->shm_child_status = CHILD_DONE;
 }
 
 static char *
@@ -2246,11 +2244,13 @@ gfarmfs_async_replicate(char *url, FH fh)
 		return (gfarm_errno_to_error(save_errno));
 	} else if (fh->child_pid == 0) {
 		if (async_argv != NULL)
-			gfarmfs_async_child_exec(url, fh);
+			gfarmfs_async_child_exec(url);
 #ifdef USE_GFARM_SCRAMBLE
 		else
 			gfarmfs_async_child_scramble_replicate(url);
 #endif
+		(void)gfarmfs_async_fork_count_decrement();
+		*fh->shm_child_status = CHILD_DONE;
 		_exit(0);
 	}
 	return (NULL);
