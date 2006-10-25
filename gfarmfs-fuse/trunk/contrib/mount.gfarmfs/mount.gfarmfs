@@ -26,7 +26,10 @@ if [ $# -gt 0 ]; then
 	FUSE_OPTIONS=$*
 fi
 
+: ${GFS_USERNAME:=`gfwhoami 2> /dev/null`}
+: ${GFS_USERNAME:=$USER}
 : ${GFS_USERNAME:=$LOGNAME}
+: ${GFS_USERNAME:=`logname 2> /dev/null`}
 : ${GFS_MOUNTDIR:=/gfs/home/$GFS_USERNAME}
 : ${GFARMFS_OPTIONS:=-lsu}
 : ${FUSE_OPTIONS:=}
