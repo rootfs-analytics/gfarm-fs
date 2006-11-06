@@ -128,10 +128,11 @@ Options
 Please print help message by '-h' option and see README of FUSE in
 order to get information of FUSE options.
 
-By specifying the 'kernel_cache' option of FUSE, speed of reading a
-file will be more than double but update of the file will not be
-reflected to another gfarmfs's cache.  Please be aware of this risk
-in using the 'kernel_cache' option.
+By specifying the 'kernel_cache' option of FUSE, speed of reading
+the same file will be faster from the second time.  However,
+update of the file will not be reflected to another gfarmfs's
+cache.  Please be aware of this risk when you use the
+'kernel_cache' option.
 
 GfarmFS options:
 
