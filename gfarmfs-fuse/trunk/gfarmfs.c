@@ -117,7 +117,6 @@ static int enable_fastcreate = 1;  /* used on FUSE version 2.2 only */
                                    /* >0: enable, 0: disable, <0: ignore */
 #ifdef USE_GFS_STATFSNODE
 static int enable_statfs = 1; /* default: enable */
-static int statfs_nhosts = 0;
 #endif
 
 /* ################################################################### */
@@ -1535,31 +1534,33 @@ gfarmfs_statfs_common(
 	file_offset_t *filesp, file_offset_t *ffreep, file_offset_t *favailp)
 {
 	char *e;
-	int nhosts = statfs_nhosts, i;
-	static char **hosts = NULL;
+	struct gfarm_host_info *hostinfos;
+	int nhosts, i;
+	char **hosts;
 
-	if ((e = gfarmfs_init()) != NULL) goto end;
-
+	if ((e = gfarmfs_init()) != NULL)
+		goto end;
+	e = gfarm_host_info_get_all(&nhosts, &hostinfos);
+	if (e != NULL)
+		goto end;
+	gfarm_host_info_free_all(nhosts, hostinfos);
+	hosts = malloc(nhosts * sizeof(char *));
 	if (hosts == NULL) {
-		hosts = malloc(nhosts * sizeof(char *));
-		if (hosts == NULL) {
-			e = GFARM_ERR_NO_MEMORY;
-			goto end;
-		}
+		e = GFARM_ERR_NO_MEMORY;
+		goto end;
 	}
 	e = gfarm_schedule_search_idle_acyclic_by_domainname(
 		"", &nhosts, hosts);
 	if (e != NULL)
-		goto end;
+		goto free_hosts;
 	e = gfs_statfsnode_total_of_hostlist(
 		hosts, nhosts, bsizep, blocksp,
 		bfreep, bavailp, filesp, ffreep, favailp);
-	for (i = 0; i < nhosts; i++) {
-		if (hosts[i]) {
+	for (i = 0; i < nhosts; i++)
+		if (hosts[i])
 			free(hosts[i]);
-			hosts[i] = NULL;
-		}
-	}
+free_hosts:
+	free(hosts);
 end:
 	return gfarmfs_final("STATFS", e, 0, path);
 }
@@ -3527,21 +3528,9 @@ setup_options()
 #endif
 
 #ifdef USE_GFS_STATFSNODE
-	/* count hosts for statfs */
-	if (enable_statfs == 1) {
-		int nhosts;
-		struct gfarm_host_info *hostinfos;
-		e = gfarm_host_info_get_all(&nhosts, &hostinfos);
-		if (e != NULL) {
-			fprintf(stderr,
-				"gfarm_host_info_get_all: %s\n", e);
-			exit(1);
-		}
-		gfarm_host_info_free_all(nhosts, hostinfos);
-		statfs_nhosts = nhosts;
-	} else {
+	/* -S, --disable-statfs */
+	if (enable_statfs == 0)
 		gfarmfs_oper_p->statfs = NULL; /* disable */
-	}
 #endif
 }
 
@@ -3565,9 +3554,13 @@ print_options()
 		printf("enable unlinkall\n");
 	}
 #ifdef USE_GFS_STATFSNODE
-	if (enable_statfs == 1) {
-		printf("enable statfs (%d hosts)\n", statfs_nhosts);
+	if (enable_statfs == 0) {
+		printf("disable statfs\n");
+	} else {
+		printf("enable statfs\n");
 	}
+#else
+	printf("disable statfs\n");
 #endif
 	if (enable_trace != NULL) {
 		printf("enable trace (output file: %s)\n", trace_name);
