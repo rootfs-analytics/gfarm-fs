@@ -17,7 +17,7 @@
   Science and Technology (AIST).  All Rights Reserved.
 */
 #define GFARMFS_VER "1.4b"
-#define GFARMFS_VER_DATE "October ?, 2006"
+#define GFARMFS_VER_DATE "November ?, 2006"
 
 #if FUSE_USE_VERSION >= 25
 /* #  warning FUSE 2.5 compatible mode. */
@@ -48,6 +48,8 @@
 #include <libgen.h>
 #include <stdlib.h>
 #include <time.h>
+#include <sys/time.h>
+#include <stdarg.h>
 
 #include <gfarm/gfarm.h>
 
@@ -88,9 +90,10 @@ static int enable_linkiscopy = 0;
 static int enable_unlinkall = 0;
 static char *arch_name = NULL;
 static int enable_count_dir_nlink = 0; /* default: disable */
-static int enable_print_enoent = 0; /* default: do not print ENOENT */
 static FILE *enable_trace = NULL;
-static char *trace_out = "gfarmfs.trace"; /* default filename */
+static char *trace_name = NULL; /* filename */
+static FILE *enable_errlog = NULL;
+static char *errlog_name = NULL; /* filename */
 static char *gfarm_mount_point = "";
 static int enable_gfarm_iobuf = 0; /* about GFARM_FILE_UNBUFFERED */
 static int enable_exact_filesize = 0;
@@ -105,10 +108,8 @@ static char *gfrep_dom = NULL;
 static char **async_argv = NULL;
 #endif
 
-/*
-   0: use gfarmfs_*_share_gf() operations (new)
-   1: use normal I/O operations (old)
-*/
+/* 0: use gfarmfs_*_share_gf() operations (new)
+   1: use normal I/O operations (old) */
 static int use_old_functions = 0;
 
 /* default: enable */
@@ -116,7 +117,7 @@ static int enable_fastcreate = 1;  /* used on FUSE version 2.2 only */
                                    /* >0: enable, 0: disable, <0: ignore */
 #ifdef USE_GFS_STATFSNODE
 static int enable_statfs = 1; /* default: enable */
-static int statfs_nhosts;
+static int statfs_nhosts = 0;
 #endif
 
 /* ################################################################### */
@@ -162,6 +163,28 @@ add_gfarm_prefix_symlink_suffix(const char *path, char **urlp)
 
 #define gfarm_url2path(url)  (url + 6)  /* cut "gfarm:" */
 
+static void
+gfarmfs_errlog(const char *format, ...)
+{
+	va_list ap;
+	FILE *out;
+	struct timeval tv;
+	struct tm *lt;
+
+	if (enable_errlog != NULL)
+		out = enable_errlog;
+	else
+		out = stderr;
+	va_start(ap, format);
+	gettimeofday(&tv, NULL);
+	lt = localtime(&tv.tv_sec);
+	fprintf(out, "[%.2d-%.2d %.2d:%.2d:%.2d] ", lt->tm_mon + 1,
+		lt->tm_mday, lt->tm_hour, lt->tm_min, lt->tm_sec);
+	vfprintf(out, format, ap);
+	fprintf(out, "\n");
+	va_end(ap);
+}
+
 #if 0
 static char *
 gfarmfs_init()
@@ -175,28 +198,20 @@ gfarmfs_init()
 static int
 gfarmfs_final(char *opname, char *e, int val_noerror, const char *name)
 {
+	int return_errno;
+
 	if (e == NULL) {
-		if (enable_trace != NULL) {
+		if (enable_trace != NULL)
 			fprintf(enable_trace, "OK: %s: %s\n", opname, name);
-		}
 		return (val_noerror);
 	} else {
-		if (enable_trace != NULL) {
+		if (enable_trace != NULL)
 			fprintf(enable_trace, "NG: %s: %s: %s\n",
 				opname, name, e);
-		}
-		if (gfarmfs_debug >= 1) {
-			if (enable_print_enoent == 0 &&
-			    e == GFARM_ERR_NO_SUCH_OBJECT) {
-				/* do not print */
-			} else if (name != NULL) {
-				fprintf(stderr, "%s: %s: %s\n",
-					opname, name, e);
-			} else {
-				fprintf(stderr, "%s: %s\n", opname, e);
-			}
-		}
-		return -gfarm_error_to_errno(e);
+		return_errno = gfarm_error_to_errno(e);
+		if (return_errno == EINVAL)
+			gfarmfs_errlog("%s: %s: %s", opname, name, e);
+		return -return_errno;
 	}
 }
 
@@ -265,7 +280,7 @@ gfarmfs_set_view(GFS_File gf)
 	e = gfs_pio_get_nfragment(gf, &nf);
 	if (e == NULL && nf <= 1)
 		e = gfs_pio_set_view_index(gf, 1, 0, NULL, 0);
-	else
+	else /* GFARM_ERR_FRAGMENT_INDEX_NOT_AVAILABLE -> creating new file */
 		e = gfs_pio_set_view_global(gf, 0);
 	return (e);
 }
@@ -352,10 +367,7 @@ gfarmfs_fastcreate_flush()
 		}
 		e = gfarmfs_create_empty_file(fc.path, fc.mode);
 		if (e != NULL) {
-			if (gfarmfs_debug >= 1) {
-				printf("fastcreate flush error: %s: %s\n",
-				       fc.path, e);
-			}
+			gfarmfs_errlog("fastcreate flush error: %s: %s", fc.path, e);
 		}
 		gfarmfs_fastcreate_free();
 		return (e);
@@ -500,8 +512,7 @@ static char *
 gfarmfs_exact_filesize(char *url, file_offset_t *sizep, mode_t mode)
 {
 	/* get st_size using gfs_fstat */
-	/* On Gfarm version 1.3 (or earlier), gfs_stat cannot
-	   get the exact st_size while a file is opened.
+	/* gfs_stat cannot get the exact st_size while a file is opened.
 	   But gfs_fstat can do it.
 	*/
 	GFS_File gf;
@@ -522,8 +533,8 @@ gfarmfs_exact_filesize(char *url, file_offset_t *sizep, mode_t mode)
 		save_mode = mode;
 		e = gfs_chmod(url, mode|0400);
 		if (e != NULL) {
-			printf("GETATTR: cancel fstat: %s: %s\n",
-			       gfarm_url2path(url), e);
+			gfarmfs_errlog("GETATTR: cancel fstat: %s: %s",
+				       gfarm_url2path(url), e);
 			return (e); /* not my modifiable file */
 		}
 		change_mode = 1;
@@ -570,14 +581,13 @@ gfarmfs_exact_filesize(char *url, file_offset_t *sizep, mode_t mode)
 	*sizep = st_size;
 fstat_close:
 	gfs_pio_close(gf);
-	if (gfarmfs_debug > 0 && e != NULL && e != GFARM_ERR_NO_SUCH_OBJECT)
-		printf("GETATTR: fstat: %s: %s\n", gfarm_url2path(url), e);
+	if (e != NULL && e != GFARM_ERR_NO_SUCH_OBJECT)
+		gfarmfs_errlog("exact_filesize: %s: %s", gfarm_url2path(url), e);
 revert_mode:
 	if (change_mode == 1) {
 		e = gfs_chmod(url, save_mode);
 		if (e != NULL)
-			printf("GETATTR: revert st_mode...: %s: %s\n",
-			       gfarm_url2path(url), e);
+			gfarmfs_errlog("exact_filesize: revert st_mode (%o): %s: %s", save_mode, gfarm_url2path(url), e);
 	}
 	return (e);
 }
@@ -628,14 +638,13 @@ gfarmfs_getattr(const char *path, struct stat *buf)
 		struct gfarm_path_info pi;
 		char *e2;
 		char *p;
-		printf("GETATTR: invalid entry: %s\n", path);
+		printf("GETATTR: repair invalid entry: %s\n", path);
 		e2 = gfarm_canonical_path(path, &p);
 		if (e2 == NULL) {
 			e2 = gfarm_path_info_get(p, &pi);
 			if (e2 == NULL) {
 				pi.status.st_mode = 0100600;
 				e2 = gfarm_path_info_replace(p, &pi);
-				printf("path_info_replace: %s\n", e2);
 			}
 			free(p);
 		}
@@ -715,10 +724,9 @@ gfarmfs_mknod(const char *path, mode_t mode, dev_t rdev)
 		e = gfarmfs_create_empty_file(path, mode);
 #endif
 	} else {
-		if (gfarmfs_debug >= 1) {
-			printf("MKNOD: not supported: mode = %o, rdev = %o\n",
-			       mode, (int)rdev);
-		}
+		gfarmfs_errlog(
+			"MKNOD: not supported: %s: mode=%o, rdev=%o",
+			path, mode, (int)rdev);
 		e = GFARM_ERR_OPERATION_NOT_PERMITTED;
 	}
 end:
@@ -1461,9 +1469,7 @@ gfs_statfsnode_cached_and_retry(
 				   filesp, ffreep, favailp);
 	}
 	if (e != NULL) {
-		if (gfarmfs_debug > 0) {
-			printf("ERROR: STATFS: %s: %s\n", hostname, e);
-		}
+		gfarmfs_errlog("STATFS: %s: %s", hostname, e);
 		if (e == GFARM_ERR_NO_SUCH_OBJECT) {
 			e = GFARM_ERR_CONNECTION_REFUSED;
 		}
@@ -2176,9 +2182,8 @@ gfarmfs_async_child_scramble_replicate(char *url)
 		goto emsg;
 	e = gfarm_terminate();
 emsg:
-	if (e != NULL) {
-		printf("ERROR: replication: %s: %s\n", gfarm_url2path(url), e);
-	}
+	if (e != NULL)
+		gfarmfs_errlog("replication: %s: %s", gfarm_url2path(url), e);
 }
 #endif
 
@@ -2187,6 +2192,12 @@ gfarmfs_async_child_exec(char *url)
 {
 	int p;
 
+	if (enable_errlog) {  /* change stderr of gfrep */
+		if (dup2(fileno(enable_errlog), fileno(stderr)) == -1) {
+			gfarmfs_errlog("errlog (dup2): %s", strerror(errno));
+			return;
+		}
+	}
 	p = fork();
 	if (p == 0) {
 		int r;
@@ -2238,7 +2249,7 @@ gfarmfs_async_replicate(char *url, FH fh)
 	fh->child_pid = fork();
 	if (fh->child_pid == -1) {
 		int save_errno = errno;
-		printf("fork failed\n");
+		gfarmfs_errlog("fork(2): %s", strerror(save_errno));
 		(void)gfarmfs_async_fork_count_decrement();
 		*fh->shm_child_status = CHILD_DONE;
 		return (gfarm_errno_to_error(save_errno));
@@ -2422,10 +2433,9 @@ gfarmfs_open_common_share_gf(char *opname,
 				fh2 = NULL;
 			}
 #endif
-			if (fh2 != NULL) {
-				printf("WARN: This must not happen.\n");
+			if (fh2 != NULL)
 				e = GFARM_ERR_ALREADY_EXISTS;
-			} else
+			else
 				e = FH_ADD2(url, ino, fh);
 		}
 		if (e != NULL) {
@@ -2474,7 +2484,7 @@ gfarmfs_open_common_share_gf(char *opname,
 #endif
 				if (e2 != NULL) {
 					/* What happen ? */
-					printf("WARN: chmod failed at OPEN: %o: %s: %s\n", save_mode, path, e2);
+					gfarmfs_errlog("WARN: OPEN: chmod failed: %o: %s: %s", save_mode, path, e2);
 				}
 			}
 		}
@@ -2706,7 +2716,7 @@ gfarmfs_rename_share_gf_check_open(char *from_url, char *to_url,
 #endif
 			if (e3 != NULL) {
 				/* What happen ? */
-				printf("WARN: RENAME: chmod failed: %o: %s: %s\n", from_mode, gfarm_url2path(url), e3);
+				gfarmfs_errlog("WARN: RENAME: chmod failed: %o: %s: %s", from_mode, gfarm_url2path(url), e3);
 			}
 		}
 		if (e2 == NULL) { /* open succeeeded */
@@ -2718,8 +2728,7 @@ gfarmfs_rename_share_gf_check_open(char *from_url, char *to_url,
 				gfs_stat_free(&gs);
 			} else {
 				/* What happen ? */
-				printf("WARN: RENAME: some problem may happen later: %s\n", gfarm_url2path(url));
-				FH_FREE(fh);
+				gfarmfs_errlog("FATAL: RENAME: some problem may happen later: %s", gfarm_url2path(url));
 			}
 		} else { /* somebody changes st_mode */
 			if (retry == 0) {
@@ -2728,9 +2737,9 @@ gfarmfs_rename_share_gf_check_open(char *from_url, char *to_url,
 			}
 			/* fatal situation ! */
 			fh->gf = NULL;
-			printf("FATAL: RENAME: can't read/write more than this: %s: %s\n", gfarm_url2path(url), e2);
+			gfarmfs_errlog("FATAL: RENAME: can't read/write more than this: %s: %s", gfarm_url2path(url), e2);
 			/* ignore e2 */
-		}
+		} /* end of (fh != NULL) */
 	}
 #else   /* for Gfarm version 2 or lator */
 	fh = FH_GET2(from_url, from_ino);
@@ -2839,9 +2848,8 @@ gfarmfs_getattr_share_gf(const char *path, struct stat *stbuf)
 	if (!gfarmfs_fh_is_opened(fh))
 		fh = NULL;
 #endif
-	/* On Gfarm version 1.3 (or earlier), gfs_stat
-	   cannot get the exact st_size while a file
-	   is opened.  But gfs_fstat can do it.
+	/* gfs_stat cannot get the exact st_size while a file is opened.
+	   But gfs_fstat can do it.
 	*/
 	if (fh != NULL) {  /* somebody opens this file. */
 #if REVISE_CHMOD == 1
@@ -3160,16 +3168,20 @@ static char *program_name = "gfarmfs";
 static struct fuse_operations *gfarmfs_oper_p = &gfarmfs_oper_share_gf;
 
 static void
-gfarmfs_version()
+gfarmfs_version(int print_fuse_version)
 {
+	const char *fusever[] = { program_name, "-V", NULL };
+
 	printf("GfarmFS-FUSE version %s (%s)\n",
 	       GFARMFS_VER, GFARMFS_VER_DATE);
 	printf("Build: %s %s\n", __DATE__, __TIME__);
 #if FUSE_USE_VERSION >= 25
-	printf("FUSE version 2.5 compatible mode\n");
+	printf("using FUSE version 2.5 interface\n");
 #else
-	printf("FUSE version 2.2 compatible mode\n");
+	printf("using FUSE version 2.2 interface\n");
 #endif
+	if (print_fuse_version)
+		fuse_main(2, (char **) fusever, gfarmfs_oper_p);
 }
 
 static void
@@ -3200,8 +3212,7 @@ gfarmfs_usage()
 #endif
 "    -a <architecture>      for a client not registered by gfhost\n"
 "    --trace <filename>     record FUSE operations called by processes\n"
-"    --print-enoent         do not ignore to print ENOENT to stderr\n"
-"                           (in -f or -d of FUSE option) (default: ignore)\n"
+"    --errlog <filename>    record errors of gfarm's own and replication\n"
 "    -v, --version          show version and exit\n"
 "\n", program_name);
 
@@ -3300,20 +3311,38 @@ parse_long_option(int *argcp, char ***argvp)
 #endif
 	else if (strcmp(&argv[0][1], "-oldio") == 0)
 		use_old_functions = 1;
-	else if (strcmp(&argv[0][1], "-print-enoent") == 0)
-		enable_print_enoent = 1;
 	else if (strcmp(&argv[0][1], "-trace") == 0) {
-		next_arg_set(&trace_out, argcp, argvp, 0);
-		if (trace_out == NULL || (strcmp(trace_out, "-") == 0))
+		next_arg_set(&trace_name, argcp, argvp, 0);
+		if (trace_name == NULL || (strcmp(trace_name, "-") == 0))
 			enable_trace = stdout;
 		else
-			enable_trace = fopen(trace_out, "w");
+			enable_trace = fopen(trace_name, "w");
 		if (enable_trace == NULL) {
-			perror(trace_out);
+			perror(trace_name);
 			exit(1);
 		}
+	} else if (strcmp(&argv[0][1], "-errlog") == 0) {
+		int fd;
+		next_arg_set(&errlog_name, argcp, argvp, 0);
+		if (errlog_name == NULL) {
+			gfarmfs_usage();
+			exit(1);
+		}
+		fd = open(errlog_name, O_WRONLY|O_CREAT|O_APPEND, 0600);
+		if (fd == -1) {
+			fprintf(stderr, "logfile (open): %s: %s\n",
+				errlog_name, strerror(errno));
+			exit(1);
+		}
+		enable_errlog = fdopen(fd, "a");
+		if (enable_errlog == NULL) {
+			fprintf(stderr, "logfile (fdopen): %s: %s\n",
+				errlog_name, strerror(errno));
+			exit(1);
+		}
+		setvbuf(enable_errlog, NULL, _IOLBF, 0);
 	} else if (strcmp(&argv[0][1], "-version") == 0) {
-		gfarmfs_version();
+		gfarmfs_version(1);
 		exit(0);
 	} else {
 		gfarmfs_usage();
@@ -3385,7 +3414,7 @@ parse_short_option(int *argcp, char ***argvp)
 			return (next_arg_set(&gfrep_dom, argcp, argvp, 1));
 #endif
 		case 'v':
-			gfarmfs_version();
+			gfarmfs_version(1);
 			exit(0);
 		default:
 			gfarmfs_usage();
@@ -3460,12 +3489,15 @@ setup_options()
 			gfrep_num = NULL;
 			enable_async_rep = 0; /* disable */
 		} else {
+			static char *str_gfrep = "gfrep";
+			static char *str_N = "-N";
+			static char *str_D = "-D";
 			if (gfrep_dom == NULL) {
 				/* gfrep -N 2 */
 				async_argv = malloc(sizeof(char*) * 5);
 				if (async_argv) {
-					async_argv[0] = strdup("gfrep");
-					async_argv[1] = strdup("-N");
+					async_argv[0] = str_gfrep;
+					async_argv[1] = str_N;
 					async_argv[2] = gfrep_num;
 					async_argv[3] = NULL; /* for url */
 					async_argv[4] = NULL;
@@ -3474,10 +3506,10 @@ setup_options()
 				/* gfrep -N 2 -D example.com */
 				async_argv = malloc(sizeof(char*) * 7);
 				if (async_argv) {
-					async_argv[0] = strdup("gfrep");
-					async_argv[1] = strdup("-N");
+					async_argv[0] = str_gfrep;
+					async_argv[1] = str_N;
 					async_argv[2] = gfrep_num;
-					async_argv[3] = strdup("-D");
+					async_argv[3] = str_D;
 					async_argv[4] = gfrep_dom;
 					async_argv[5] = NULL; /* for url */
 					async_argv[6] = NULL;
@@ -3519,7 +3551,7 @@ print_options()
 	if (gfarmfs_debug == 0)
 		return;
 
-	gfarmfs_version();
+	gfarmfs_version(0);
 	if (enable_symlink == 1) {
 		printf("enable symlink\n");
 	}
@@ -3538,7 +3570,7 @@ print_options()
 	}
 #endif
 	if (enable_trace != NULL) {
-		printf("enable trace (output file: %s)\n", trace_out);
+		printf("enable trace (output file: %s)\n", trace_name);
 	}
 	if (enable_count_dir_nlink == 1) {
 		printf("enable count_dir_nlink\n");
@@ -3591,22 +3623,21 @@ main(int argc, char *argv[])
 	if (argc > 0) {
 		program_name = basename(argv[0]);
 	}
-
 	check_gfarmfs_options(&argc, &argv);
 	check_fuse_options(&argc, &argv, &newargc, &newargv);
 
 	e = gfarm_initialize(NULL, NULL);
 	if (e != NULL) {
-		fprintf(stderr, "%s: %s\n", program_name, e);
-		exit(-1);
+		fprintf(stderr, "gfarm_initialize: %s\n", e);
+		exit(1);
 	}
 	setup_options();
 	print_options();
 #if ENABLE_ASYNC_REPLICATION != 0
 	e = gfarmfs_async_fork_count_initialize();
 	if (e != NULL) {
-		fprintf(stderr, "%s: %s\n", program_name, e);
-		exit(-1);
+		fprintf(stderr, "initialize: %s\n", e);
+		exit(1);
 	}
 #endif
 	ret = fuse_main(newargc, newargv, gfarmfs_oper_p);
@@ -3616,13 +3647,16 @@ main(int argc, char *argv[])
 	if (enable_trace != NULL) {
 		fclose(enable_trace);
 	}
+	if (enable_errlog != NULL) {
+		fclose(enable_errlog);
+	}
 #if ENABLE_ASYNC_REPLICATION != 0
 	gfarmfs_async_fork_count_finalize();
 #endif
 	e = gfarm_terminate();
 	if (e != NULL) {
-		fprintf(stderr, "%s: %s\n", program_name, e);
-		exit(-1);
+		fprintf(stderr, "gfarm_terminate: %s\n", e);
+		exit(1);
 	}
 
 	return (ret);
