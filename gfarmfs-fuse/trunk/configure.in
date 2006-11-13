@@ -98,6 +98,13 @@ AC_SUBST(use_gfs_statfsnode)
 AC_TRY_LINK([
 #include <stdio.h>
 #include <gfarm/gfarm.h>],[
+gfarm_schedule_search_idle_acyclic_hosts_to_write(0, NULL, NULL, NULL);],
+[use_gfrep_H=-DUSE_GFREP_H],[])
+AC_SUBST(use_gfrep_H)
+
+AC_TRY_LINK([
+#include <stdio.h>
+#include <gfarm/gfarm.h>],[
 gfs_pio_set_view_scramble(NULL, 0);],
 [use_gfarm_scramble=-DUSE_GFARM_SCRAMBLE],[])
 AC_SUBST(use_gfarm_scramble)
