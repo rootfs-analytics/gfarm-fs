@@ -22,13 +22,14 @@ For example, on Fedora Core 5 :
 
     # yum install fuse fuse-libs fuse-devel
     # (GfarmFS-FUSE users should belong to 'fuse' group.)
-    # rpm -ivh gfarm-libs-1.3-0.i386.rpm gfarm-client-1.3-0.i386.rpm \
-      gfarm-devel-1.3-0.i386.rpm
+    # rpm -ivh gfarm-libs-1.4-0.i386.rpm gfarm-client-1.4-0.i386.rpm \
+      gfarm-devel-1.4-0.i386.rpm
 
     $ (Check if your Gfarm configuration file (ex.: ~/.gfarmrc) is correct.)
-    $ (Check if your authenticaion to a Gfarm filesystem is successful by commands (ex.: gfhost, gfkey or grid-proxy-init).)
-    $ tar zxvf gfarmfs-fuse-1.3.0.tar.gz
-    $ cd gfarmfs-fuse-1.3.0
+    $ (Check if your authenticaion to a Gfarm filesystem is successful
+       by commands (ex.: gfhost, gfkey or grid-proxy-init).)
+    $ tar zxvf gfarmfs-fuse-1.4.0.tar.gz
+    $ cd gfarmfs-fuse-1.4.0
     $ ./configure
     $ make
     $ mkdir ~/mountpoint
@@ -78,7 +79,11 @@ In the case of csh or tcsh,
 Mount
 =====
 
-Make sure your Gfarm environment is set. (See INSTALL.en of Gfarm.)
+Make sure your Gfarm environment is set for client.
+(See INSTALL.en of Gfarm.)
+For example, when you install Gfarm using RPM binary packages, you
+should install gfarm-gsi-libs (or gfarm-libs) and gfarm-gsi-client
+(or gfarm-client) packages.
 
 Make sure your FUSE environment is ready to use.  For examale, 
 on Fedora Core 5, when fuse and fuse-libs RPM packages are installed,
@@ -195,6 +200,23 @@ GfarmFS options:
   same file from multiple gfarmfs clients, however, the updated data
   is not immediately reflected to another gfarmfs client.
 
+-N <num-of-replicas>
+
+  Specifies the required number of file replicas.  After creating new
+  file or modifying existng file, the command of gfrep is running in
+  async automatically.
+
+-D <destination-domainname>
+
+  Specifies the domain name of destination filesystem nodes to which
+  replicas will be copied.  This option is used with -N option.
+
+--errlog <filename>
+
+  Specifies a filename for recording error messages that is not
+  returned as errno to the running application on the gfarmfs
+  mountpoint.  For example, the errors in using -N option are recorded.
+
 -a <architecture>
 
   Specifies the architecture name of the client host.
@@ -257,7 +279,7 @@ Peculiar PROBLEMS of GfarmFS-FUSE:
 *** While open(2)ing a file which has two or more fragments,
     chmod(2) and fchmod(2) cannot work on the same gfarmfs client.
 
-  This problem will be fixed in the Gfarm v1.4.
+  This problem is fixed in the Gfarm v1.4.
   (However, we don't have a plan that executable bits of the file
    which has two or more fragments can be changed safely.)
 
