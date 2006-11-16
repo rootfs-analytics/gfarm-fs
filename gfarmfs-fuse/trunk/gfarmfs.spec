@@ -1,7 +1,7 @@
 Summary: GfarmFS-FUSE
 Name: gfarmfs-fuse
-Version: 1.3.0
-Release: 2
+Version: 1.4.0
+Release: 0
 License: BSD
 Group: Applications/Internet
 Vendor: National Institute of Advanced Industrial Science and Technology
@@ -11,7 +11,9 @@ BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
 
 %define prefix   %{_prefix}
 
-Requires: fuse >= 2.5, fuse-libs >= 2.5
+BuildRequires: fuse-devel >= 2.5, gfarm-libs >= 1.4, gfarm-devel >= 1.4
+
+Requires: fuse >= 2.5, fuse-libs >= 2.5, gfarm-libs >= 1.4, gfarm-client >= 1.4
 
 %description
 GfarmFS-FUSE enables you to mount a Gfarm filesystem in userspace via
@@ -44,6 +46,9 @@ install -m 755 contrib/mount.gfarmfs/umount.gfarmfs $RPM_BUILD_ROOT%{prefix}/bin
 %doc README README.ja ChangeLog ChangeLog.ja
 
 %changelog
+* Tue Nov 14 2006  <takuya@soum.co.jp> 1.4.0-0
+- Depend on gfarm-libs and gfarm-client.
+- Add BuildRequires.
 * Thu Sep 07 2006  <tatebe@gmail.com> 1.3.0-2
 - Add mount.gfarmfs and umount.gfarmfs.
 * Wed Aug 30 2006  <tatebe@gmail.com> 1.3.0-1
