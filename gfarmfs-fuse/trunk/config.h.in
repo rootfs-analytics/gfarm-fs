@@ -39,9 +39,6 @@
 /* Define to 1 if you have the <unistd.h> header file. */
 #undef HAVE_UNISTD_H
 
-/* Define to 1 if you have the <xattr.h> header file. */
-#undef HAVE_XATTR_H
-
 /* Name of package */
 #undef PACKAGE
 

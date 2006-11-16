@@ -43,13 +43,6 @@
 #if USE_GFS_STATFSNODE
 #include <sys/statfs.h>
 #endif
-#if HAVE_SETXATTR
-#if 0
-#include <sys/xattr.h>
-#else
-#undef HAVE_SETXATTR
-#endif
-#endif
 
 #include <gfarm/gfarm.h>
 /* These definitions may conflict with <gfarm/gfarm_config.h> */
@@ -101,6 +94,8 @@
 #define ENABLE_NOFLAGMENTINFO_AUTO_DELETE 0
 
 #define ENABLE_ASYNC_REPLICATION 1
+
+#define ENABLE_XATTR 0
 
 /* ################################################################### */
 
@@ -1644,7 +1639,7 @@ end:
 }
 #endif
 
-#ifdef HAVE_SETXATTR
+#if ENABLE_XATTR
 static int
 gfarmfs_setxattr(const char *path, const char *name, const char *value,
 		 size_t size, int flags)
@@ -1670,7 +1665,7 @@ gfarmfs_removexattr(const char *path, const char *name)
 {
 	return (-ENOSYS);
 }
-#endif /* HAVE_SETXATTR */
+#endif /* ENABLE_XATTR */
 
 static struct fuse_operations gfarmfs_oper_base = {
 	.getattr   = gfarmfs_getattr,
@@ -1702,7 +1697,7 @@ static struct fuse_operations gfarmfs_oper_base = {
 	.access    = gfarmfs_access,
 #endif
 	.flush     = gfarmfs_flush,
-#ifdef HAVE_SETXATTR
+#if ENABLE_XATTR
 	.setxattr    = gfarmfs_setxattr,
 	.getxattr    = gfarmfs_getxattr,
 	.listxattr   = gfarmfs_listxattr,
@@ -3499,7 +3494,7 @@ static struct fuse_operations gfarmfs_oper_share_gf = {
 	.access    = gfarmfs_access,
 #endif
 	.flush     = gfarmfs_flush,
-#ifdef HAVE_SETXATTR
+#if ENABLE_XATTR
 	.setxattr    = gfarmfs_setxattr,
 	.getxattr    = gfarmfs_getxattr,
 	.listxattr   = gfarmfs_listxattr,
