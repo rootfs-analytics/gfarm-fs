@@ -122,6 +122,7 @@ sharedstatedir = @sharedstatedir@
 sysconfdir = @sysconfdir@
 target_alias = @target_alias@
 bin_SCRIPTS = mount.gfarmfs umount.gfarmfs
+EXTRA_DIST = $(bin_SCRIPTS)
 all: all-am
 
 .SUFFIXES:
