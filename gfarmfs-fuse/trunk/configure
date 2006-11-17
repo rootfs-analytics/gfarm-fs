@@ -2933,6 +2933,10 @@ test -z "$INSTALL_SCRIPT" && INSTALL_SCRIPT='${INSTALL}'
 test -z "$INSTALL_DATA" && INSTALL_DATA='${INSTALL} -m 644'
 
 
+if test x$CC = xgcc; then
+  CFLAGS="$CFLAGS -Wall"
+fi
+
 ### Checks for libraries.
 
 
