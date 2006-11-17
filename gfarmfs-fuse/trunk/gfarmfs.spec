@@ -1,7 +1,7 @@
 Summary: GfarmFS-FUSE
 Name: gfarmfs-fuse
 Version: 1.4.0
-Release: 0
+Release: 1
 License: BSD
 Group: Applications/Internet
 Vendor: National Institute of Advanced Industrial Science and Technology
@@ -24,15 +24,11 @@ FUSE mechanism.
 
 %build
 ./configure --prefix=%{prefix}
+make
 
 %install
 [ "$RPM_BUILD_ROOT" != "/" ] && rm -rf $RPM_BUILD_ROOT
-make
-mkdir -p $RPM_BUILD_ROOT%{prefix}/bin
-install -m 755 gfarmfs $RPM_BUILD_ROOT%{prefix}/bin/gfarmfs
-install -m 755 contrib/gfarmfs-exec/gfarmfs-exec.sh $RPM_BUILD_ROOT%{prefix}/bin/gfarmfs-exec.sh
-install -m 755 contrib/mount.gfarmfs/mount.gfarmfs $RPM_BUILD_ROOT%{prefix}/bin/mount.gfarmfs
-install -m 755 contrib/mount.gfarmfs/umount.gfarmfs $RPM_BUILD_ROOT%{prefix}/bin/umount.gfarmfs
+make DESTDIR=${RPM_BUILD_ROOT} install
 
 %clean
 [ "$RPM_BUILD_ROOT" != "/" ] && rm -rf $RPM_BUILD_ROOT
@@ -46,6 +42,8 @@ install -m 755 contrib/mount.gfarmfs/umount.gfarmfs $RPM_BUILD_ROOT%{prefix}/bin
 %doc README README.ja ChangeLog ChangeLog.ja
 
 %changelog
+* Fri Nov 17 2006  <takuya@soum.co.jp> 1.4.0-1
+- Use "make install". ("contrib/" is included in Makefile by automake.)
 * Tue Nov 14 2006  <takuya@soum.co.jp> 1.4.0-0
 - Depend on gfarm-libs and gfarm-client.
 - Add BuildRequires.
