@@ -385,11 +385,12 @@ gfarmfs_fastcreate_flush()
 		char *e;
 
 		if (gfarmfs_debug >= 2) {
-			printf("fastcreate flush: %s\n", fc.path);
+			printf("FASTCREATE: flush: %s\n", fc.path);
 		}
 		e = gfarmfs_create_empty_file(fc.path, fc.mode);
 		if (e != NULL) {
-			gfarmfs_errlog("fastcreate flush error: %s: %s", fc.path, e);
+			gfarmfs_errlog("FASTCREATE: flush: %s: %s",
+				       fc.path, e);
 		}
 		gfarmfs_fastcreate_free();
 		return (e);
@@ -409,7 +410,7 @@ gfarmfs_fastcreate_save(const char *path, mode_t mode)
 	}
 	fc.mode = mode;
 	if (gfarmfs_debug >= 2) {
-		printf("fastcreate add: %s\n", path);
+		printf("FASTCREATE: add: %s\n", path);
 	}
 	return (NULL);
 }
@@ -422,7 +423,7 @@ gfarmfs_fastcreate_open(char *url, int flags, GFS_File *gfp)
 
 	if (fc.path != NULL && strcmp(fc.path, path) == 0) {
 		if (gfarmfs_debug >= 2) {
-			printf("fastcreate open: %s\n", path);
+			printf("FASTCREATE: open: %s\n", path);
 		}
 		e = gfs_pio_create(url,
 				   flags|GFARM_FILE_TRUNC|GFARM_FILE_EXCLUSIVE,
@@ -604,12 +605,15 @@ gfarmfs_exact_filesize(char *url, file_offset_t *sizep, mode_t mode)
 fstat_close:
 	gfs_pio_close(gf);
 	if (e != NULL && e != GFARM_ERR_NO_SUCH_OBJECT)
-		gfarmfs_errlog("exact_filesize: %s: %s", gfarm_url2path(url), e);
+		gfarmfs_errlog("exact_filesize: %s: %s",
+			       gfarm_url2path(url), e);
 revert_mode:
 	if (change_mode == 1) {
 		e = gfs_chmod(url, save_mode);
 		if (e != NULL)
-			gfarmfs_errlog("exact_filesize: revert st_mode (%o): %s: %s", save_mode, gfarm_url2path(url), e);
+			gfarmfs_errlog("exact_filesize: "
+				       "revert st_mode (%o): %s: %s",
+				       save_mode, gfarm_url2path(url), e);
 	}
 	return (e);
 }
@@ -2205,7 +2209,7 @@ gfarmfs_scramble_replicate(char *url)
 	e = gfarm_terminate();
 emsg:
 	if (e != NULL)
-		gfarmfs_errlog("replication: %s: %s", gfarm_url2path(url), e);
+		gfarmfs_errlog("REPLICATE: %s: %s", gfarm_url2path(url), e);
 }
 #endif
 
@@ -2312,11 +2316,12 @@ gfarmfs_gfrep_H_init(char *url, int *nhostsp, char **hosts)
 		*nhostsp = 0;
 		e = NULL;
 		gfarmfs_errlog(
-			"replication: "
-			"warning: require(%d) - have(%d) > selected(0)",
+			"REPLICATE: WARN: "
+			"require(%d) - have(%d) > selected(0)",
 			nrequire, nhave);
 		goto free_tmplist;
 	}
+	/* ntmplist > 0 */
 	/* schedule the number (nrequire - nhave) of hosts from tmplist */
 	*nhostsp = nrequire - nhave;
 	if (*nhostsp > ntmplist)
@@ -2339,7 +2344,7 @@ gfarmfs_gfrep_H_init(char *url, int *nhostsp, char **hosts)
 		}
 		if (nrequire - nhave > *nhostsp)
 			gfarmfs_errlog(
-				"replication: warning: "
+				"REPLICATE: WARN: "
 				"require(%d) - have(%d) > selected(%d)",
 			nrequire, nhave, *nhostsp);
 	}
@@ -2366,50 +2371,46 @@ gfarmfs_gfrep_H_exec(char *url, int nhosts, char **hosts)
 
 	if (enable_errlog) {  /* change stderr of gfrep */
 		if (dup2(fileno(enable_errlog), fileno(stderr)) == -1) {
-			gfarmfs_errlog("replication: dup2: %s",
-				       strerror(errno));
+			gfarmfs_errlog("REPLICATE: dup2: %s", strerror(errno));
 			return;
 		}
 	}
 	if (pipe(pfds) == -1)
-		gfarmfs_errlog("replication: pipe: %s",
-			       strerror(errno));
+		gfarmfs_errlog("REPLICATE: pipe: %s", strerror(errno));
 	p = fork();
 	if (p == -1) {
-		gfarmfs_errlog("replication: fork: %s", strerror(errno));
+		gfarmfs_errlog("REPLICATE: fork: %s", strerror(errno));
 		return;
 	} else if (p == 0) { /* grandchild */
 		close(pfds[1]);
 		if (dup2(pfds[0], 0) == -1) { /* stdin */
-			gfarmfs_errlog("replication: dup2(grandchild): %s",
+			gfarmfs_errlog("REPLICATE: dup2(grandchild): %s",
 				       strerror(errno));
 			_exit(0);
 		}
 		close(pfds[0]);
 		if (execl(gfrep_path, gfrep_path, "-H", "-", url, (char*)NULL)
 		    == -1)
-			gfarmfs_errlog("replication: execvp: %s",
+			gfarmfs_errlog("REPLICATE: execvp: %s",
 				       strerror(errno));
 		_exit(1);
 	}
 	close(pfds[0]);
 	f = fdopen(pfds[1], "w");
 	if (f == NULL) {
-		gfarmfs_errlog("replication: fdopen: %s",
-			       strerror(errno));
+		gfarmfs_errlog("REPLICATE: fdopen: %s", strerror(errno));
 		close(pfds[1]);
 		return;
 	}
 	for (i = 0; i < nhosts; i++) {
 		if (fprintf(f, "%s\n", hosts[i]) < 0) {
-			gfarmfs_errlog("replication: fprintf: %s",
+			gfarmfs_errlog("REPLICATE: fprintf: %s",
 				       strerror(errno));
 			break;
 		}
 	}
 	if (fclose(f) == EOF)
-		gfarmfs_errlog("replication: fclose: %s",
-                               strerror(errno));
+		gfarmfs_errlog("REPLICATE: fclose: %s", strerror(errno));
 	waitpid(p, NULL, 0);
 }
 #endif /* end of USE_GFREP_H */
@@ -2454,14 +2455,14 @@ gfarmfs_gfrep_N_exec(char *url)
 
 	if (enable_errlog) {  /* change stderr of gfrep */
 		if (dup2(fileno(enable_errlog), fileno(stderr)) == -1) {
-			gfarmfs_errlog("replication: dup2: %s",
+			gfarmfs_errlog("REPLICATE: dup2: %s",
 				       strerror(errno));
 			return;
 		}
 	}
 	p = fork();
 	if (p == -1) {
-		gfarmfs_errlog("replication: fork: %s", strerror(errno));
+		gfarmfs_errlog("REPLICATE: fork: %s", strerror(errno));
 		return;
 	} else if (p == 0) { /* grandchild */
 		if (gfrep_dom == NULL)
@@ -2469,7 +2470,7 @@ gfarmfs_gfrep_N_exec(char *url)
 		else
 			gfrep_N_argv[5] = url;
 		if (execv(gfrep_N_argv[0], gfrep_N_argv) == -1)
-			gfarmfs_errlog("replication: execvp: %s",
+			gfarmfs_errlog("REPLICATE: execvp: %s",
 				       strerror(errno));
 		_exit(1);
 	}
@@ -2516,6 +2517,8 @@ gfarmfs_async_replicate(char *url, FH fh)
 	} else {
 #ifdef USE_GFREP_H
 #if FIX_GFREP_H
+		/* gfrep -H cannot operates an executable file in
+		   gfarm v1.4 or earlier */
 		struct gfs_stat gs;
 		mode_t mode;
 		e = gfs_stat(url, &gs);
@@ -2523,11 +2526,11 @@ gfarmfs_async_replicate(char *url, FH fh)
 			return (e);
 		mode = gs.st_mode;
 		gfs_stat_free(&gs);
-		if (!GFARM_S_IS_FRAGMENTED_FILE(mode)) { /* program */
+		if (!GFARM_S_IS_FRAGMENTED_FILE(mode)) {
 			gfarmfs_gfrep_N_init();
 			rep_mode = REP_GFREP_N;
 		} else
-#endif
+#endif /* FIX_GFREP_H */
 		if (enable_replication == REP_GFREP_H) { /* normal */
 			if (nhosts > 0) {
 				hosts = calloc(nhosts, sizeof(char *));
@@ -2538,8 +2541,10 @@ gfarmfs_async_replicate(char *url, FH fh)
 				return (NULL);
 			}
 			e = gfarmfs_gfrep_H_init(url, &nhosts, hosts);
-			if (e != NULL)
+			if (e != NULL) {
+				free(hosts);
 				return (e); /* error */
+			}
 			if (nhosts == 0) {
 				/* do nothing */
 				free(hosts);
@@ -2569,7 +2574,7 @@ gfarmfs_async_replicate(char *url, FH fh)
 	if (fh->child_pid == -1) {
 		/* error */
 		int save_errno = errno;
-		gfarmfs_errlog("replication: fork: %s", strerror(save_errno));
+		gfarmfs_errlog("REPLICATE: fork: %s", strerror(save_errno));
 		(void)gfarmfs_async_fork_count_decrement();
 		*fh->shm_child_status = CHILD_DONE;
 		e = gfarm_errno_to_error(save_errno);
@@ -2820,7 +2825,10 @@ gfarmfs_open_common_share_gf(char *opname,
 #endif
 				if (e2 != NULL) {
 					/* What happen ? */
-					gfarmfs_errlog("WARN: OPEN: chmod failed: %o: %s: %s", save_mode, path, e2);
+					gfarmfs_errlog("OPEN: WARN: "
+						       "chmod failed: "
+						       "%o: %s: %s",
+						       save_mode, path, e2);
 				}
 			}
 		}
@@ -3052,7 +3060,10 @@ gfarmfs_rename_share_gf_check_open(char *from_url, char *to_url,
 #endif
 			if (e3 != NULL) {
 				/* What happen ? */
-				gfarmfs_errlog("WARN: RENAME: chmod failed: %o: %s: %s", from_mode, gfarm_url2path(url), e3);
+				gfarmfs_errlog("RENAME: WARN: "
+					       "chmod failed: %o: %s: %s",
+					       from_mode, gfarm_url2path(url),
+					       e3);
 			}
 		}
 		if (e2 == NULL) { /* open succeeeded */
@@ -3064,7 +3075,9 @@ gfarmfs_rename_share_gf_check_open(char *from_url, char *to_url,
 				gfs_stat_free(&gs);
 			} else {
 				/* What happen ? */
-				gfarmfs_errlog("FATAL: RENAME: some problem may happen later: %s", gfarm_url2path(url));
+				gfarmfs_errlog("RENAME: FATAL: "
+					       "some problem may happen later:"
+					       " %s", gfarm_url2path(url));
 			}
 		} else { /* somebody changes st_mode */
 			if (retry == 0) {
@@ -3073,7 +3086,9 @@ gfarmfs_rename_share_gf_check_open(char *from_url, char *to_url,
 			}
 			/* fatal situation ! */
 			fh->gf = NULL;
-			gfarmfs_errlog("FATAL: RENAME: can't read/write more than this: %s: %s", gfarm_url2path(url), e2);
+			gfarmfs_errlog("RENAME: FATAL: "
+				       "can't read/write more than this: "
+				       "%s: %s", gfarm_url2path(url), e2);
 			/* ignore e2 */
 		}
 	} /* (fh != NULL) */
@@ -3260,7 +3275,11 @@ gfarmfs_release_share_gf(const char *path, struct fuse_file_info *fi)
 		if (enable_replication != REP_DISABLE /* enable */ &&
 		    (fh->flags & GFARM_FILE_ACCMODE) != GFARM_FILE_RDONLY &&
 		    e == NULL) {
-			gfarmfs_async_replicate(url, fh);
+			e = gfarmfs_async_replicate(url, fh);
+			if (e != NULL) {
+				gfarmfs_errlog("REPLICATE: %s", e);
+				e = NULL;
+			}
 		} else { /* disable or read-open or error */
 			FH_REMOVE2(url, fh->ino);
 			FH_FREE(fh);
@@ -3529,7 +3548,7 @@ commandpath(char *command)
 	static int bufsize = 0;
 	static char *buffer = NULL;
 	char *path;
-        int span, dirlen;
+	int span, dirlen;
 
 	if (strchr(command, '/') != NULL) {     /* absolute or relative path */
 		return iscommand(command) ? command : NULL;
@@ -3612,7 +3631,7 @@ gfarmfs_usage()
 "Usage: %s [GfarmFS options] <mountpoint> [FUSE options]\n"
 "\n"
 "GfarmFS options:\n"
-"    -m <dir on Gfarm>      set mount point on Gfarm.\n"
+"    -m <dir on Gfarm>      set mount point on Gfarm\n"
 "                           (ex. -m /username cut gfarm:/username)\n"
 #ifdef SYMLINK_MODE
 "    -s, --symlink          enable symlink(2) to work (emulation)\n"
@@ -3626,7 +3645,7 @@ gfarmfs_usage()
 "    -S, --disable-statfs   disable statfs(2)\n"
 #endif
 #if ENABLE_ASYNC_REPLICATION
-"    -N <num-of-replicas>   run gfrep after write-close\n"
+"    -N <num-of-replicas>   run gfrep command after write-close\n"
 "    -D <domainname>        domainname of destination for -N option\n"
 #endif
 "    -a <architecture>      for a client not registered by gfhost\n"
