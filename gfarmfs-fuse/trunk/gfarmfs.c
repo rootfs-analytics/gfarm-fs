@@ -1151,24 +1151,21 @@ gfarmfs_chown(const char *path, uid_t uid, gid_t gid)
 	struct gfs_stat s;
 
 	gfarmfs_fastcreate_check();
-	e = gfarmfs_init();
+	if ((e = gfarmfs_init()) != NULL) goto end;
+	e = add_gfarm_prefix(path, &url);
 	if (e == NULL) {
-		e = add_gfarm_prefix(path, &url);
-		if (e == NULL) {
-			e = gfs_stat(url, &s);
-			free(url);
-		}
+		e = gfs_stat(url, &s);
+		printf("%s: %s\n", url, e);
 #ifdef SYMLINK_MODE
-		if (enable_symlink == 1 && e == GFARM_ERR_NO_SUCH_OBJECT) {
+		if (enable_symlink == 1 &&
+			 e == GFARM_ERR_NO_SUCH_OBJECT) {
 			free(url);
 			e = add_gfarm_prefix_symlink_suffix(path, &url);
 			if (gfarmfs_debug >= 2) {
 				printf("CHOWN: for symlink: %s\n", gfarm_url2path(url));
 			}
-			if (e == NULL) {
+			if (e == NULL)
 				e = gfs_stat(url, &s);
-				free(url);
-			}
 		}
 #endif
 		if (e == NULL) {
@@ -1179,8 +1176,9 @@ gfarmfs_chown(const char *path, uid_t uid, gid_t gid)
 			} /* XXX - else: do nothing */
 			gfs_stat_free(&s);
 		}
+		free(url);
 	}
-
+end:
 	return gfarmfs_final("CHOWN", e, 0, path);
 }
 
@@ -3193,6 +3191,8 @@ gfarmfs_getattr_share_gf(const char *path, struct stat *stbuf)
 	e = convert_gfs_stat_to_stat(url, &gs1, stbuf, symlinkmode);
 	gfs_stat_free(&gs1);
 	if (e != NULL)
+		goto free_url;
+	if (!S_ISREG(stbuf->st_mode)) /* && e == NULL: skip */
 		goto free_url;
 	fh = FH_GET2(url, gs1.st_ino);
 #if ENABLE_ASYNC_REPLICATION
