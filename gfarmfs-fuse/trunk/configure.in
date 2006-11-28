@@ -44,7 +44,7 @@ echo "Please install the headers of Gfarm."
 exit 1
 ])
 
-AC_CHECK_HEADERS(gfarm/gfarm_config.h paths.h)
+AC_CHECK_HEADERS(paths.h)
 
 ### Check for FUSE interface.
 
