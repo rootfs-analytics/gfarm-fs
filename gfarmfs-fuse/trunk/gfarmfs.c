@@ -2374,12 +2374,6 @@ gfarmfs_gfrep_H_exec(char *url, int nhosts, char **hosts)
 	int pfds[2];
 	FILE *f;
 
-	if (enable_errlog) {  /* change stderr of gfrep */
-		if (dup2(fileno(enable_errlog), fileno(stderr)) == -1) {
-			gfarmfs_errlog("REPLICATE: dup2: %s", strerror(errno));
-			return;
-		}
-	}
 	if (pipe(pfds) == -1)
 		gfarmfs_errlog("REPLICATE: pipe: %s", strerror(errno));
 	p = fork();
@@ -2458,13 +2452,6 @@ gfarmfs_gfrep_N_exec(char *url)
 {
 	int p;
 
-	if (enable_errlog) {  /* change stderr of gfrep */
-		if (dup2(fileno(enable_errlog), fileno(stderr)) == -1) {
-			gfarmfs_errlog("REPLICATE: dup2: %s",
-				       strerror(errno));
-			return;
-		}
-	}
 	p = fork();
 	if (p == -1) {
 		gfarmfs_errlog("REPLICATE: fork: %s", strerror(errno));
@@ -3991,10 +3978,15 @@ setup_options()
 		gfarmfs_oper_p->statfs = NULL; /* disable */
 #endif
 
-	if (enable_errlog != NULL)
+	if (enable_errlog != NULL) {
 		errlog_out = enable_errlog;
-	else
+		if (dup2(fileno(enable_errlog), fileno(stderr)) == -1) {
+			fprintf(stderr, "dup2: %s\n", strerror(errno));
+			exit(1);
+		}
+	} else {
 		errlog_out = stderr;
+	}
 }
 
 static void
