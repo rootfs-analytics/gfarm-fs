@@ -88,8 +88,8 @@
 #define REVISE_UTIME 1  /* problem of gfarm v1 */
 #endif
 
-#define REVISE_CHMOD 0  /* limitation in global view
-			   of gfarm v1.3.1 or earlier */
+/* limitation in global view of gfarm v1.3.1 or earlier */
+#define REVISE_CHMOD 0
 
 #define ENABLE_NOFLAGMENTINFO_AUTO_DELETE 0
 
@@ -135,7 +135,8 @@ static int force_gfrep_N = 0;
 #endif /* ENABLE_ASYNC_REPLICATION */
 
 /* 0: use gfarmfs_*_share_gf() operations (new)
-   1: use normal I/O operations (old) */
+ * 1: use normal I/O operations (old)
+ */
 static int use_old_functions = 0;
 
 /* default: enable */
@@ -536,8 +537,8 @@ gfarmfs_exact_filesize(char *url, file_offset_t *sizep, mode_t mode)
 {
 	/* get st_size using gfs_fstat */
 	/* gfs_stat cannot get the exact st_size while the file is opened.
-	   But gfs_fstat can do it.
-	*/
+	 * But gfs_fstat can do it.
+	 */
 	GFS_File gf;
 	int flags;
 	char *e;
@@ -1196,7 +1197,7 @@ gfarmfs_truncate_common(char *url, off_t size)
 		e = gfs_pio_truncate(gf, size);
 	}
 	gfs_pio_close(gf);
-	return (NULL);
+	return (e);
 }
 
 static int
@@ -2119,10 +2120,10 @@ gfarmfs_async_fork_count_initialize()
 }
 
 static char *
-gfarmfs_async_fork_count_increment()
+gfarmfs_async_fork_count_increment_n(int n)
 {
 	int save_errno;
-	struct sembuf sb = {0, -1, 0};
+	struct sembuf sb = {0, -n, 0};
 	if (semop(semid, &sb, 1) == -1) {
 		save_errno = errno;
 		perror("semop");
@@ -2133,10 +2134,10 @@ gfarmfs_async_fork_count_increment()
 }
 
 static char *
-gfarmfs_async_fork_count_decrement()
+gfarmfs_async_fork_count_decrement_n(int n)
 {
 	int save_errno;
-	struct sembuf sb = {0, 1, 0};
+	struct sembuf sb = {0, n, 0};
 	if (semop(semid, &sb, 1) == -1) {
 		save_errno = errno;
 		perror("semop");
@@ -2154,6 +2155,7 @@ gfarmfs_async_fork_count_finalize()
 }
 
 #else  /* ! USE_SEMAPHORE */
+/* not work correctly  */
 static int *fork_count = NULL; /* shm (for counter) */
 
 static char *
@@ -2169,26 +2171,31 @@ gfarmfs_async_fork_count_initialize()
 }
 
 static char *
-gfarmfs_async_fork_count_increment()
+gfarmfs_async_fork_count_increment_n(int n)
 {
-	if (*fork_count >= DEFAULT_FORK_MAX)
+	*fork_count += n;
+	if (*fork_count > DEFAULT_FORK_MAX)
 		waitpid(-1, NULL, 0);
-	(*fork_count)++;
 	return (NULL);
 }
 
 static char *
-gfarmfs_async_fork_count_decrement()
+gfarmfs_async_fork_count_decrement_n(int n)
 {
-	(*fork_count)--;
+	*fork_count -= n;
 	return (NULL);
 }
 
 #define gfarmfs_async_fork_count_finalize()
 #endif /* USE_SEMAPHORE */
 
+#define gfarmfs_async_fork_count_increment() \
+	gfarmfs_async_fork_count_increment_n(1)
+
+#define gfarmfs_async_fork_count_decrement() \
+	gfarmfs_async_fork_count_decrement_n(1)
+
 #ifdef USE_GFARM_SCRAMBLE
-char *gfs_scramble_make_replica(char *);
 
 static void
 gfarmfs_scramble_replicate(char *url)
@@ -2213,9 +2220,9 @@ emsg:
 
 #ifdef USE_GFREP_H
 /* *nhostsp > 0 : OK
-   *nhostsp == 0: do nothing
-   *nhostsp = -1: retry (gfrep -N)
-   error: undefined
+ * *nhostsp == 0: do nothing
+ * *nhostsp = -1: retry (gfrep -N)
+ * error: undefined
  */
 static char *
 gfarmfs_gfrep_H_init(char *url, int *nhostsp, char **hosts)
@@ -2515,8 +2522,9 @@ gfarmfs_async_replicate(char *url, FH fh)
 	} else {
 #ifdef USE_GFREP_H
 #if FIX_GFREP_H
-		/* gfrep -H cannot operates an executable file in
-		   gfarm v1.4 or earlier */
+		/* gfrep -H cannot operate an executable file in
+		 * gfarm v1.4 or earlier
+		 */
 		struct gfs_stat gs;
 		mode_t mode;
 		e = gfs_stat(url, &gs);
@@ -2814,8 +2822,9 @@ gfarmfs_open_common_share_gf(char *opname,
 				e2 = gfs_chmod(url, save_mode);
 #else
 				/* gfs_fchmod cannot work in global view
-				   (the case of nsection >= 2)
-				   on gfarm v1.3.1 or earlier */
+				 * (the case of nsection >= 2)
+				 * on gfarm v1.3.1 or earlier
+				 */
 				if (e == NULL)
 					e2 = gfs_fchmod(gf, save_mode);
 				else
@@ -2872,11 +2881,15 @@ gfarmfs_chmod_share_gf_internal(char *url, mode_t mode)
 	char *e;
 	struct gfs_stat gs;
 	FH fh;
-	mode_t old_mode;
 
 	e = gfs_stat(url, &gs);
 	if (e != NULL)
 		goto end;
+	if (!GFARM_S_ISREG(gs.st_mode)) {
+		e = gfs_chmod(url, mode);
+		goto free_gfs_stat;
+	}
+	/* regular file */
 	fh = FH_GET2(url, gs.st_ino);
 #if ENABLE_ASYNC_REPLICATION
 	gfarmfs_async_wait(fh);
@@ -2884,25 +2897,20 @@ gfarmfs_chmod_share_gf_internal(char *url, mode_t mode)
 		fh = NULL; /* closed */
 #endif
 #if REVISE_CHMOD
-	if (fh != NULL) { /* opened */
+	if (fh != NULL) { /* somebody opens this file */
 		/* must chmod on release */
 		fh->mode_changed = 1;
 		fh->save_mode = mode;
-	}
-#endif
-	old_mode = gs.st_mode;
-	gfs_stat_free(&gs);
-#if REVISE_CHMOD
-	if (fh != NULL) { /* somebody opens this file */
-		if (IS_EXECUTABLE(old_mode) == IS_EXECUTABLE(mode)) {
+		if (IS_EXECUTABLE(gs.st_mode) == IS_EXECUTABLE(mode)) {
 			e = gfs_chmod(url, mode);
-			if (e != NULL && fh->mode_changed == 1)
+			if (e != NULL)
 				fh->mode_changed = 0;
 		}
 		/* (else): somebody opens this file and changes executable bit.
-		   -> gfs_chmod on RELEASE only
-		   In Gfarm v1, gfs_pio_close fails at replacing section info
-		   in this case. */
+		 * -> gfs_chmod on RELEASE only
+		 * In Gfarm v1, gfs_pio_close fails at replacing section info
+		 * in this case.
+		 */
 		/* always succeeed ... (e == NULL) */
 	} else {
 		/* nobody opens this file */
@@ -2911,11 +2919,14 @@ gfarmfs_chmod_share_gf_internal(char *url, mode_t mode)
 #else
 	if (fh != NULL) /* somebody opens this open */
 		/* gfs_fchmod cannot work in global view
-		   (the case of nsection >= 2) on gfarm v1.3.1 or earlier */
+		 * (the case of nsection >= 2) on gfarm v1.3.1 or earlier
+		 */
 		e = gfs_fchmod(fh->gf, mode);
 	else
 		e = gfs_chmod(url, mode);
 #endif
+free_gfs_stat:
+	gfs_stat_free(&gs);
 end:
 	return (e);
 }
@@ -3050,8 +3061,9 @@ gfarmfs_rename_share_gf_check_open(char *from_url, char *to_url,
 #else
 			if (e2 == NULL)
 				/* gfs_fchmod cannot work in global view
-				   (the case of nsection >= 2)
-				   on gfarm v1.3.1 or earlier */
+				 * (the case of nsection >= 2)
+				 * on gfarm v1.3.1 or earlier
+				 */
 				e3 = gfs_fchmod(gf, from_mode);
 			else
 				e3 = gfs_chmod(url, from_mode);
@@ -3147,11 +3159,22 @@ gfarmfs_rename_share_gf(const char *from, const char *to)
 #endif
 	if (e != NULL)
 		goto free_to_url;
-	save_ino = gs.st_ino;
-	save_mode = gs.st_mode;
-	gfs_stat_free(&gs);
-	e = gfarmfs_rename_share_gf_check_open(from_url, to_url,
-					       save_ino, save_mode);
+	if (GFARM_S_ISDIR(gs.st_mode)) {
+		gfs_stat_free(&gs);
+		/* wait all background processes of replication */
+		gfarmfs_async_fork_count_increment_n(DEFAULT_FORK_MAX);
+		wait(NULL);
+		e = gfs_rename(from_url, to_url);
+		gfarmfs_async_fork_count_decrement_n(DEFAULT_FORK_MAX);
+	} else if (GFARM_S_ISREG(gs.st_mode)) {
+		save_ino = gs.st_ino;
+		save_mode = gs.st_mode;
+		gfs_stat_free(&gs);
+		e = gfarmfs_rename_share_gf_check_open(from_url, to_url,
+						       save_ino, save_mode);
+	} else {
+		e = gfs_rename(from_url, to_url);
+	}
 free_to_url:
 	free(to_url);
 free_from_url:
@@ -3189,19 +3212,18 @@ gfarmfs_getattr_share_gf(const char *path, struct stat *stbuf)
 	if (e != NULL)
 		goto free_url;
 	e = convert_gfs_stat_to_stat(url, &gs1, stbuf, symlinkmode);
-	gfs_stat_free(&gs1);
 	if (e != NULL)
-		goto free_url;
+		goto free_gfs_stat;
 	if (!S_ISREG(stbuf->st_mode)) /* && e == NULL: skip */
-		goto free_url;
+		goto free_gfs_stat;
 	fh = FH_GET2(url, gs1.st_ino);
 #if ENABLE_ASYNC_REPLICATION
 	if (!gfarmfs_fh_is_opened(fh))
 		fh = NULL;
 #endif
 	/* gfs_stat cannot get the exact st_size while the file is opened.
-	   But gfs_fstat can do it.
-	*/
+	 * But gfs_fstat can do it.
+	 */
 	if (fh != NULL) {  /* somebody opens this file. */
 #if REVISE_CHMOD
 		if (fh->mode_changed)
@@ -3220,6 +3242,8 @@ gfarmfs_getattr_share_gf(const char *path, struct stat *stbuf)
 		if (e2 == NULL)
 			stbuf->st_size = size;
 	}
+free_gfs_stat:
+	gfs_stat_free(&gs1);
 free_url:
 	free(url);
 end:
