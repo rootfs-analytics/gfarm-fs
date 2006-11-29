@@ -6,7 +6,11 @@ New Features
 
   * add -S and -D options which enable replication to work asynchronously.
   * add --errlog option.
-  
+
+Update Features
+
+  * -a option can work correctly.
+
 Bug fix
 
   * When filesystem nodes are added or removed, statfs(2) can calculate
