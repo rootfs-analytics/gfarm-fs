@@ -1,18 +1,16 @@
-### Process this file with autoconf to produce a configure script.
-
 AC_PREREQ(2.59)
 AC_INIT(gfarmfs-fuse, 1.4.0)
-AM_INIT_AUTOMAKE(gfarmfs-fuse, 1.4.0)
-
+AM_INIT_AUTOMAKE(AC_PACKAGE_NAME, AC_PACKAGE_VERSION)
 AC_CONFIG_SRCDIR(gfarmfs.c)
 AM_CONFIG_HEADER(config.h)
 
 AC_PROG_CC
 AC_PROG_INSTALL
 
-if test x$CC = xgcc; then
-  CFLAGS="$CFLAGS -Wall"
-fi
+export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH
+PKG_CHECK_MODULES(GFARMFS, [fuse >= 2.2 glib-2.0])
+CFLAGS="$CFLAGS -Wall -W -D_REENTRANT $GFARMFS_CFLAGS"
+LIBS="$GFARMFS_LIBS"
 
 ### Checks for libraries.
 AC_CHECK_LIB(fuse, fuse_main,,
@@ -29,15 +27,6 @@ exit 1
 
 ### Checks for header files.
 
-AC_TRY_CPP([
-#define _FILE_OFFSET_BITS 64
-#include <fuse.h>
-],,
-[
-echo "Please install the headers of FUSE."
-exit 1
-])
-
 AC_CHECK_HEADER(gfarm/gfarm.h,,
 [
 echo "Please install the headers of Gfarm."
@@ -49,51 +38,59 @@ AC_CHECK_HEADERS(paths.h)
 ### Check for FUSE interface.
 
 fuse_interface=0
-
-if test $fuse_interface = 0; then
+KERNEL_NAME=`uname -s`
+if test x"$KERNEL_NAME" = x"Linux"; then
+  if test $fuse_interface = 0; then
 AC_TRY_CPP([
 #define _FILE_OFFSET_BITS 64
 #define FUSE_USE_VERSION 25
 #include <fuse.h>
 ],fuse_interface=25,)
-fi
-
-if test $fuse_interface = 0; then
+  fi
+  if test $fuse_interface = 0; then
 AC_TRY_CPP([
 #define _FILE_OFFSET_BITS 64
 #define FUSE_USE_VERSION 22
 #include <fuse.h>
 ],fuse_interface=22,)
-fi
-
-if test $fuse_interface = 0; then
-  echo "Please install FUSE 2.2 or later."
-  exit 1
-fi
-
-if test $fuse_interface = 25; then
-  fuse_interface=22
-  KERNEL_NAME=`uname -s`
-  KERNEL_RELEASE=`uname -r`
-  KLEN=`expr length $KERNEL_NAME`
-  RLEN=`expr length $KERNEL_RELEASE`
-  if test $KLEN -ne 0 -a $RLEN -ne 0 -a x"$KERNEL_NAME" = x"Linux"; then
-    MAJVER=`echo $KERNEL_RELEASE | cut -f-2 -d.`
-    if test x"$MAJVER" = x"2.6"; then
-      MINVER=`echo $KERNEL_RELEASE | cut -f 3 -d. | cut -f 1 -d. | cut -f 1 -d- `
-      if test $MINVER -ge 15; then
-        fuse_interface=25
+  fi
+  if test $fuse_interface = 0; then
+    echo "Please install FUSE 2.2 or later."
+    exit 1
+  fi
+  if test $fuse_interface = 25; then
+    fuse_interface=22
+    KERNEL_RELEASE=`uname -r`
+    KLEN=`expr length $KERNEL_NAME`
+    RLEN=`expr length $KERNEL_RELEASE`
+    if test $KLEN -ne 0 -a $RLEN -ne 0 -a x"$KERNEL_NAME" = x"Linux"; then
+      MAJVER=`echo $KERNEL_RELEASE | cut -f-2 -d.`
+      if test x"$MAJVER" = x"2.6"; then
+        MINVER=`echo $KERNEL_RELEASE | cut -f 3 -d. | cut -f 1 -d. | cut -f 1 -d- `
+        if test $MINVER -ge 15; then
+          fuse_interface=25
+        fi
       fi
     fi
   fi
+  if test $fuse_interface = 25; then
+    echo "found Linux Kernel version 2.6.15 or later"
+    echo "using FUSE version 2.5 interface"
+  else
+    echo "using FUSE version 2.2 interface"
+  fi
+else  ### != Linux ###
+AC_TRY_CPP([
+#define _FILE_OFFSET_BITS 64
+#define FUSE_USE_VERSION 25
+#include <fuse.h>
+],fuse_interface=25,
+[ echo "Please install FUSE 2.5 or later."
+  exit 1
+])
+  echo "using FUSE version 2.5 interface"
 fi
 
-if test $fuse_interface = 25; then
-  echo "found Linux Kernel version 2.6.15 or later"
-  echo "using FUSE version 2.5 interface"
-else
-  echo "using FUSE version 2.2 interface"
-fi
 AC_SUBST(fuse_interface)
 
 ### Checks for Gfarm functions
