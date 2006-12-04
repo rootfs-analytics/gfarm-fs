@@ -40,9 +40,6 @@
 #include <time.h>
 #include <sys/time.h>
 #include <stdarg.h>
-#if USE_GFS_STATFSNODE
-#include <sys/statfs.h>
-#endif
 
 #include <gfarm/gfarm.h>
 /* These definitions may conflict with <gfarm/gfarm_config.h> */
@@ -198,7 +195,7 @@ gfarmfs_errlog(const char *format, ...)
 
 	va_start(ap, format);
 	gettimeofday(&tv, NULL);
-	lt = localtime(&tv.tv_sec);
+	lt = localtime((time_t*)&tv.tv_sec);
 	fprintf(errlog_out, "[%.2d-%.2d %.2d:%.2d:%.2d] ", lt->tm_mon + 1,
 		lt->tm_mday, lt->tm_hour, lt->tm_min, lt->tm_sec);
 	vfprintf(errlog_out, format, ap);
@@ -1107,6 +1104,8 @@ gfarmfs_chown(const char *path, uid_t uid, gid_t gid)
 	char *e;
 	char *url = NULL;
 	struct gfs_stat s;
+	(void) uid;
+	(void) gid;
 
 	gfarmfs_fastcreate_check();
 	if ((e = gfarmfs_init()) != NULL) goto end;
@@ -1553,6 +1552,7 @@ static int
 gfarmfs_statfs(const char *path, struct statfs *stfs)
 {
 	file_offset_t favail;
+	stfs->f_namelen = GFS_MAXNAMLEN;
 	return gfarmfs_statfs_common(path,
 				     (gfarm_int32_t*)&stfs->f_bsize,
 				     (file_offset_t*)&stfs->f_blocks,
@@ -1563,6 +1563,7 @@ gfarmfs_statfs(const char *path, struct statfs *stfs)
 				     (file_offset_t*)&favail);
 }
 #elif FUSE_USE_VERSION >= 25
+
 static int
 gfarmfs_statfs(const char *path, struct statvfs *stvfs)
 {
@@ -1576,6 +1577,9 @@ gfarmfs_statfs(const char *path, struct statvfs *stvfs)
 				    (file_offset_t*)&stvfs->f_ffree,
 				    (file_offset_t*)&stvfs->f_favail);
 	stvfs->f_bsize = (unsigned long) bsize;
+	stvfs->f_frsize = (unsigned long) bsize;
+	stvfs->f_namemax = GFS_MAXNAMLEN;
+
 	return (res);
 }
 #endif /* FUSE_USE_VERSION */
@@ -1586,6 +1590,7 @@ static int
 gfarmfs_flush(const char *path, struct fuse_file_info *fi)
 {
 	char *e = gfarmfs_init();
+	(void) fi;
 #if 0 /* XXX TODO */
 	GFS_File gf;
 	if (e != NULL) goto end;
@@ -2599,6 +2604,7 @@ gfs_pio_open_common(char *url, int flags, GFS_File *gfp, mode_t *create_modep)
 		flags |= GFARM_FILE_UNBUFFERED;
 	}
 #ifdef ENABLE_FASTCREATE
+	(void) create_modep;
 	/* created a file on MKNOD */
 	if (enable_fastcreate > 0) {
 		e = gfarmfs_fastcreate_open(url, flags, gfp);
@@ -2958,6 +2964,9 @@ gfarmfs_rename_share_gf_check_open(char *from_url, char *to_url,
 {
 	char *e;
 	FH fh;
+#if FH_LIST_USE_INO != 1
+	(void) from_ino;
+#endif
 
 #if GFARM_USE_VERSION == 1   /* for Gfarm version 1 */
 	fh = FH_GET2(from_url, from_ino);
@@ -3559,7 +3568,7 @@ commandpath(char *command)
 	for (;;) {
 		span = strcspn(path, ":");
 		dirlen = span == 0 ? 1 : span;
-		if (bufsize <= dirlen + 1 + strlen(command)) {
+		if (bufsize <= dirlen + 1 + (int)strlen(command)) {
 			bufsize = dirlen + 1 + strlen(command) + 1;
 			if ((buffer = realloc(buffer, bufsize)) == NULL) {
 				fprintf(stderr,
