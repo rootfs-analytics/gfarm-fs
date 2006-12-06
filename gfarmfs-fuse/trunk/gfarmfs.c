@@ -1112,7 +1112,6 @@ gfarmfs_chown(const char *path, uid_t uid, gid_t gid)
 	e = add_gfarm_prefix(path, &url);
 	if (e == NULL) {
 		e = gfs_stat(url, &s);
-		printf("%s: %s\n", url, e);
 #ifdef SYMLINK_MODE
 		if (e == GFARM_ERR_NO_SUCH_OBJECT &&
 		    enable_symlink == 1) {
@@ -1552,6 +1551,7 @@ static int
 gfarmfs_statfs(const char *path, struct statfs *stfs)
 {
 	file_offset_t favail;
+
 	stfs->f_namelen = GFS_MAXNAMLEN;
 	return gfarmfs_statfs_common(path,
 				     (gfarm_int32_t*)&stfs->f_bsize,
@@ -1569,6 +1569,7 @@ gfarmfs_statfs(const char *path, struct statvfs *stvfs)
 {
 	int res;
 	gfarm_int32_t bsize = 0;
+
 	res = gfarmfs_statfs_common(path, &bsize,
 				    (file_offset_t*)&stvfs->f_blocks,
 				    (file_offset_t*)&stvfs->f_bfree,
@@ -1593,6 +1594,7 @@ gfarmfs_flush(const char *path, struct fuse_file_info *fi)
 	(void) fi;
 #if 0 /* XXX TODO */
 	GFS_File gf;
+
 	if (e != NULL) goto end;
 	if ((fi->flags & O_ACCMODE) != O_RDONLY) {
 		gf = gfarmfs_cast_fh(fi);
@@ -1938,6 +1940,7 @@ gfarmfs_fh_remove_key_url(char *url)
 {
 	char *e;
 	long ino;
+
 	e = gfarmfs_get_ino(url, &ino);
 	if (e != NULL)
 		return;
@@ -2065,6 +2068,7 @@ gfarmfs_async_fork_count_initialize()
 {
 	int save_errno;
 	struct sembuf sb = {0, DEFAULT_FORK_MAX, 0};
+
 	if (sem_initialized == 1)
 		return (NULL);
 	sem_initialized = 1;
@@ -2086,6 +2090,7 @@ gfarmfs_async_fork_count_increment_n(int n)
 {
 	int save_errno;
 	struct sembuf sb = {0, -n, 0};
+
 	if (semop(semid, &sb, 1) == -1) {
 		save_errno = errno;
 		perror("semop");
@@ -2100,6 +2105,7 @@ gfarmfs_async_fork_count_decrement_n(int n)
 {
 	int save_errno;
 	struct sembuf sb = {0, n, 0};
+
 	if (semop(semid, &sb, 1) == -1) {
 		save_errno = errno;
 		perror("semop");
