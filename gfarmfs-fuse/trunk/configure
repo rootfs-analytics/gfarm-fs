@@ -4444,7 +4444,7 @@ fi
 rm -f conftest.err conftest.$ac_objext \
       conftest$ac_exeext conftest.$ac_ext
 
-                                        ac_config_files="$ac_config_files Makefile contrib/Makefile contrib/gfarmfs-exec/Makefile contrib/mount.gfarmfs/Makefile"
+                                                            ac_config_files="$ac_config_files Makefile test/Makefile test/expected/Makefile contrib/Makefile contrib/gfarmfs-exec/Makefile contrib/mount.gfarmfs/Makefile"
 
 
 cat >confcache <<\_ACEOF
@@ -4997,6 +4997,8 @@ do
   case "$ac_config_target" in
   # Handling of arguments.
   "Makefile" ) CONFIG_FILES="$CONFIG_FILES Makefile" ;;
+  "test/Makefile" ) CONFIG_FILES="$CONFIG_FILES test/Makefile" ;;
+  "test/expected/Makefile" ) CONFIG_FILES="$CONFIG_FILES test/expected/Makefile" ;;
   "contrib/Makefile" ) CONFIG_FILES="$CONFIG_FILES contrib/Makefile" ;;
   "contrib/gfarmfs-exec/Makefile" ) CONFIG_FILES="$CONFIG_FILES contrib/gfarmfs-exec/Makefile" ;;
   "contrib/mount.gfarmfs/Makefile" ) CONFIG_FILES="$CONFIG_FILES contrib/mount.gfarmfs/Makefile" ;;

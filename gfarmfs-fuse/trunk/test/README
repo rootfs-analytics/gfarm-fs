@@ -1,0 +1,22 @@
+*** Preconditon
+
+The expected files (./expected/*.out) is depend on:
+
+  - FUSE version 2.6
+  - Gfarm version 1.4
+
+The test for gfarmfs expects that the Gfarm environment setting is finished.
+
+*** Do test
+
+  $ make check
+
+*** Check files if errors happen
+
+  $ cat ./_diffs/*.out
+
+*** Update expected results (for another version of FUSE or Gfarm)
+
+  $ make check
+  (make sure ./_output/*.out files)
+  $ mv ./_output/*.out ./expected/
