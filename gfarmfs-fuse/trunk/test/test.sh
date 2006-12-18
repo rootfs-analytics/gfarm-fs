@@ -91,13 +91,17 @@ test_common()
 
 umount_fuse()
 {
+    MNTDIR=$1
+
     retry=10
     i=0
     while true; do
-        fusermount -u $1 > /dev/null 2>&1
+        fusermount -u $MNTDIR > /dev/null 2>&1
         if [ $? -eq 0 ]; then
             return 0;
         fi
+        # force RELEASE (?)
+        ls -l $MNTDIR > /dev/null 2>&1
         if [ $i -ge $retry ]; then
             return 1;
         fi
@@ -161,6 +165,10 @@ test_gfarmfs()
     TESTDIR=${TMP_MNTDIR}/${LOGNAME}  # need gfmkdir gfarm:~
 
     fuse_common_init "${TESTNAME}" ${OUTNAME}
+    result=$?
+    if [ $result -ne 0 ];then
+        return $result
+    fi
     $GFARMFS ${OPTIONS} ${TMP_MNTDIR} ${FUSEOPTIONS} > ${OUTPUT} 2>&1
     result=$?
     fuse_common_do_test $result ${TESTDIR} ${OUTNAME}
@@ -185,6 +193,10 @@ test_fusexmp()
         return 0
     fi
     fuse_common_init "${TESTNAME}" ${OUTNAME}
+    result=$?
+    if [ $result -ne 0 ];then
+        return $result
+    fi
     ${FUSEXMP} ${TMP_MNTDIR} ${FUSEOPTIONS} > ${OUTPUT} 2>&1
     result=$?
     fuse_common_do_test $result ${TESTDIR} ${OUTNAME}
