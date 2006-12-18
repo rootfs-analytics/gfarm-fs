@@ -2,7 +2,7 @@ bin_PROGRAMS = gfarmfs
 gfarmfs_SOURCES = gfarmfs.c
 AM_CPPFLAGS = -DFUSE_USE_VERSION=$(fuse_interface) -D_FILE_OFFSET_BITS=64 
 EXTRA_DIST = README.ja ChangeLog.ja gfarmfs.spec
-SUBDIRS = contrib
+SUBDIRS = contrib test
 
 testurl = 'http://fuse.cvs.sourceforge.net/*checkout*/fuse/fuse/test/test.c'
 testprog = fusetest

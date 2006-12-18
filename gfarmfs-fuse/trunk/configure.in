@@ -122,6 +122,8 @@ AC_DEFINE(USE_GFARM_SCRAMBLE, 1, [using gfs_pio_set_view_scramble()])
 
 AC_CONFIG_FILES(
 Makefile
+test/Makefile
+test/expected/Makefile
 contrib/Makefile
 contrib/gfarmfs-exec/Makefile
 contrib/mount.gfarmfs/Makefile)
