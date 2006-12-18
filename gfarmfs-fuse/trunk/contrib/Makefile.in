@@ -114,6 +114,7 @@ build_alias = @build_alias@
 datadir = @datadir@
 exec_prefix = @exec_prefix@
 fuse_interface = @fuse_interface@
+gfarm_libs = @gfarm_libs@
 host_alias = @host_alias@
 includedir = @includedir@
 infodir = @infodir@

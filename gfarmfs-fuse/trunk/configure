@@ -309,7 +309,7 @@ ac_includes_default="\
 # include <unistd.h>
 #endif"
 
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA CYGPATH_W PACKAGE VERSION ACLOCAL AUTOCONF AUTOMAKE AUTOHEADER MAKEINFO install_sh STRIP ac_ct_STRIP INSTALL_STRIP_PROGRAM mkdir_p AWK SET_MAKE am__leading_dot AMTAR am__tar am__untar CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT DEPDIR am__include am__quote AMDEP_TRUE AMDEP_FALSE AMDEPBACKSLASH CCDEPMODE am__fastdepCC_TRUE am__fastdepCC_FALSE PKG_CONFIG ac_pt_PKG_CONFIG GFARMFS_CFLAGS GFARMFS_LIBS CPP EGREP fuse_interface LIBOBJS LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA CYGPATH_W PACKAGE VERSION ACLOCAL AUTOCONF AUTOMAKE AUTOHEADER MAKEINFO install_sh STRIP ac_ct_STRIP INSTALL_STRIP_PROGRAM mkdir_p AWK SET_MAKE am__leading_dot AMTAR am__tar am__untar CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT DEPDIR am__include am__quote AMDEP_TRUE AMDEP_FALSE AMDEPBACKSLASH CCDEPMODE am__fastdepCC_TRUE am__fastdepCC_FALSE PKG_CONFIG ac_pt_PKG_CONFIG GFARMFS_CFLAGS GFARMFS_LIBS gfarm_libs CPP EGREP fuse_interface LIBOBJS LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -2949,6 +2949,7 @@ test -z "$INSTALL_SCRIPT" && INSTALL_SCRIPT='${INSTALL}'
 test -z "$INSTALL_DATA" && INSTALL_DATA='${INSTALL} -m 644'
 
 
+CFLAGS="$CFLAGS -Wall -W"
 export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH
 
 
@@ -3065,12 +3066,12 @@ if test -n "$PKG_CONFIG"; then
         pkg_cv_GFARMFS_CFLAGS="$GFARMFS_CFLAGS"
     else
         if test -n "$PKG_CONFIG" && \
-    { (echo "$as_me:$LINENO: \$PKG_CONFIG --exists --print-errors \"fuse >= 2.2 glib-2.0\"") >&5
-  ($PKG_CONFIG --exists --print-errors "fuse >= 2.2 glib-2.0") 2>&5
+    { (echo "$as_me:$LINENO: \$PKG_CONFIG --exists --print-errors \"fuse >= 2.2\"") >&5
+  ($PKG_CONFIG --exists --print-errors "fuse >= 2.2") 2>&5
   ac_status=$?
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); }; then
-  pkg_cv_GFARMFS_CFLAGS=`$PKG_CONFIG --cflags "fuse >= 2.2 glib-2.0" 2>/dev/null`
+  pkg_cv_GFARMFS_CFLAGS=`$PKG_CONFIG --cflags "fuse >= 2.2" 2>/dev/null`
 else
   pkg_failed=yes
 fi
@@ -3083,12 +3084,12 @@ if test -n "$PKG_CONFIG"; then
         pkg_cv_GFARMFS_LIBS="$GFARMFS_LIBS"
     else
         if test -n "$PKG_CONFIG" && \
-    { (echo "$as_me:$LINENO: \$PKG_CONFIG --exists --print-errors \"fuse >= 2.2 glib-2.0\"") >&5
-  ($PKG_CONFIG --exists --print-errors "fuse >= 2.2 glib-2.0") 2>&5
+    { (echo "$as_me:$LINENO: \$PKG_CONFIG --exists --print-errors \"fuse >= 2.2\"") >&5
+  ($PKG_CONFIG --exists --print-errors "fuse >= 2.2") 2>&5
   ac_status=$?
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); }; then
-  pkg_cv_GFARMFS_LIBS=`$PKG_CONFIG --libs "fuse >= 2.2 glib-2.0" 2>/dev/null`
+  pkg_cv_GFARMFS_LIBS=`$PKG_CONFIG --libs "fuse >= 2.2" 2>/dev/null`
 else
   pkg_failed=yes
 fi
@@ -3107,14 +3108,14 @@ else
         _pkg_short_errors_supported=no
 fi
         if test $_pkg_short_errors_supported = yes; then
-	        GFARMFS_PKG_ERRORS=`$PKG_CONFIG --short-errors --errors-to-stdout --print-errors "fuse >= 2.2 glib-2.0"`
+	        GFARMFS_PKG_ERRORS=`$PKG_CONFIG --short-errors --errors-to-stdout --print-errors "fuse >= 2.2"`
         else
-	        GFARMFS_PKG_ERRORS=`$PKG_CONFIG --errors-to-stdout --print-errors "fuse >= 2.2 glib-2.0"`
+	        GFARMFS_PKG_ERRORS=`$PKG_CONFIG --errors-to-stdout --print-errors "fuse >= 2.2"`
         fi
 	# Put the nasty error message in config.log where it belongs
 	echo "$GFARMFS_PKG_ERRORS" >&5
 
-	{ { echo "$as_me:$LINENO: error: Package requirements (fuse >= 2.2 glib-2.0) were not met:
+	{ { echo "$as_me:$LINENO: error: Package requirements (fuse >= 2.2) were not met:
 
 $GFARMFS_PKG_ERRORS
 
@@ -3125,7 +3126,7 @@ Alternatively, you may set the environment variables GFARMFS_CFLAGS
 and GFARMFS_LIBS to avoid the need to call pkg-config.
 See the pkg-config man page for more details.
 " >&5
-echo "$as_me: error: Package requirements (fuse >= 2.2 glib-2.0) were not met:
+echo "$as_me: error: Package requirements (fuse >= 2.2) were not met:
 
 $GFARMFS_PKG_ERRORS
 
@@ -3166,89 +3167,8 @@ else
 echo "${ECHO_T}yes" >&6
 	:
 fi
-CFLAGS="$CFLAGS -Wall -W -D_REENTRANT $GFARMFS_CFLAGS"
-LIBS="$GFARMFS_LIBS"
 
 ### Checks for libraries.
-
-
-echo "$as_me:$LINENO: checking for fuse_main in -lfuse" >&5
-echo $ECHO_N "checking for fuse_main in -lfuse... $ECHO_C" >&6
-if test "${ac_cv_lib_fuse_fuse_main+set}" = set; then
-  echo $ECHO_N "(cached) $ECHO_C" >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lfuse  $LIBS"
-cat >conftest.$ac_ext <<_ACEOF
-/* confdefs.h.  */
-_ACEOF
-cat confdefs.h >>conftest.$ac_ext
-cat >>conftest.$ac_ext <<_ACEOF
-/* end confdefs.h.  */
-
-/* Override any gcc2 internal prototype to avoid an error.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-/* We use char because int might match the return type of a gcc2
-   builtin and then its argument prototype would still apply.  */
-char fuse_main ();
-int
-main ()
-{
-fuse_main ();
-  ;
-  return 0;
-}
-_ACEOF
-rm -f conftest.$ac_objext conftest$ac_exeext
-if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
-  (eval $ac_link) 2>conftest.er1
-  ac_status=$?
-  grep -v '^ *+' conftest.er1 >conftest.err
-  rm -f conftest.er1
-  cat conftest.err >&5
-  echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); } &&
-	 { ac_try='test -z "$ac_c_werror_flag"
-			 || test ! -s conftest.err'
-  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
-  (eval $ac_try) 2>&5
-  ac_status=$?
-  echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); }; } &&
-	 { ac_try='test -s conftest$ac_exeext'
-  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
-  (eval $ac_try) 2>&5
-  ac_status=$?
-  echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); }; }; then
-  ac_cv_lib_fuse_fuse_main=yes
-else
-  echo "$as_me: failed program was:" >&5
-sed 's/^/| /' conftest.$ac_ext >&5
-
-ac_cv_lib_fuse_fuse_main=no
-fi
-rm -f conftest.err conftest.$ac_objext \
-      conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-echo "$as_me:$LINENO: result: $ac_cv_lib_fuse_fuse_main" >&5
-echo "${ECHO_T}$ac_cv_lib_fuse_fuse_main" >&6
-if test $ac_cv_lib_fuse_fuse_main = yes; then
-  cat >>confdefs.h <<_ACEOF
-#define HAVE_LIBFUSE 1
-_ACEOF
-
-  LIBS="-lfuse $LIBS"
-
-else
-
-echo "Please install the libraries of FUSE."
-exit 1
-
-fi
 
 
 
@@ -3330,6 +3250,9 @@ exit 1
 
 fi
 
+gfarmfs_libs=$LIBS
+
+LIBS=
 
 ### Checks for header files.
 
@@ -5131,6 +5054,7 @@ s,@PKG_CONFIG@,$PKG_CONFIG,;t t
 s,@ac_pt_PKG_CONFIG@,$ac_pt_PKG_CONFIG,;t t
 s,@GFARMFS_CFLAGS@,$GFARMFS_CFLAGS,;t t
 s,@GFARMFS_LIBS@,$GFARMFS_LIBS,;t t
+s,@gfarm_libs@,$gfarm_libs,;t t
 s,@CPP@,$CPP,;t t
 s,@EGREP@,$EGREP,;t t
 s,@fuse_interface@,$fuse_interface,;t t
