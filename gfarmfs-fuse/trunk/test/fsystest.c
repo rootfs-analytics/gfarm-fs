@@ -1090,7 +1090,7 @@ do_test_mmap(int prot, const char *prot_str, int flags, const char *flags_str)
 
 #define BSIZE 1024
 
-int
+static int
 test_seek(int pos)
 {
 	int res;
@@ -1099,7 +1099,7 @@ test_seek(int pos)
 	char b1[BSIZE], b2[BSIZE];
 	start_test("seek(%d)", pos);
 	unlink(testfile);
-	fd = open(testfile, O_CREAT|O_RDWR, 0600);
+	fd = open(testfile, O_CREAT | O_RDWR, 0644);
 	if (fd == -1) {
 		PERROR("open");
 		return -1;
@@ -1109,18 +1109,17 @@ test_seek(int pos)
 	pwrite(fd, b1, 1, pos - 2);
 	pread(fd, b2, 2, pos - 2); /* toward */
 	pwrite(fd, b1, 1, pos - 1); /* go back */
-	pwrite(fd, b1, 2, pos); /* Can write it correctly? */
+	pwrite(fd, b1, 2, pos); /* Can this write correctly? */
 	res = pread(fd, b2, BSIZE, pos); /* check */
 	if (res != 2) {
 		ERROR("cannot write correctly");
 		return -1;
-	} else {
-		success();
-		return 0;
 	}
+	success();
+	return 0;
 }
 
-int
+static int
 test_open_rename()
 {
 	int res;
@@ -1168,7 +1167,7 @@ test_open_rename()
 #define test_open_open(c, f, s)  do_test_open_open(c, f, #f, s, #s)
 
 /* for gfarmfs_open_common_share_gf() */
-int
+static int
 do_test_open_open(int creat_mode,
 		  int flags_first, const char *str_first,
 		  int flags_second, const char *str_second)
