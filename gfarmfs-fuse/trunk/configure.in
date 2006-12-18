@@ -18,7 +18,7 @@ AC_CHECK_LIB(gfarm, gfarm_initialize,,
 echo "Please install the libraries of Gfarm."
 exit 1
 ])
-gfarmfs_libs=$LIBS
+gfarm_libs=$LIBS
 AC_SUBST(gfarm_libs)
 LIBS=
 
