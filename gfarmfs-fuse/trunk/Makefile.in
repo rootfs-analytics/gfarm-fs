@@ -39,7 +39,7 @@ subdir = .
 DIST_COMMON = README $(am__configure_deps) $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in $(srcdir)/config.h.in \
 	$(top_srcdir)/configure AUTHORS COPYING ChangeLog INSTALL NEWS \
-	depcomp install-sh missing
+	compile depcomp install-sh missing
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.in
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
@@ -52,9 +52,10 @@ CONFIG_CLEAN_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
-am_gfarmfs_OBJECTS = gfarmfs.$(OBJEXT)
+am_gfarmfs_OBJECTS = gfarmfs-gfarmfs.$(OBJEXT)
 gfarmfs_OBJECTS = $(am_gfarmfs_OBJECTS)
-gfarmfs_LDADD = $(LDADD)
+am__DEPENDENCIES_1 =
+gfarmfs_DEPENDENCIES = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 DEFAULT_INCLUDES = -I. -I$(srcdir) -I.
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
@@ -144,6 +145,7 @@ build_alias = @build_alias@
 datadir = @datadir@
 exec_prefix = @exec_prefix@
 fuse_interface = @fuse_interface@
+gfarm_libs = @gfarm_libs@
 host_alias = @host_alias@
 includedir = @includedir@
 infodir = @infodir@
@@ -161,7 +163,9 @@ sharedstatedir = @sharedstatedir@
 sysconfdir = @sysconfdir@
 target_alias = @target_alias@
 gfarmfs_SOURCES = gfarmfs.c
-AM_CPPFLAGS = -DFUSE_USE_VERSION=$(fuse_interface) -D_FILE_OFFSET_BITS=64 
+gfarmfs_LDADD = $(GFARMFS_LIBS) $(gfarm_libs)
+gfarmfs_CFLAGS = $(GFARMFS_CFLAGS)
+gfarmfs_CPPFLAGS = -D_REENTRANT -DFUSE_USE_VERSION=$(fuse_interface)
 EXTRA_DIST = README.ja ChangeLog.ja gfarmfs.spec
 SUBDIRS = contrib test
 testurl = 'http://fuse.cvs.sourceforge.net/*checkout*/fuse/fuse/test/test.c'
@@ -256,7 +260,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gfarmfs.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gfarmfs-gfarmfs.Po@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	if $(COMPILE) -MT $@ -MD -MP -MF "$(DEPDIR)/$*.Tpo" -c -o $@ $<; \
@@ -271,6 +275,20 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(COMPILE) -c `$(CYGPATH_W) '$<'`
+
+gfarmfs-gfarmfs.o: gfarmfs.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(gfarmfs_CPPFLAGS) $(CPPFLAGS) $(gfarmfs_CFLAGS) $(CFLAGS) -MT gfarmfs-gfarmfs.o -MD -MP -MF "$(DEPDIR)/gfarmfs-gfarmfs.Tpo" -c -o gfarmfs-gfarmfs.o `test -f 'gfarmfs.c' || echo '$(srcdir)/'`gfarmfs.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/gfarmfs-gfarmfs.Tpo" "$(DEPDIR)/gfarmfs-gfarmfs.Po"; else rm -f "$(DEPDIR)/gfarmfs-gfarmfs.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='gfarmfs.c' object='gfarmfs-gfarmfs.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(gfarmfs_CPPFLAGS) $(CPPFLAGS) $(gfarmfs_CFLAGS) $(CFLAGS) -c -o gfarmfs-gfarmfs.o `test -f 'gfarmfs.c' || echo '$(srcdir)/'`gfarmfs.c
+
+gfarmfs-gfarmfs.obj: gfarmfs.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(gfarmfs_CPPFLAGS) $(CPPFLAGS) $(gfarmfs_CFLAGS) $(CFLAGS) -MT gfarmfs-gfarmfs.obj -MD -MP -MF "$(DEPDIR)/gfarmfs-gfarmfs.Tpo" -c -o gfarmfs-gfarmfs.obj `if test -f 'gfarmfs.c'; then $(CYGPATH_W) 'gfarmfs.c'; else $(CYGPATH_W) '$(srcdir)/gfarmfs.c'; fi`; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/gfarmfs-gfarmfs.Tpo" "$(DEPDIR)/gfarmfs-gfarmfs.Po"; else rm -f "$(DEPDIR)/gfarmfs-gfarmfs.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='gfarmfs.c' object='gfarmfs-gfarmfs.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(gfarmfs_CPPFLAGS) $(CPPFLAGS) $(gfarmfs_CFLAGS) $(CFLAGS) -c -o gfarmfs-gfarmfs.obj `if test -f 'gfarmfs.c'; then $(CYGPATH_W) 'gfarmfs.c'; else $(CYGPATH_W) '$(srcdir)/gfarmfs.c'; fi`
 uninstall-info-am:
 
 # This directory's subdirectories are mostly independent; you can cd

@@ -1,6 +1,8 @@
 bin_PROGRAMS = gfarmfs
 gfarmfs_SOURCES = gfarmfs.c
-AM_CPPFLAGS = -DFUSE_USE_VERSION=$(fuse_interface) -D_FILE_OFFSET_BITS=64 
+gfarmfs_LDADD = $(GFARMFS_LIBS) $(gfarm_libs)
+gfarmfs_CFLAGS = $(GFARMFS_CFLAGS)
+gfarmfs_CPPFLAGS = -D_REENTRANT -DFUSE_USE_VERSION=$(fuse_interface)
 EXTRA_DIST = README.ja ChangeLog.ja gfarmfs.spec
 SUBDIRS = contrib test
 
