@@ -11,24 +11,25 @@ GFARMFS=../gfarmfs
 
 ##### test mode #####
 TESTMODE=$1
-DO_TMP=1
-DO_GFARMFS=1
-DO_FUSEXMP=1
+DO_TMP=0
+DO_GFARMFS=0
+DO_FUSEXMP=0
 
 if [ x"${TESTMODE}" = x"all" ]; then
     DO_TMP=1
     DO_GFARMFS=1
     DO_FUSEXMP=1
-fi
-if [ x"${TESTMODE}" = x"gfarmfs" ]; then
+elif [ x"${TESTMODE}" = x"gfarmfs" ]; then
     DO_TMP=0
     DO_GFARMFS=1
     DO_FUSEXMP=0
-fi
-if [ x"${TESTMODE}" = x"fusexmp" ]; then
+elif [ x"${TESTMODE}" = x"fusexmp" ]; then
     DO_TMP=0
     DO_GFARMFS=0
     DO_FUSEXMP=1
+else
+    echo "usage: $0 <all|gfarmfs|fusexmp>"
+    exit 1
 fi
 
 ##### functions #####
@@ -90,8 +91,18 @@ test_common()
 
 umount_fuse()
 {
-    fusermount -u $1 > /dev/null 2>&1
-    fusermount -u $1 > /dev/null 2>&1
+    retry=10
+    i=0
+    while true; do
+        fusermount -u $1 > /dev/null 2>&1
+        if [ $? -eq 0 ]; then
+            return 0;
+        fi
+        if [ $i -ge $retry ]; then
+            return 1;
+        fi
+        i=`expr $i + 1`
+    done
 }
 
 fuse_common_init()
