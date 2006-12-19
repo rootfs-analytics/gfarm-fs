@@ -4201,6 +4201,8 @@ fi
 
 ### Checks for Gfarm functions
 
+LIBS=$gfarm_libs
+
 cat >conftest.$ac_ext <<_ACEOF
 /* confdefs.h.  */
 _ACEOF
@@ -4366,6 +4368,8 @@ sed 's/^/| /' conftest.$ac_ext >&5
 fi
 rm -f conftest.err conftest.$ac_objext \
       conftest$ac_exeext conftest.$ac_ext
+
+LIBS=
 
                                                             ac_config_files="$ac_config_files Makefile test/Makefile test/expected/Makefile contrib/Makefile contrib/gfarmfs-exec/Makefile contrib/mount.gfarmfs/Makefile"
 
