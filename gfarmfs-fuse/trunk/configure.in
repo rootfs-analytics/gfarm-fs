@@ -92,6 +92,8 @@ AC_SUBST(fuse_interface)
 
 ### Checks for Gfarm functions
 
+LIBS=$gfarm_libs
+
 AC_TRY_LINK([
 #include <stdio.h>
 #include <gfarm/gfarm.h>],[
@@ -108,7 +110,6 @@ gfarm_schedule_search_idle_acyclic_hosts_to_write(0, NULL, NULL, NULL);],
 AC_DEFINE(USE_GFREP_H, 1, [using gfrep -H])
 ],[])
 
-
 AC_TRY_LINK([
 #include <stdio.h>
 #include <gfarm/gfarm.h>],[
@@ -116,6 +117,8 @@ gfs_pio_set_view_scramble(NULL, 0);],
 [
 AC_DEFINE(USE_GFARM_SCRAMBLE, 1, [using gfs_pio_set_view_scramble()])
 ],[])
+
+LIBS=
 
 AC_CONFIG_FILES(
 Makefile
