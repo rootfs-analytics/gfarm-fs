@@ -1370,6 +1370,8 @@ gfarmfs_release(const char *path, struct fuse_file_info *fi)
 	return gfarmfs_final(OP_RELEASE, e, 0, path);
 }
 
+#define CLEAR_EOF(gf)  (gfs_pio_eof(gf) ? gfs_pio_clearerr(gf) : (void) 0)
+
 static int
 gfarmfs_read(const char *path, char *buf, size_t size, off_t offset,
 	     struct fuse_file_info *fi)
@@ -1383,8 +1385,10 @@ gfarmfs_read(const char *path, char *buf, size_t size, off_t offset,
 	while (e == NULL) {
 		gf = gfarmfs_cast_fh(fi);
 		e = gfs_pio_seek(gf, offset, 0, &off);
-		if (e != NULL) break;
+		if (e != NULL)
+			break;
 		e = gfs_pio_read(gf, buf, size, &n);
+		CLEAR_EOF(gf);
 		break;
 	}
 
@@ -1404,7 +1408,8 @@ gfarmfs_write(const char *path, const char *buf, size_t size,
 	while (e == NULL) {
 		gf = gfarmfs_cast_fh(fi);
 		e = gfs_pio_seek(gf, offset, 0, &off);
-		if (e != NULL) break;
+		if (e != NULL)
+			break;
 		e = gfs_pio_write(gf, buf, size, &n);
 		break;
 	}
@@ -3390,8 +3395,10 @@ gfarmfs_read_share_gf(const char *path, char *buf, size_t size, off_t offset,
 		e = GFARM_ERR_INPUT_OUTPUT;
 	else
 		e = gfs_pio_seek(fh->gf, offset, 0, &off);
-	if (e != NULL) goto end;
+	if (e != NULL)
+		goto end;
 	e = gfs_pio_read(fh->gf, buf, size, &n);
+	CLEAR_EOF(fh->gf);
 #if REVISE_UTIME
 	if (n > 0)
 		fh->utime_changed = 0; /* reset */
@@ -3415,7 +3422,8 @@ gfarmfs_write_share_gf(const char *path, const char *buf, size_t size,
 		e = GFARM_ERR_INPUT_OUTPUT;
 	else
 		e = gfs_pio_seek(fh->gf, offset, 0, &off);
-	if (e != NULL) goto end;
+	if (e != NULL)
+		goto end;
 	e = gfs_pio_write(fh->gf, buf, size, &n);
 #if REVISE_UTIME
 	if (n > 0)
