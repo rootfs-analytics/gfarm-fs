@@ -134,6 +134,9 @@ gfarmfs_direct_io.out \
 gfarmfs_N2.out \
 gfarmfs_nlsu.out \
 gfarmfs_noopt.out \
+gfarmfs_attr0.out \
+gfarmfs_oldio.out \
+gfarmfs_oldio_F.out \
 slashtmp.out
 
 all: all-am
