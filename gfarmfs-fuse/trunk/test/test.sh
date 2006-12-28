@@ -76,12 +76,12 @@ check_result()
     IGNORE=$3
 
     if [ $RESULT -ne 0 -a $IGNORE -eq 1 ]; then
-        echo "IGNORE(${RESULT}): ${TESTSTR}"
+        echo "IGNORE: ${TESTSTR}"
     elif [ $RESULT -ne 0 ]; then
         err=`expr $err + 1`
-        echo "NG(${RESULT}): ${TESTSTR}"
+        echo "NG: ${TESTSTR}"
     else
-        echo "OK(${RESULT}): ${TESTSTR}"
+        echo "OK: ${TESTSTR}"
     fi
 }
 
