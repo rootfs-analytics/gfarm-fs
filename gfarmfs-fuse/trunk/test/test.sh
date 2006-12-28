@@ -15,26 +15,24 @@ export GFARM_PATH_INFO_TIMEOUT=1000
 TESTMODE=$1
 DO_TMP=0
 DO_GFARMFS=0
+DO_GFARMFS_OLD=0
 DO_FUSEXMP=0
 
 if [ x"${TESTMODE}" = x"all" ]; then
     DO_TMP=1
     DO_GFARMFS=1
+    DO_GFARMFS_OLD=1
     DO_FUSEXMP=1
 elif [ x"${TESTMODE}" = x"tmp" ]; then
     DO_TMP=1
-    DO_GFARMFS=0
-    DO_FUSEXMP=0
 elif [ x"${TESTMODE}" = x"gfarmfs" ]; then
-    DO_TMP=0
     DO_GFARMFS=1
-    DO_FUSEXMP=0
+elif [ x"${TESTMODE}" = x"oldgfarmfs" ]; then
+    DO_GFARMFS_OLD=1
 elif [ x"${TESTMODE}" = x"fusexmp" ]; then
-    DO_TMP=0
-    DO_GFARMFS=0
     DO_FUSEXMP=1
 else
-    echo "usage: $0 <all|gfarmfs|fusexmp|tmp>"
+    echo "usage: $0 <all|gfarmfs|oldgfarmfs|fusexmp|tmp>"
     exit 1
 fi
 
@@ -249,6 +247,8 @@ if [ $DO_GFARMFS -eq 1 ]; then
     test_gfarmfs "-nlsu -b" "" gfarmfs_b
     test_gfarmfs "-nlsu -b" "-o direct_io" gfarmfs_b_direct_io
     test_gfarmfs "-nlsu" "-o direct_io" gfarmfs_direct_io
+fi
+if [ $DO_GFARMFS_OLD -eq 1 ]; then
     test_gfarmfs "--oldio -nlsub" "-o attr_timeout=0" gfarmfs_oldio
     test_gfarmfs "--oldio -nlsubF" "-o attr_timeout=0" gfarmfs_oldio_F
 fi
