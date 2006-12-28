@@ -17,6 +17,8 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/mman.h>
+#include <stdlib.h>
+#include <signal.h>
 
 static char testfile[] = "./__testfile";
 static char testfile2[] = "./__testfile2";
@@ -35,7 +37,7 @@ static int testdata2len = sizeof(testdata2) - 1;
 static void
 test_perror(const char *func, const char *msg)
 {
-	fprintf(stderr, "[%s] %s() - %s: %s\n", testname, func, msg,
+	fprintf(stdout, "NG [%s] %s(): %s: %s\n", testname, func, msg,
 		strerror(errno));
 }
 
@@ -51,17 +53,17 @@ static void
 test_error(const char *func, const char *msg, ...)
 {
 	va_list ap;
-	fprintf(stderr, "[%s] %s() - ", testname, func);
+	fprintf(stdout, "NG [%s] %s(): ", testname, func);
 	va_start(ap, msg);
-	vfprintf(stderr, msg, ap);
+	vfprintf(stdout, msg, ap);
 	va_end(ap);
-	fprintf(stderr, "\n");
+	fprintf(stdout, "\n");
 }
 
 static void
 success(void)
 {
-	fprintf(stderr, "[%s] OK\n", testname);
+	fprintf(stdout, "OK [%s]\n", testname);
 }
 
 static void
@@ -136,11 +138,11 @@ check_times(const char *path, time_t atime, time_t mtime)
 		return -1;
 	}
 	if (stbuf.st_atime != atime) {
-		ERROR("atime %li instead of %li", stbuf.st_atime, atime);
+		ERROR("different atime (instead of %li)", (long) atime);
 		err--;
 	}
 	if (stbuf.st_mtime != mtime) {
-		ERROR("mtime %li instead of %li", stbuf.st_mtime, mtime);
+		ERROR("different mtime (instead of %li)", (long) mtime);
 		err--;
 	}
 	if (err)
@@ -190,8 +192,11 @@ check_buffer(const char *buf, const char *data, unsigned len)
 	return 0;
 }
 
+#define check_data(p, d, o, l)  do_check_data(p, #p, d, o, l)
+
 static int
-check_data(const char *path, const char *data, int offset, unsigned len)
+do_check_data(const char *path, const char *path_str,
+	      const char *data, int offset, unsigned len)
 {
 	char buf[4096];
 	int res;
@@ -214,7 +219,8 @@ check_data(const char *path, const char *data, int offset, unsigned len)
 			return -1;
 		}
 		if (res != rdlen) {
-			ERROR("short read: %u instead of %u", res, rdlen);
+			ERROR("%s: short read: %u instead of %u",
+			      path_str, res, rdlen);
 			close(fd);
 			return -1;
 		}
@@ -458,7 +464,7 @@ test_ftruncate(int len, int mode)
 	int datalen = testdatalen;
 	int res;
 	int fd;
-	start_test("ftruncate(%u) mode: 0%03o", len, mode);
+	start_test("ftruncate(%u) mode=0%03o", len, mode);
 	res = create_file(testfile, data, datalen);
 	if (res == -1)
 		return -1;
@@ -753,17 +759,18 @@ succ:
 	return 0;
 }
 
-#define test_open_acc(flags, mode, err)  do_test_open_acc(flags, #flags, mode, err)
+#define test_open_acc(flags, mode, err)  do_test_open_acc(flags, #flags, mode, err, #err)
 
 static int
-do_test_open_acc(int flags, const char *flags_str, int mode, int err)
+do_test_open_acc(int flags, const char *flags_str, int mode,
+		 int err, const char *err_str)
 {
 	const char *data = testdata;
 	int datalen = testdatalen;
 	int res;
 	int fd;
-	start_test("open_acc(%s) mode: 0%03o error: '%s'", flags_str, mode,
-		   strerror(err));
+	start_test("open_acc(%s) mode=0%03o error=%s", flags_str, mode,
+		   err_str);
 	unlink(testfile);
 	res = create_file(testfile, data, datalen);
 	if (res == -1)
@@ -1091,13 +1098,13 @@ do_test_mmap(int prot, const char *prot_str, int flags, const char *flags_str)
 #define BSIZE 1024
 
 static int
-test_seek(int pos)
+test_seek_eof(int pos)
 {
 	int res;
 	int fd;
 	int i;
 	char b1[BSIZE], b2[BSIZE];
-	start_test("seek(%d)", pos);
+	start_test("seek_EOF offset=%d", pos);
 	unlink(testfile);
 	fd = open(testfile, O_CREAT | O_RDWR, 0644);
 	if (fd == -1) {
@@ -1120,11 +1127,51 @@ test_seek(int pos)
 }
 
 static int
-test_open_rename()
+test_open_size()
 {
 	int res;
+	int fd;
+	char b = '0';
+	start_test("open size");
+	unlink(testfile);
+	res = create_file(testfile, testdata, testdatalen);
+	if (res == -1)
+		return -1;
+	fd = open(testfile, O_RDWR | O_CREAT | O_TRUNC, 0600);
+	if (fd == -1) {
+		PERROR("open");
+		return -1;
+	}
+	res = check_size(testfile, 0);
+	if (res == -1)
+		return -1;
+	res = write(fd, &b, 1);
+	if (res == -1) {
+		PERROR("write");
+		return -1;
+	}
+	res = check_size(testfile, 1);
+	if (res == -1)
+		return -1;
+	lseek(fd, 65536, SEEK_SET);
+	res = write(fd, &b, 1);
+	res = check_size(testfile, 65537);
+	if (res == -1)
+		return -1;
+	close(fd);
+	success();
+	return 0;
+}
+
+static int
+test_open_rename()
+{
+	int res, err = 0;
 	int fd1, fd2;
-	start_test("open_rename");
+	struct utimbuf utm;
+	time_t atime = 987631200;
+	time_t mtime = 123116400;
+	start_test("open rename utime close");
 	unlink(testfile);
 	unlink(testfile2);
 	res = create_file(testfile, testdata, testdatalen);
@@ -1141,32 +1188,170 @@ test_open_rename()
 		close(fd1);
 		return -1;
 	}
-	res = create_file(testfile, testdata2, testdata2len);
-	if (res == -1) {
-		close(fd1);
+	res = check_nonexist(testfile);
+	if (res == -1)
 		return -1;
-	}
-	fd2 = open(testfile, O_RDWR);
+	fd2 = open(testfile, O_RDWR | O_CREAT | O_EXCL, 0600);
 	if (fd2 == -1) {
 		PERROR("open_2");
 		close(fd1);
 		return -1;
 	}
+	res = write(fd2, testdata2, testdata2len);
+	if (res == -1) {
+		PERROR("write");
+		err += -1;
+	} else if (res != testdata2len) {
+		ERROR("write is short: %u instead of %u", res, testdata2len);
+		err += -1;
+	}
+	utm.actime = atime;
+	utm.modtime = mtime;
+	res = utime(testfile, &utm);
+	res = 0;
+	if (res == -1) {
+		PERROR("utime_1");
+		err += -1;
+	}
+	res = utime(testfile2, &utm);
+	if (res == -1) {
+		PERROR("utime_2");
+		err += -1;
+	}
 	close(fd1);
 	close(fd2);
-	res = check_data(testfile, testdata2, 0, testdata2len);
+	err += check_times(testfile, atime, mtime);
+	err += check_times(testfile2, atime, mtime);
+	err += check_data(testfile, testdata2, 0, testdata2len);
+	err += check_data(testfile2, testdata, 0, testdatalen);
+	if (err)
+		return -1;
+	success();
+	return 0;
+}
+
+static int
+test_open_unlink()
+{
+	int res;
+	int fd;
+	char b = '0';
+	start_test("open unlink close");
+	unlink(testfile);
+	res = create_file(testfile, testdata, testdatalen);
 	if (res == -1)
 		return -1;
-	res = check_data(testfile2, testdata, 0, testdatalen);
+	fd = open(testfile, O_RDWR);
+	if (fd == -1) {
+		PERROR("open");
+		return -1;
+	}
+	res = unlink(testfile); /* FUSE: RENAME is called */
+	if (res == -1) {
+		PERROR("unlink");
+		close(fd);
+		return -1;
+	}
+	/* for a filesystem which update the metadata at CLOSE only */
+	write(fd, &b, 1); 
+	res = check_nonexist(testfile);
+	if (res == -1)
+		return -1;
+	res = fchmod(fd, 0700);  /* FUSE: renamed hidden file. */
+	if (res == -1)
+		PERROR("fchmod");
+	close(fd);
+	res = check_nonexist(testfile);
 	if (res == -1)
 		return -1;
 	success();
 	return 0;
 }
 
-#define test_open_open(c, f, s)  do_test_open_open(c, f, #f, s, #s)
+static int
+test_open_utime()
+{
+	int res;
+	int fd;
+	char b = '0';
+	struct utimbuf utm;
+	time_t atime = 987631200;
+	time_t mtime = 123116400;
+	start_test("open utime close");
+	unlink(testfile);
+	res = create_file(testfile, testdata, testdatalen);
+	if (res == -1)
+		return -1;
+	fd = open(testfile, O_RDWR);
+	if (fd == -1) {
+		PERROR("open");
+		return -1;
+	}
+	write(fd, &b, 1);  /* update metadata */
+	utm.actime = atime;
+	utm.modtime = mtime;
+	res = utime(testfile, &utm);
+	if (res == -1) {
+		PERROR("utime");
+		close(fd);
+		return -1;
+	}
+	res = check_times(testfile, atime, mtime);
+	if (res == -1)
+		return -1;
+	close(fd);
+	res = check_times(testfile, atime, mtime);
+	if (res == -1)
+		return -1;
+	success();
+	return 0;
+}
 
-/* for gfarmfs_open_common_share_gf() */
+static int
+test_open_chmod(mode_t mode1, mode_t mode2)
+{
+	int res;
+	int fd;
+	char b = '0';
+	start_test("chmod(0%o) open chmod(0%o) close", mode1, mode2);
+	unlink(testfile);
+	res = create_file(testfile, testdata, testdatalen);
+	if (res == -1)
+		return -1;
+	res = chmod(testfile, mode1);
+	if (res == -1) {
+		PERROR("chmod_1");
+		return -1;
+	}
+	res = check_mode(testfile, mode1);
+	if (res == -1)
+		return -1;
+	fd = open(testfile, O_RDWR);
+	if (fd == -1) {
+		PERROR("open");
+		return -1;
+	}
+	write(fd, &b, 1);  /* update metadata */
+	res = chmod(testfile, mode2);
+	if (res == -1) {
+		PERROR("chmod_2");
+		close(fd);
+		return -1;
+	}
+	res = check_mode(testfile, mode2);
+	close(fd);
+	if (res == -1)
+		return -1;
+	res = check_mode(testfile, mode2);
+	if (res == -1)
+		return -1;
+	success();
+	return 0;
+}
+
+#define test_open_open(f, s)   do_test_open_open(0, f, #f, s, #s)
+#define test_open_creat(f, s)  do_test_open_open(1, f, #f, s, #s)
+
 static int
 do_test_open_open(int creat_mode,
 		  int flags_first, const char *str_first,
@@ -1176,7 +1361,7 @@ do_test_open_open(int creat_mode,
 	int fd1, fd2;
 	unlink(testfile);
 	if (creat_mode) {
-		start_test("creat_open(%s, %s)", str_first, str_second);
+		start_test("creat(%s) open(%s)", str_first, str_second);
 		fd1 = open(testfile, O_CREAT | flags_first, 0644);
 		if (fd1 == -1) {
 			PERROR("open_1");
@@ -1195,7 +1380,7 @@ do_test_open_open(int creat_mode,
 			return -1;
 		}
 	} else {
-		start_test("open_open(%s, %s)", str_first, str_second);
+		start_test("open(%s) open(%s)", str_first, str_second);
 		res = create_file(testfile, testdata, testdatalen);
 		if (res == -1)
 			return -1;
@@ -1220,16 +1405,46 @@ do_test_open_open(int creat_mode,
 	return 0;
 }
 
+static int
+test_finalize(int err)
+{
+	unlink(testfile);
+	unlink(testfile2);
+	rmdir(testdir);
+	rmdir(testdir2);
+	if (err) {
+		fprintf(stdout, "%i tests failed\n", -err);
+		return 1;
+	}
+	return 0;
+}
+
+static void
+signal_exit(int sig)
+{
+	int res;
+	(void) sig;
+	res = test_finalize(0);
+	fprintf(stderr, "canceled\n");
+	exit(res);
+}
+
 int
 main(int argc, char *argv[])
 {
 	int err = 0;
+	struct sigaction sa;
+
 	if (argc != 2) {
 		fprintf(stderr, "usage: %s testdir\n", argv[0]);
 		return 1;
 	}
 	umask(0);
 	chdir(argv[1]);
+
+	sa.sa_handler = signal_exit;
+	sigaction(SIGHUP, &sa, NULL);
+	sigaction(SIGINT, &sa, NULL);
 
 	err += test_create();
 	err += test_symlink();
@@ -1291,28 +1506,25 @@ main(int argc, char *argv[])
 	err += test_mmap(PROT_READ, MAP_SHARED);
 	err += test_mmap(PROT_WRITE, MAP_SHARED);
 	err += test_mmap(PROT_READ | PROT_WRITE, MAP_SHARED);
-	err += test_seek(10);
+	err += test_seek_eof(10);
+	err += test_open_size();
 	err += test_open_rename();
-	err += test_open_open(0, O_RDONLY, O_WRONLY);
-	err += test_open_open(0, O_RDONLY, O_RDWR);
-	err += test_open_open(0, O_WRONLY, O_RDONLY);
-	err += test_open_open(0, O_WRONLY, O_RDWR);
-	err += test_open_open(0, O_RDWR, O_RDONLY);
-	err += test_open_open(0, O_RDWR, O_WRONLY);
-	/* err += test_open_open(1, O_RDONLY, O_WRONLY); EBADF */
-	/* err += test_open_open(1, O_RDONLY, O_RDWR);   EBADF */
-	err += test_open_open(1, O_WRONLY, O_RDONLY);
-	err += test_open_open(1, O_WRONLY, O_RDWR);
-	err += test_open_open(1, O_RDWR, O_RDONLY);
-	err += test_open_open(1, O_RDWR, O_WRONLY);
+	err += test_open_unlink();
+	err += test_open_utime();
+	err += test_open_chmod(0600, 0700);
+	err += test_open_chmod(0700, 0600);
+	err += test_open_open(O_RDONLY, O_WRONLY);
+	err += test_open_open(O_RDONLY, O_RDWR);
+	err += test_open_open(O_WRONLY, O_RDONLY);
+	err += test_open_open(O_WRONLY, O_RDWR);
+	err += test_open_open(O_RDWR, O_RDONLY);
+	err += test_open_open(O_RDWR, O_WRONLY);
+	/* err += test_open_creat(O_RDONLY, O_WRONLY); -- EBADF */
+	/* err += test_open_creat(O_RDONLY, O_RDWR);   -- EBADF */
+	err += test_open_creat(O_WRONLY, O_RDONLY);
+	err += test_open_creat(O_WRONLY, O_RDWR);
+	err += test_open_creat(O_RDWR, O_RDONLY);
+	err += test_open_creat(O_RDWR, O_WRONLY);
 
-	unlink(testfile);
-	unlink(testfile2);
-	rmdir(testdir);
-	rmdir(testdir2);
-	if (err) {
-		fprintf(stderr, "%i tests failed\n", -err);
-		return 1;
-	}
-	return 0;
+	return test_finalize(err);
 }
