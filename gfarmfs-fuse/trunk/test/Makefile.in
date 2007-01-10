@@ -148,7 +148,7 @@ sysconfdir = @sysconfdir@
 target_alias = @target_alias@
 fsystest_SOURCE = fsystest.c
 noinst_SCRIPTS = test.sh
-EXTRA_DIST = $(noinst_SCRIPTS) README
+EXTRA_DIST = $(noinst_SCRIPTS) README KNOWN_ERRORS
 SUBDIRS = expected
 all: all-recursive
 
