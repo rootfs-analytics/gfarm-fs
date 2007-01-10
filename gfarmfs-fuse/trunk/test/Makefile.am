@@ -1,7 +1,7 @@
 noinst_PROGRAMS = fsystest
 fsystest_SOURCE = fsystest.c
 noinst_SCRIPTS = test.sh
-EXTRA_DIST = $(noinst_SCRIPTS) README
+EXTRA_DIST = $(noinst_SCRIPTS) README KNOWN_ERRORS
 SUBDIRS = expected
 
 top-all:
