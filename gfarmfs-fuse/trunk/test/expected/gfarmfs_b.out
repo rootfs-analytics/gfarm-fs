@@ -1,3 +1,4 @@
+gfarmfs: opt="-nlsu -b", fuse_opt=""
 OK [create]
 OK [symlink]
 NG [link] check_nlink(): nlink 1 instead of 2
@@ -40,19 +41,23 @@ OK [open(-, O_RDWR | O_CREAT | O_EXCL, 0600)]
 OK [open(+, O_RDWR | O_CREAT | O_EXCL, 0600)]
 OK [open(-, O_RDWR | O_CREAT | O_EXCL, 0000)]
 OK [open(+, O_RDWR | O_CREAT | O_EXCL, 0000)]
-OK [open_acc(O_RDONLY) mode=0600 error=0]
-OK [open_acc(O_WRONLY) mode=0600 error=0]
-OK [open_acc(O_RDWR) mode=0600 error=0]
-OK [open_acc(O_RDONLY) mode=0400 error=0]
-OK [open_acc(O_RDONLY | O_TRUNC) mode=0400 error=EACCES]
-OK [open_acc(O_WRONLY) mode=0400 error=EACCES]
-OK [open_acc(O_RDWR) mode=0400 error=EACCES]
-OK [open_acc(O_RDONLY) mode=0200 error=EACCES]
-OK [open_acc(O_WRONLY) mode=0200 error=0]
-OK [open_acc(O_RDWR) mode=0200 error=EACCES]
-OK [open_acc(O_RDONLY) mode=0000 error=EACCES]
-OK [open_acc(O_WRONLY) mode=0000 error=EACCES]
-OK [open_acc(O_RDWR) mode=0000 error=EACCES]
+OK [open_acc(O_RDONLY) mode=0600 errno=0]
+OK [open_acc(O_WRONLY) mode=0600 errno=0]
+OK [open_acc(O_RDWR) mode=0600 errno=0]
+OK [open_acc(O_RDONLY) mode=0400 errno=0]
+OK [open_acc(O_RDONLY | O_TRUNC) mode=0400 errno=EACCES]
+OK [open_acc(O_WRONLY) mode=0400 errno=EACCES]
+OK [open_acc(O_RDWR) mode=0400 errno=EACCES]
+OK [open_acc(O_RDONLY) mode=0200 errno=EACCES]
+OK [open_acc(O_WRONLY) mode=0200 errno=0]
+OK [open_acc(O_RDWR) mode=0200 errno=EACCES]
+OK [open_acc(O_RDONLY) mode=0000 errno=EACCES]
+OK [open_acc(O_WRONLY) mode=0000 errno=EACCES]
+OK [open_acc(O_RDWR) mode=0000 errno=EACCES]
+OK [open_acc(O_RDONLY | O_TRUNC) mode=0600 errno=0]
+NG [open_acc(O_RDONLY | O_TRUNC) mode=0200 errno=EACCES] check_size(): length 0 instead of 26
+OK [open_acc(O_WRONLY | O_TRUNC) mode=0200 errno=0]
+NG [open_acc(O_RDWR | O_TRUNC) mode=0200 errno=EACCES] check_size(): length 0 instead of 26
 OK [mmap(PROT_READ, MAP_SHARED)]
 NG [mmap(PROT_WRITE, MAP_SHARED)] do_test_mmap(): mmap: No such device
 NG [mmap(PROT_READ | PROT_WRITE, MAP_SHARED)] do_test_mmap(): mmap: No such device
@@ -73,4 +78,4 @@ OK [creat(O_WRONLY) open(O_RDONLY)]
 OK [creat(O_WRONLY) open(O_RDWR)]
 OK [creat(O_RDWR) open(O_RDONLY)]
 OK [creat(O_RDWR) open(O_WRONLY)]
-4 tests failed
+6 tests failed

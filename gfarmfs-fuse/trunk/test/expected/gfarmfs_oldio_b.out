@@ -1,4 +1,4 @@
-gfarmfs: opt="--oldio -nlsu", fuse_opt="-o attr_timeout=0"
+gfarmfs: opt="--oldio -nlsub", fuse_opt="-o attr_timeout=0"
 OK [create]
 OK [symlink]
 NG [link] check_nlink(): nlink 1 instead of 2
@@ -25,7 +25,8 @@ OK [open(+, O_WRONLY, 0000)]
 NG [open(-, O_RDWR | O_CREAT, 0600)] check_size(): length 0 instead of 26
 NG [open(-, O_RDWR | O_CREAT, 0600)] do_check_data(): testfile: short read: 0 instead of 26
 NG [open(-, O_RDWR | O_CREAT, 0600)] do_test_open(): read is short: 0 instead of 26
-OK [open(+, O_RDWR | O_CREAT, 0600)]
+NG [open(+, O_RDWR | O_CREAT, 0600)] check_buffer(): data mismatch
+NG [open(+, O_RDWR | O_CREAT, 0600)] check_buffer(): data mismatch
 NG [open(-, O_RDWR | O_CREAT | O_TRUNC, 0600)] check_size(): length 0 instead of 26
 NG [open(-, O_RDWR | O_CREAT | O_TRUNC, 0600)] do_check_data(): testfile: short read: 0 instead of 26
 NG [open(-, O_RDWR | O_CREAT | O_TRUNC, 0600)] do_test_open(): read is short: 0 instead of 26
@@ -95,4 +96,4 @@ OK [creat(O_WRONLY) open(O_RDONLY)]
 OK [creat(O_WRONLY) open(O_RDWR)]
 OK [creat(O_RDWR) open(O_RDONLY)]
 OK [creat(O_RDWR) open(O_WRONLY)]
-23 tests failed
+24 tests failed
