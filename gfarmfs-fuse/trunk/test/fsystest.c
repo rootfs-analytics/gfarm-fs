@@ -138,11 +138,11 @@ check_times(const char *path, time_t atime, time_t mtime)
 		return -1;
 	}
 	if (stbuf.st_atime != atime) {
-		ERROR("different atime (instead of %li)", (long) atime);
+		ERROR("different atime");
 		err--;
 	}
 	if (stbuf.st_mtime != mtime) {
-		ERROR("different mtime (instead of %li)", (long) mtime);
+		ERROR("different mtime");
 		err--;
 	}
 	if (err)
@@ -725,7 +725,8 @@ do_test_open(int exist, int flags, const char *flags_str, int mode)
 							testdata2 + datalen,
 							testdata2len - datalen
 							);
-				} else if (exist)
+				} else if (exist && !(flags & O_TRUNC))
+					/* (added) O_RDONLY only */
 					err += check_buffer(
 						buf, testdata2, testdata2len);
 			}
@@ -769,7 +770,7 @@ do_test_open_acc(int flags, const char *flags_str, int mode,
 	int datalen = testdatalen;
 	int res;
 	int fd;
-	start_test("open_acc(%s) mode=0%03o error=%s", flags_str, mode,
+	start_test("open_acc(%s) mode=0%03o errno=%s", flags_str, mode,
 		   err_str);
 	unlink(testfile);
 	res = create_file(testfile, data, datalen);
@@ -789,6 +790,13 @@ do_test_open_acc(int flags, const char *flags_str, int mode,
 			PERROR("open");
 			return -1;
 		}
+		res = check_size(testfile, datalen); /* added */
+		if (res == -1)
+			return -1;
+		chmod(testfile, 0400);
+		res = check_data(testfile, data, 0, datalen); /* added */
+		if (res == -1)
+			return -1;
 	} else {
 		if (err) {
 			ERROR("open should have failed");
@@ -796,6 +804,11 @@ do_test_open_acc(int flags, const char *flags_str, int mode,
 			return -1;
 		}
 		close(fd);
+		if (flags & O_TRUNC) { /* added */
+			res = check_size(testfile, 0);
+			if (res == -1)
+				return -1;
+		}
 	}
 	success();
 	return 0;
@@ -1350,7 +1363,7 @@ test_open_chmod(mode_t mode1, mode_t mode2)
 }
 
 #define test_open_open(f, s)   do_test_open_open(0, f, #f, s, #s)
-#define test_open_creat(f, s)  do_test_open_open(1, f, #f, s, #s)
+#define test_creat_open(f, s)  do_test_open_open(1, f, #f, s, #s)
 
 static int
 do_test_open_open(int creat_mode,
@@ -1502,7 +1515,11 @@ main(int argc, char *argv[])
 	err += test_open_acc(O_WRONLY, 0000, EACCES);
 	err += test_open_acc(O_RDWR,   0000, EACCES);
 
-	/* additional tests */
+	/* ------ additional tests ------ */
+	err += test_open_acc(O_RDONLY | O_TRUNC, 0600, 0);
+	err += test_open_acc(O_RDONLY | O_TRUNC, 0200, EACCES);
+	err += test_open_acc(O_WRONLY | O_TRUNC, 0200, 0);
+	err += test_open_acc(O_RDWR   | O_TRUNC, 0200, EACCES);
 	err += test_mmap(PROT_READ, MAP_SHARED);
 	err += test_mmap(PROT_WRITE, MAP_SHARED);
 	err += test_mmap(PROT_READ | PROT_WRITE, MAP_SHARED);
@@ -1519,12 +1536,12 @@ main(int argc, char *argv[])
 	err += test_open_open(O_WRONLY, O_RDWR);
 	err += test_open_open(O_RDWR, O_RDONLY);
 	err += test_open_open(O_RDWR, O_WRONLY);
-	/* err += test_open_creat(O_RDONLY, O_WRONLY); -- EBADF */
-	/* err += test_open_creat(O_RDONLY, O_RDWR);   -- EBADF */
-	err += test_open_creat(O_WRONLY, O_RDONLY);
-	err += test_open_creat(O_WRONLY, O_RDWR);
-	err += test_open_creat(O_RDWR, O_RDONLY);
-	err += test_open_creat(O_RDWR, O_WRONLY);
+	/* err += test_creat_open(O_RDONLY, O_WRONLY); -- EBADF */
+	/* err += test_creat_open(O_RDONLY, O_RDWR);   -- EBADF */
+	err += test_creat_open(O_WRONLY, O_RDONLY);
+	err += test_creat_open(O_WRONLY, O_RDWR);
+	err += test_creat_open(O_RDWR, O_RDONLY);
+	err += test_creat_open(O_RDWR, O_WRONLY);
 
 	return test_finalize(err);
 }
