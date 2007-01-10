@@ -1,7 +1,7 @@
 #!/bin/sh
 
-OUTPUTDIR=./_output
-DIFFDIR=./_diffs
+OUTPUTDIR=./output
+DIFFDIR=./diffs
 TMP_MNTDIR=./_tmp_mnt
 
 EXPECTDIR=./expected
@@ -94,7 +94,8 @@ test_common()
     if [ $canceled -eq 1 ];then
         return
     fi
-    ${FSYSTEST} ${TESTDIR} > ${OUTPUT} 2>&1 &
+    echo "${TESTSTR}" > ${OUTPUT}
+    ${FSYSTEST} ${TESTDIR} >> ${OUTPUT} 2>&1 &
     testpid=$!
     wait $testpid
     if [ $canceled -eq 1 ];then
@@ -152,6 +153,7 @@ fuse_common_do_test()
     RESULT=$1
     TESTDIR=$2
     OUTNAME=$3
+    TESTNAME=$4
 
     EXPECTED=${OUTNAME}
     OUTPUT=${OUTPUTDIR}/${OUTNAME}.out
@@ -196,7 +198,7 @@ test_gfarmfs()
     fi
     $GFARMFS $OPTIONS $ERRLOGOPT $TMP_MNTDIR $FUSEOPTIONS > $OUTPUT 2>&1
     result=$?
-    fuse_common_do_test $result ${TESTDIR} ${OUTNAME}
+    fuse_common_do_test $result ${TESTDIR} ${OUTNAME} "${TESTNAME}"
     fuse_common_final
 }
 
@@ -226,7 +228,7 @@ test_fusexmp()
     fi
     ${FUSEXMP} ${TMP_MNTDIR} ${FUSEOPTIONS} > ${OUTPUT} 2>&1
     result=$?
-    fuse_common_do_test $result ${TESTDIR} ${OUTNAME}
+    fuse_common_do_test $result ${TESTDIR} ${OUTNAME} "${TESTNAME}"
     fuse_common_final
 }
 
@@ -242,6 +244,7 @@ fi
 if [ $DO_GFARMFS -eq 1 ]; then
     test_gfarmfs "" "" gfarmfs_noopt
     test_gfarmfs "-nlsu" "" gfarmfs_nlsu
+    test_gfarmfs "-nlsu" "-o default_permissions" gfarmfs_defperm
     test_gfarmfs "-nlsu" "-o attr_timeout=0" gfarmfs_attr0
     test_gfarmfs "-nlsu -N2" "" gfarmfs_N2
     test_gfarmfs "-nlsu -b" "" gfarmfs_b
@@ -249,8 +252,9 @@ if [ $DO_GFARMFS -eq 1 ]; then
     test_gfarmfs "-nlsu" "-o direct_io" gfarmfs_direct_io
 fi
 if [ $DO_GFARMFS_OLD -eq 1 ]; then
-    test_gfarmfs "--oldio -nlsub" "-o attr_timeout=0" gfarmfs_oldio
-    test_gfarmfs "--oldio -nlsubF" "-o attr_timeout=0" gfarmfs_oldio_F
+    test_gfarmfs "--oldio -nlsu" "-o attr_timeout=0" gfarmfs_oldio
+    test_gfarmfs "--oldio -nlsub" "-o attr_timeout=0" gfarmfs_oldio_b
+    test_gfarmfs "--oldio -nlsuF" "-o attr_timeout=0" gfarmfs_oldio_F
 fi
 
 ##### fusexmp_fh #####
@@ -260,6 +264,7 @@ if [ $DO_FUSEXMP -eq 1 ]; then
     test_fusexmp "fusexmp_fh" "-o direct_io" fusexmp_fh_direct_io
     test_fusexmp "fusexmp_fh" "-o kernel_cache" fusexmp_fh_kernel_cache
     test_fusexmp "fusexmp_fh" "-s" fusexmp_fh_s
+    test_fusexmp "fusexmp_fh" "-o default_permissions" fusexmp_fh_defperm
 fi
 
 ##### final #####
