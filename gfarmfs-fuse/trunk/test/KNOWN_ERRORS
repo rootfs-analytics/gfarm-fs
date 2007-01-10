@@ -1,0 +1,22 @@
+*** gfarmfs with -l option
+
+[link] check_nlink(): nlink 1 instead of 2
+--> link(2) behavior is copying-file instead of hardlink. (Gfarm 1.4)
+
+*** All of FUSE filesystems
+
+[mmap(PROT_WRITE, MAP_SHARED)] do_test_mmap(): mmap: No such device
+[mmap(PROT_READ | PROT_WRITE, MAP_SHARED)] do_test_mmap(): mmap: No such device
+--> FUSE limitation (FUSE 2.6)
+
+*** All of FUSE filesystems with -o direct_io
+
+[mmap(PROT_READ, MAP_SHARED)] do_test_mmap(): mmap: No such device
+--> FUSE limitation (FUSE 2.6)
+
+*** All of FUSE filesystem without -o default_permissions
+
+[open_acc(O_RDONLY | O_TRUNC) mode=0200 errno=EACCES] check_size(): length 0 instead of 26
+[open_acc(O_RDWR | O_TRUNC) mode=0200 errno=EACCES] check_size(): length 0 instead of 26
+Though EACCES happens, the file is truncated.
+--> FUSE specification (FUSE 2.6) (O_TRUNC = TRUNCATE + OPEN)
