@@ -4,6 +4,9 @@ noinst_SCRIPTS = test.sh
 EXTRA_DIST = $(noinst_SCRIPTS) README KNOWN_ERRORS
 SUBDIRS = expected
 
+clean-local:
+	-rm -rf output diffs
+
 top-all:
 	$(MAKE) -C $(top_builddir) all
 
