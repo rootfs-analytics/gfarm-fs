@@ -1408,6 +1408,7 @@ gfarmfs_truncate_common(char *url, off_t size)
 		e = gfs_pio_open(url, GFARM_FILE_WRONLY|GFARM_FILE_TRUNC, &gf);
 		if (e != NULL)
 			return (e);
+		e = gfarmfs_set_view(gf);
 		gfs_pio_close(gf);
 	} else {
 		e = gfs_pio_open(url, GFARM_FILE_WRONLY, &gf);
@@ -4278,18 +4279,22 @@ setup_options()
 	}
 
 	/* unlink operation */
+#ifdef USE_GFARM_SCRAMBLE
+	gfarmfs_unlink_op = gfs_unlink;
+#else
 	if (enable_unlinkall == 1) {
 		gfarmfs_unlink_op = gfs_unlink;
 	} else {
 		gfarmfs_unlink_op = gfarmfs_unlink_self_arch;
 	}
+#endif /* USE_GFARM_SCRAMBLE */
 
 	if (enable_trace != NULL || enable_timer) {
-		gfarmfs_init = &gfarmfs_init_prof;
-		gfarmfs_final = &gfarmfs_final_prof;
+		gfarmfs_init = gfarmfs_init_prof;
+		gfarmfs_final = gfarmfs_final_prof;
 	} else {
-		gfarmfs_init = &gfarmfs_init_normal;
-		gfarmfs_final = &gfarmfs_final_normal;
+		gfarmfs_init = gfarmfs_init_normal;
+		gfarmfs_final = gfarmfs_final_normal;
 	}
 }
 
