@@ -40,6 +40,8 @@
 #include <time.h>
 #include <sys/time.h>
 #include <stdarg.h>
+#include <sys/sem.h>
+#include <syslog.h>
 
 #include <gfarm/gfarm.h>
 /* These definitions may conflict with <gfarm/gfarm_config.h> */
@@ -107,6 +109,7 @@ static char *trace_name = NULL; /* filename */
 static FILE *enable_errlog = NULL;
 static char *errlog_name = NULL; /* filename */
 static FILE *errlog_out;
+static int enable_syslog = 0;
 static char *gfarm_mount_point = "";
 static int enable_gfarm_iobuf = 0; /* about GFARM_FILE_UNBUFFERED */
 static int enable_exact_filesize = 0;
@@ -201,6 +204,12 @@ gfarmfs_errlog(const char *format, ...)
 		lt->tm_mday, lt->tm_hour, lt->tm_min, lt->tm_sec);
 	vfprintf(errlog_out, format, ap);
 	fprintf(errlog_out, "\n");
+
+	if (enable_syslog == 1) {
+		char buf[2048];
+		vsnprintf(buf, sizeof(buf), format, ap);
+		syslog(LOG_ERR, "%s", buf);
+	}
 	va_end(ap);
 }
 
@@ -406,7 +415,7 @@ gfarmfs_prof_final()
 
 	total = (((double)total_time.tv_sec) * SECOND_BY_MICROSEC
 		 + total_time.tv_usec) / SECOND_BY_MICROSEC;
-	printf("Total time in gfarmfs (implies errors): %10.6f s\n",
+	printf("Total time in gfarmfs (including errors): %10.6f s\n",
 	       total);
 }
 
@@ -2325,11 +2334,6 @@ gfarmfs_shm_alloc(size_t size)
 	return (b);
 }
 
-#define USE_SEMAPHORE 1
-
-#if USE_SEMAPHORE
-#include <sys/sem.h>
-
 static int semid;
 static int sem_initialized = 0;
 
@@ -2344,12 +2348,12 @@ gfarmfs_async_fork_count_initialize()
 	sem_initialized = 1;
 	if ((semid = semget(IPC_PRIVATE, 1, 0600|IPC_CREAT)) == -1) {
 		save_errno = errno;
-		perror("semget");
+		gfarmfs_errlog("semget(init): %s", strerror(save_errno));
 		return (gfarm_errno_to_error(save_errno));
 	}
 	if (semop(semid, &sb, 1) == -1) {
 		save_errno = errno;
-		perror("semop");
+		gfarmfs_errlog("semop(init): %s", strerror(save_errno));
 		return (gfarm_errno_to_error(save_errno));
 	}
 	return (NULL);
@@ -2363,7 +2367,7 @@ gfarmfs_async_fork_count_increment_n(int n)
 
 	if (semop(semid, &sb, 1) == -1) {
 		save_errno = errno;
-		perror("semop");
+		gfarmfs_errlog("semop(+): %s", strerror(save_errno));
 		return gfarm_errno_to_error(save_errno);
 	}
 	/* printf("semval = %d\n", semctl(semid, 0, GETVAL, 0)); */
@@ -2378,7 +2382,7 @@ gfarmfs_async_fork_count_decrement_n(int n)
 
 	if (semop(semid, &sb, 1) == -1) {
 		save_errno = errno;
-		perror("semop");
+		gfarmfs_errlog("semop(-): %s", strerror(save_errno));
 		return gfarm_errno_to_error(save_errno);
 	}
 	return (NULL);
@@ -2389,43 +2393,8 @@ gfarmfs_async_fork_count_finalize()
 {
 	sem_initialized = 0;
 	if (semctl(semid, 0, IPC_RMID, 0) == -1)
-		perror("semctl");
+		gfarmfs_errlog("semctl(final): %s", strerror(errno));
 }
-
-#else  /* ! USE_SEMAPHORE */
-/* not work correctly  */
-static int *fork_count = NULL; /* shm (for counter) */
-
-static char *
-gfarmfs_async_fork_count_initialize()
-{
-	if (fork_count == NULL) {
-		fork_count = gfarmfs_shm_alloc(sizeof(int));
-		if (fork_count == NULL)
-			return (gfarm_errno_to_error(errno));
-		*fork_count = 0;
-	}
-	return (NULL);
-}
-
-static char *
-gfarmfs_async_fork_count_increment_n(int n)
-{
-	*fork_count += n;
-	if (*fork_count > DEFAULT_FORK_MAX)
-		waitpid(-1, NULL, 0);
-	return (NULL);
-}
-
-static char *
-gfarmfs_async_fork_count_decrement_n(int n)
-{
-	*fork_count -= n;
-	return (NULL);
-}
-
-#define gfarmfs_async_fork_count_finalize()
-#endif /* USE_SEMAPHORE */
 
 #define gfarmfs_async_fork_count_increment() \
 	gfarmfs_async_fork_count_increment_n(1)
@@ -3929,11 +3898,16 @@ gfarmfs_usage()
 "    -a <architecture>      set the client architecture\n"
 "    --trace <filename>     record FUSE operations called by processes\n"
 "    --errlog <filename>    record errors of gfarm's own and replication\n"
+"    --syslog               record errors in syslog\n"
 "    -v, --version          show version and exit\n"
 "\n", program_name);
 
 	fuse_main(2, (char **) fusehelp, gfarmfs_oper_p);
 }
+
+static char *opt_str_s = "-s";
+static char *opt_str_o = "-o";
+static char *opt_str_kopts = "use_ino";
 
 static void
 check_fuse_options(int *argcp, char ***argvp, int *newargcp, char ***newargvp)
@@ -3942,13 +3916,9 @@ check_fuse_options(int *argcp, char ***argvp, int *newargcp, char ***newargvp)
 	char **argv = *argvp;
 	char **newargv;
 	int i;
-	int ok_s = 0; /* check -s */
-	char *opt_s_str = "-s";
 
 	for (i = 1; i < argc; i++) {
-		if (strcmp(argv[i], "-s") == 0) {
-			ok_s = 1;
-		} else if (strcmp(argv[i], "-f") == 0) {
+		if (strcmp(argv[i], "-f") == 0) {
 			gfarmfs_debug = 1;
 		} else if (strcmp(argv[i], "-d") == 0) {
 			gfarmfs_debug = 2;
@@ -3957,24 +3927,23 @@ check_fuse_options(int *argcp, char ***argvp, int *newargcp, char ***newargvp)
 			exit(0);
 		}
 	}
-	if (ok_s == 0) { /* add -s option */
-		newargv = malloc((argc + 1) * sizeof(char *));
-		if (newargv == NULL) {
-			errno = ENOMEM;
-			perror("");
-			exit(1);
-		}
-		for (i = 0; i < argc; i++) {
-			newargv[i] = argv[i];
-		}
-		argc++;
-		newargv[argc - 1] = opt_s_str;
-		*newargcp = argc;
-		*newargvp = newargv;
-	} else {
-		*newargcp = argc;
-		*newargvp = argv;
+	newargv = malloc((argc + 3) * sizeof(char *));
+	if (newargv == NULL) {
+		errno = ENOMEM;
+		perror("check_fuse_options");
+		exit(1);
 	}
+	for (i = 0; i < argc; i++) {
+		newargv[i] = argv[i];
+	}
+	newargv[argc] = opt_str_s;
+	argc++;
+	newargv[argc] = opt_str_o;
+	argc++;
+	newargv[argc] = opt_str_kopts;
+	argc++;
+	*newargcp = argc;
+	*newargvp = newargv;
 }
 
 static int
@@ -4061,6 +4030,8 @@ parse_long_option(int *argcp, char ***argvp)
 			exit(1);
 		}
 		setvbuf(enable_errlog, NULL, _IOLBF, 0);
+	} else if (strcmp(&argv[0][1], "-syslog") == 0) {
+		enable_syslog = 1;
 	} else if (strcmp(&argv[0][1], "-timer") == 0) {
 		enable_timer = 1;
 	} else if (strcmp(&argv[0][1], "-version") == 0) {
@@ -4278,6 +4249,11 @@ setup_options()
 		errlog_out = stderr;
 	}
 
+	/* syslog */
+	if (enable_syslog == 1) {
+		openlog("gfarmfs", LOG_PID, LOG_LOCAL0);
+	}
+
 	/* unlink operation */
 #ifdef USE_GFARM_SCRAMBLE
 	gfarmfs_unlink_op = gfs_unlink;
@@ -4373,6 +4349,13 @@ print_options()
 		printf("set GFARM_PATH_INFO_TIMEOUT: %d (ms)\n",
 		       path_info_timeout);
 	}
+	if (enable_errlog) {
+		printf("enable errlog: %s\n", errlog_name);
+	}
+	if (enable_syslog) {
+		printf("enable syslog\n");
+	}
+	printf("force FUSE options: %s -o %s\n", opt_str_s, opt_str_kopts);
 }
 
 int
@@ -4404,6 +4387,7 @@ main(int argc, char *argv[])
 	}
 #endif
 	gfarmfs_prof_init();
+	umask(0);
 	ret = fuse_main(newargc, newargv, gfarmfs_oper_p);
 	free(newargv);
 	gfarmfs_fastcreate_check();
