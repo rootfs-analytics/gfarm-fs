@@ -17,9 +17,10 @@
  * Science and Technology (AIST).  All Rights Reserved.
  */
 #if FUSE_USE_VERSION >= 25
-/* #  warning FUSE 2.5 compatible mode. */
+#if DISABLE_FUSE_CREATE
+#define ENABLE_FASTCREATE 1
+#endif
 #elif FUSE_USE_VERSION == 22
-/* #  warning FUSE 2.2 compatible mode. */
 #define ENABLE_FASTCREATE 1
 #else
 #  error Please install FUSE 2.2 or later
@@ -139,8 +140,10 @@ static int force_gfrep_N = 0;
 static int use_old_functions = 0;
 
 /* default: enable */
+#if ENABLE_FASTCREATE
 static int enable_fastcreate = 1;  /* used on FUSE version 2.2 only */
                                    /* >0: enable, 0: disable, <0: ignore */
+#endif
 #if USE_GFS_STATFSNODE
 static int enable_statfs = 1; /* default: enable */
 #endif
@@ -592,7 +595,6 @@ gfarmfs_create_empty_file(const char *path, mode_t mode)
 }
 
 /* ################################################################### */
-/* FUSE version 2.2 only */
 #ifdef ENABLE_FASTCREATE
 
 struct fastcreate {
@@ -2910,7 +2912,7 @@ gfs_pio_open_common(char *url, int flags, GFS_File *gfp, mode_t *create_modep)
 	}
 	if (e != NULL)
 		gfs_pio_close(*gfp);
-#endif
+#endif /* ENABLE_FASTCREATE */
 	return (e);
 }
 
@@ -4247,15 +4249,17 @@ setup_options()
 		setenv("GFARM_PATH_INFO_TIMEOUT", s, 1);
 	}
 
-#ifndef ENABLE_FASTCREATE  /* not defined */
-	if (enable_fastcreate > 0)
-		enable_fastcreate = -1; /* ignore on FUSE 2.5 */
-#endif
-
 	/* setup old I/O functions */
 	if (use_old_functions == 1) {
 		gfarmfs_oper_p = &gfarmfs_oper_base;
 	}
+
+#if FUSE_USE_VERSION >= 25
+#ifdef DISABLE_FUSE_CREATE
+	/* disable CREATE for old Linux kernel */
+	gfarmfs_oper_p->create = NULL;
+#endif
+#endif
 
 	/* validate gfarm_mount_point */
 	e = add_gfarm_prefix("/", &url);
