@@ -107,7 +107,7 @@ AC_TRY_LINK([
 #include <gfarm/gfarm.h>],[
 gfarm_schedule_search_idle_acyclic_hosts_to_write(0, NULL, NULL, NULL);],
 [
-AC_DEFINE(USE_GFREP_H, 1, [using gfrep -H])
+AC_DEFINE(USE_SCHEDULER, 1, [using scheduler])
 ],[])
 
 AC_TRY_LINK([
