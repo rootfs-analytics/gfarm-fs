@@ -1,5 +1,8 @@
 /* config.h.in.  Generated from configure.in by autoheader.  */
 
+/* disable FUSE CREATE */
+#undef DISABLE_FUSE_CREATE
+
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
 
@@ -57,7 +60,7 @@
 /* using gfs_pio_set_view_scramble() */
 #undef USE_GFARM_SCRAMBLE
 
-/* gfs_statfsnode() */
+/* using gfs_statfsnode() */
 #undef USE_GFS_STATFSNODE
 
 /* using scheduler */
