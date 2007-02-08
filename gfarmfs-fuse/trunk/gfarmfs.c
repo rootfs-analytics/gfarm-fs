@@ -90,9 +90,7 @@
 #define REVISE_CHMOD 0
 
 #define ENABLE_NOFLAGMENTINFO_AUTO_DELETE 0
-
 #define ENABLE_ASYNC_REPLICATION 1
-
 #define ENABLE_XATTR 0
 
 /* ################################################################### */
@@ -118,19 +116,19 @@ static int path_info_timeout = 0;
 #if ENABLE_ASYNC_REPLICATION
 #define REP_DISABLE  (0)
 #define REP_GFREP_N  (1)  /* gfrep -N */
-#if USE_GFREP_H
-#define REP_GFREP_H  (2)  /* gfrep -H */
+#if USE_SCHEDULER
+#define REP_GFREP_HN (2)  /* gfrep -H -N */
+#define REP_GFREP_d  (3)  /* gfrep -d */
 #endif
 #if USE_GFARM_SCRAMBLE
-#define REP_SCRAMBLE (3)
+#define REP_SCRAMBLE (4)
 #endif
 static int enable_replication = REP_DISABLE;
 static char *gfrep_path = NULL;
 static int gfrep_target_num = -1;
 static char *gfrep_dom = NULL;
-#if USE_GFREP_H
+#if USE_SCHEDULER
 static int force_gfrep_N = 0;
-#define FIX_GFREP_H 1 /* for executable file in gfarm v1.4 or earlier */
 #endif
 
 #endif /* ENABLE_ASYNC_REPLICATION */
@@ -252,7 +250,6 @@ struct gfarmfs_prof {
 	struct timeval timer;
 	struct timeval op_total_time;
 	unsigned long op_count;
-	/* TODO define mutex for timer if thread-safe is ready */
 };
 
 static char OP_GETATTR[] = "GETATTR";
@@ -2425,16 +2422,16 @@ emsg:
 }
 #endif
 
-#ifdef USE_GFREP_H
+#ifdef USE_SCHEDULER
 /* *nhostsp > 0 : OK
  * *nhostsp == 0: do nothing
  * *nhostsp = -1: retry (gfrep -N)
  * error: undefined
  */
 static char *
-gfarmfs_gfrep_H_init(char *url, int *nhostsp, char **hosts)
+gfarmfs_gfrep_schedule(char *url, char **srchostp,
+		       int nrequire, int *nhostsp, char **hosts)
 {
-	const int nrequire = *nhostsp;
 	char *e;
 	int nsections, ncopies, nhostinfos;
 	struct gfarm_file_section_info *sections;
@@ -2456,7 +2453,7 @@ gfarmfs_gfrep_H_init(char *url, int *nhostsp, char **hosts)
 		gfarm_path, &nsections, &sections);
 	if (e != NULL)
 		goto free_gfarm_path;
-	if (nsections <= 0 || nsections >= 2) {
+	if (nsections <= 0 || nsections >= 2) { /* unexpected */
 		gfarm_file_section_info_free_all(nsections, sections);
 		e = NULL;
 		*nhostsp = -1; /* gfrep -N */
@@ -2468,6 +2465,7 @@ gfarmfs_gfrep_H_init(char *url, int *nhostsp, char **hosts)
 	gfarm_file_section_info_free_all(nsections, sections);
 	if (e != NULL)
 		goto free_gfarm_path;
+	/* ncopies >= 2: unexpected... */
 	/* !!! need free_copy_info !!! */
 	have_hosts = malloc(ncopies * sizeof(char *));
 	if (have_hosts == NULL) {
@@ -2558,8 +2556,10 @@ gfarmfs_gfrep_H_init(char *url, int *nhostsp, char **hosts)
 			gfarmfs_errlog(
 				"REPLICATE: WARN: "
 				"require(%d) - have(%d) > selected(%d)",
-			nrequire, nhave, *nhostsp);
+				nrequire, nhave, *nhostsp);
 	}
+	if (e == NULL)
+		*srchostp = strdup(copies[0].hostname);
 free_tmplist:
 	free(tmplist);
 free_hostinfos:
@@ -2574,29 +2574,73 @@ free_gfarm_path:
 	return (e);
 }
 
-static void
-gfarmfs_gfrep_H_exec(char *url, int nhosts, char **hosts)
+static int
+gfarmfs_gfrep_d_exec(char *url, char *srchost, int nhosts, char **hosts,
+		     int disable_stderr)
+{
+	int p, i;
+	int status, res = 0;
+
+	for (i = 0; i < nhosts; i++) {
+		p = fork();
+		if (p == -1) {
+			gfarmfs_errlog("REPLICATE: fork: %s", strerror(errno));
+			return (-1);
+		} else if (p == 0) { /* grandchild */
+			int r;
+			close(1);
+			if (disable_stderr)
+				close(2);
+			if (srchost != NULL) {
+				r = execl(gfrep_path, gfrep_path,
+					  "-s", srchost,
+					  "-d", hosts[i], url, (char*)NULL);
+			} else {
+				r = execl(gfrep_path, gfrep_path,
+					  "-d", hosts[i], url, (char*)NULL);
+			}
+			if (r == -1)
+				gfarmfs_errlog("REPLICATE: execvp: %s",
+					       strerror(errno));
+			_exit(1);
+		}
+		waitpid(p, &status, 0);
+		if (WEXITSTATUS(status) != 0 && res == 0)
+			res = WEXITSTATUS(status);
+	}
+
+	return (res);
+}
+
+static int
+gfarmfs_gfrep_HN_exec(char *url, int nhosts, char **hosts, int disable_stderr)
 {
 	int p, i;
 	int pfds[2];
 	FILE *f;
+	int status;
+	char numstr[16];
 
 	if (pipe(pfds) == -1)
 		gfarmfs_errlog("REPLICATE: pipe: %s", strerror(errno));
 	p = fork();
 	if (p == -1) {
 		gfarmfs_errlog("REPLICATE: fork: %s", strerror(errno));
-		return;
+		return (-1);
 	} else if (p == 0) { /* grandchild */
 		close(pfds[1]);
 		if (dup2(pfds[0], 0) == -1) { /* stdin */
 			gfarmfs_errlog("REPLICATE: dup2(grandchild): %s",
 				       strerror(errno));
-			_exit(0);
+			_exit(1);
 		}
 		close(pfds[0]);
-		if (execl(gfrep_path, gfrep_path, "-H", "-", url, (char*)NULL)
-		    == -1)
+		snprintf(numstr, sizeof(numstr), "%d", nhosts);
+		close(1);
+		if (disable_stderr)
+			close(2);
+		if (execl(gfrep_path, gfrep_path,
+			  "-H", "-", "-N", numstr, url, (char*)NULL) == -1)
 			gfarmfs_errlog("REPLICATE: execvp: %s",
 				       strerror(errno));
 		_exit(1);
@@ -2606,7 +2650,7 @@ gfarmfs_gfrep_H_exec(char *url, int nhosts, char **hosts)
 	if (f == NULL) {
 		gfarmfs_errlog("REPLICATE: fdopen: %s", strerror(errno));
 		close(pfds[1]);
-		return;
+		return (-1);
 	}
 	for (i = 0; i < nhosts; i++) {
 		if (fprintf(f, "%s\n", hosts[i]) < 0) {
@@ -2617,9 +2661,11 @@ gfarmfs_gfrep_H_exec(char *url, int nhosts, char **hosts)
 	}
 	if (fclose(f) == EOF)
 		gfarmfs_errlog("REPLICATE: fclose: %s", strerror(errno));
-	waitpid(p, NULL, 0);
+	waitpid(p, &status, 0);
+
+	return (WEXITSTATUS(status));
 }
-#endif /* end of USE_GFREP_H */
+#endif /* end of USE_SCHEDULER */
 
 static char *gfrep_N_argv[7];
 
@@ -2659,6 +2705,7 @@ gfarmfs_gfrep_N_exec(char *url)
 {
 	int p;
 
+	gfarmfs_gfrep_N_init();
 	p = fork();
 	if (p == -1) {
 		gfarmfs_errlog("REPLICATE: fork: %s", strerror(errno));
@@ -2674,15 +2721,6 @@ gfarmfs_gfrep_N_exec(char *url)
 		_exit(1);
 	}
 	waitpid(p, NULL, 0);
-#if 0
-	/* gfwhere */
-	p = fork();
-	if (p == 0) {
-		execlp("gfwhere", "gfwhere", "-s", url, (char*)NULL);
-		_exit(0);
-	} else if (p > 0)
-		waitpid(p, NULL, 0);
-#endif
 }
 
 static char *
@@ -2690,11 +2728,12 @@ gfarmfs_async_replicate(char *url, FH fh)
 {
 	char *e;
 	int rep_mode = REP_DISABLE;
-#ifdef USE_GFREP_H
+#ifdef USE_SCHEDULER
+	char *srchost = NULL;
 	char **hosts = NULL;
-	int nhosts = gfrep_target_num;
+	int nhosts;
 #endif
-
+	/* ----------- prepare ---------- */
 	if (fh->shm_child_status == NULL) { /* initialize */
 		fh->shm_child_status = gfarmfs_shm_alloc(sizeof(int));
 		if (fh->shm_child_status == NULL)
@@ -2707,68 +2746,55 @@ gfarmfs_async_replicate(char *url, FH fh)
 		/* do nothing */
 		return (NULL);
 	} else if (enable_replication == REP_GFREP_N){
-		gfarmfs_gfrep_N_init();
 		rep_mode = REP_GFREP_N;
 #ifdef USE_GFARM_SCRAMBLE
 	} else if (enable_replication == REP_SCRAMBLE) {
 		rep_mode = REP_SCRAMBLE;
 #endif
-	} else {
-#ifdef USE_GFREP_H
-#if FIX_GFREP_H
-		/* gfrep -H cannot operate an executable file in
-		 * gfarm v1.4 or earlier
-		 */
-		struct gfs_stat gs;
-		mode_t mode;
-		e = gfs_stat(url, &gs);
-		if (e != NULL)
-			return (e);
-		mode = gs.st_mode;
-		gfs_stat_free(&gs);
-		if (!GFARM_S_IS_FRAGMENTED_FILE(mode)) {
-			gfarmfs_gfrep_N_init();
-			rep_mode = REP_GFREP_N;
-		} else
-#endif /* FIX_GFREP_H */
-		if (enable_replication == REP_GFREP_H) { /* normal */
-			if (nhosts > 0) {
-				hosts = calloc(nhosts, sizeof(char *));
+	} else {  /* REP_GFREP_d or REP_GFREP_HN */
+#ifdef USE_SCHEDULER
+		if (enable_replication == REP_GFREP_HN ||
+		    enable_replication == REP_GFREP_d) { /* normal */
+			if (gfrep_target_num > 0) {
+				hosts = calloc(gfrep_target_num,
+					       sizeof(char *));
 				if (hosts == NULL)
 					return (GFARM_ERR_NO_MEMORY);
 			} else {
-				/* do nothing */
+				/* unexpected: do nothing */
 				return (NULL);
 			}
-			e = gfarmfs_gfrep_H_init(url, &nhosts, hosts);
+			e = gfarmfs_gfrep_schedule(url, &srchost,
+						   gfrep_target_num,
+						   &nhosts, hosts);
 			if (e != NULL) {
-				free(hosts);
-				return (e); /* error */
+				nhosts = 0;
+				goto end;
 			}
 			if (nhosts == 0) {
 				/* do nothing */
-				free(hosts);
-				return (NULL);
+				goto end;
 			} else if (nhosts > 0) {
-				rep_mode = REP_GFREP_H;
+				rep_mode = enable_replication;
 			} else {  /* nhosts == -1 -> using gfrep -N */
 				free(hosts);
 				hosts = NULL;
-				gfarmfs_gfrep_N_init();
 				rep_mode = REP_GFREP_N;
 			}
 		} else {
 			/* unexpected: do nothing */
 			return (NULL);
 		}
-#else  /* not use gfrep -H */
+#else  /* not use scheduler */
 		/* unexpected: do nothing */
 		return (NULL);
-#endif  /* USE_GFREP_H */
+#endif  /* USE_SCHEDULER */
 	}
+
+	/* ----------- execute ---------- */
 	e = gfarmfs_async_fork_count_increment(); /* limiter */
 	if (e != NULL)
-		return (e);
+		goto end;
 	*fh->shm_child_status = CHILD_RUNNING; /* gfarmfs_async_start(fh) */
 	fh->child_pid = fork();
 	if (fh->child_pid == -1) {
@@ -2782,9 +2808,11 @@ gfarmfs_async_replicate(char *url, FH fh)
 		/* child */
 		if (rep_mode == REP_GFREP_N)
 			gfarmfs_gfrep_N_exec(url);
-#ifdef USE_GFREP_H
-		else if (rep_mode == REP_GFREP_H)
-			gfarmfs_gfrep_H_exec(url, nhosts, hosts);
+#ifdef USE_SCHEDULER
+		else if (rep_mode == REP_GFREP_HN)
+			gfarmfs_gfrep_HN_exec(url, nhosts, hosts, 0);
+		else if (rep_mode == REP_GFREP_d)
+			gfarmfs_gfrep_d_exec(url, srchost, nhosts, hosts, 0);
 #endif
 #ifdef USE_GFARM_SCRAMBLE
 		else if (rep_mode == REP_SCRAMBLE)
@@ -2796,7 +2824,8 @@ gfarmfs_async_replicate(char *url, FH fh)
 		_exit(0);
 	}
 	/* parent: continue */
-#ifdef USE_GFREP_H
+end:
+#ifdef USE_SCHEDULER
 	if (hosts != NULL) {
 		int i;
 		for (i = 0; i < nhosts; i++)
@@ -2804,7 +2833,10 @@ gfarmfs_async_replicate(char *url, FH fh)
 				free(hosts[i]);
 		free(hosts);
 	}
+	if (srchost != NULL)
+		free(srchost);
 #endif
+
 	return (e);
 }
 #endif
@@ -3511,7 +3543,7 @@ gfarmfs_release_share_gf(const char *path, struct fuse_file_info *fi)
 #else
 		FH_REMOVE2(url, fh->ino);
 		FH_FREE(fh);
-#endif
+#endif /* ENABLE_ASYNC_REPLICATION */
 		free(url);
 	} else {   /* nopen > 0 */
 		if ((fi->flags & O_ACCMODE) != O_RDONLY)
@@ -3907,7 +3939,7 @@ gfarmfs_usage()
 
 static char *opt_str_s = "-s";
 static char *opt_str_o = "-o";
-static char *opt_str_kopts = "use_ino";
+static char *opt_str_kopts = "";
 
 static void
 check_fuse_options(int *argcp, char ***argvp, int *newargcp, char ***newargvp)
@@ -3936,12 +3968,11 @@ check_fuse_options(int *argcp, char ***argvp, int *newargcp, char ***newargvp)
 	for (i = 0; i < argc; i++) {
 		newargv[i] = argv[i];
 	}
-	newargv[argc] = opt_str_s;
-	argc++;
-	newargv[argc] = opt_str_o;
-	argc++;
-	newargv[argc] = opt_str_kopts;
-	argc++;
+	newargv[argc++] = opt_str_s;
+	if (strlen(opt_str_kopts) > 0) {
+		newargv[argc++] = opt_str_o;
+		newargv[argc++] = opt_str_kopts;
+	}
 	*newargcp = argc;
 	*newargvp = newargv;
 }
@@ -3996,7 +4027,7 @@ parse_long_option(int *argcp, char ***argvp)
 #endif
 	else if (strcmp(&argv[0][1], "-oldio") == 0)
 		use_old_functions = 1;
-#ifdef USE_GFREP_H
+#ifdef USE_SCHEDULER
 	else if (strcmp(&argv[0][1], "-force-gfrep-N") == 0)
 		force_gfrep_N = 1;
 #endif
@@ -4034,6 +4065,8 @@ parse_long_option(int *argcp, char ***argvp)
 		enable_syslog = 1;
 	} else if (strcmp(&argv[0][1], "-timer") == 0) {
 		enable_timer = 1;
+	} else if (strcmp(&argv[0][1], "-gfreppath") == 0) {
+		next_arg_set(&gfrep_path, argcp, argvp, 0);
 	} else if (strcmp(&argv[0][1], "-version") == 0) {
 		gfarmfs_version(1);
 		exit(0);
@@ -4154,6 +4187,50 @@ check_gfarmfs_options(int *argcp, char ***argvp)
 	*argvp = argv;
 }
 
+#ifdef USE_SCHEDULER
+static int
+check_gfrep()
+{
+	char *e;
+	GFS_File gf;
+	char url[] = "gfarm:_gfarmfs_gfrep";
+	char *srchost = NULL;
+	int nhosts = 0;
+	char *hosts[2];
+	int res = REP_DISABLE;
+	int i;
+
+	e = gfs_pio_create(url, GFARM_FILE_WRONLY, 0600, &gf);
+	if (e == NULL) {
+		gfarmfs_set_view(gf);
+		gfs_pio_close(gf);
+		e = gfarmfs_gfrep_schedule(url, &srchost, 2,
+					   &nhosts, hosts);
+		if (e == NULL) {
+			int r;
+			r = gfarmfs_gfrep_d_exec(url, srchost,
+						 nhosts, hosts, 1);
+			if (r == 0) {
+				res = REP_GFREP_d;
+			} else {
+				r = gfarmfs_gfrep_HN_exec(url, nhosts,
+							  hosts, 1);
+				if (r == 0)
+					res = REP_GFREP_HN;
+			}
+		}
+	}
+	gfs_unlink(url);
+	if (srchost != NULL)
+		free(srchost);
+	for (i = 0; i < nhosts; i++)
+		if (hosts[i])
+			free(hosts[i]);
+
+	return (res);
+}
+#endif /* USE_SCHEDULER */
+
 static void
 setup_options()
 {
@@ -4206,22 +4283,27 @@ setup_options()
 		enable_replication = REP_SCRAMBLE;
 #else
 		enable_replication = REP_DISABLE;
-#endif
-	} else { /* gfrep_target_num >=2 */
-#ifdef USE_GFREP_H
+#endif  /* USE_GFARM_SCRAMBLE */
+	} else { /* gfrep_target_num >= 2 */
+#ifdef USE_SCHEDULER
 		if (force_gfrep_N)
 			enable_replication = REP_GFREP_N;
 		else
-			enable_replication = REP_GFREP_H;
+			enable_replication = REP_GFREP_HN;
+		
 #else
 		enable_replication = REP_GFREP_N;
-#endif
+#endif  /* USE_SCHEDULER */
 	}
-#endif
+#endif  /* ENABLE_ASYNC_REPLICATION */
+
 	/* checking the location of grep */
-	if (enable_replication == REP_GFREP_N
-#ifdef USE_GFREP_H
-	    || enable_replication == REP_GFREP_H
+	if (gfrep_path == NULL &&
+#ifdef USE_SCHEDULER
+	    (enable_replication == REP_GFREP_N ||
+	     enable_replication == REP_GFREP_HN)
+#else
+	    enable_replication == REP_GFREP_N
 #endif
 		) {
 		gfrep_path = commandpath("gfrep");
@@ -4237,22 +4319,6 @@ setup_options()
 	if (enable_statfs == 0)
 		gfarmfs_oper_p->statfs = NULL; /* disable */
 #endif
-
-	/* error log */
-	if (enable_errlog != NULL) {
-		errlog_out = enable_errlog;
-		if (dup2(fileno(enable_errlog), fileno(stderr)) == -1) {
-			fprintf(stderr, "dup2: %s\n", strerror(errno));
-			exit(1);
-		}
-	} else {
-		errlog_out = stderr;
-	}
-
-	/* syslog */
-	if (enable_syslog == 1) {
-		openlog("gfarmfs", LOG_PID, LOG_LOCAL0);
-	}
 
 	/* unlink operation */
 #ifdef USE_GFARM_SCRAMBLE
@@ -4272,6 +4338,29 @@ setup_options()
 		gfarmfs_init = gfarmfs_init_normal;
 		gfarmfs_final = gfarmfs_final_normal;
 	}
+
+	/* ----------------- logging start -------------------------- */
+	/* error log */
+	if (enable_errlog != NULL) {
+		errlog_out = enable_errlog;
+		if (dup2(fileno(enable_errlog), fileno(stderr)) == -1) {
+			fprintf(stderr, "dup2: %s\n", strerror(errno));
+			exit(1);
+		}
+	} else {
+		errlog_out = stderr;
+	}
+
+	/* syslog */
+	if (enable_syslog == 1) {
+		openlog("gfarmfs", LOG_PID, LOG_LOCAL0);
+	}
+
+#ifdef USE_SCHEDULER
+	/* checking the version of gfrep */
+	if (enable_replication == REP_GFREP_HN)
+		enable_replication = check_gfrep();
+#endif
 }
 
 static void
@@ -4323,19 +4412,28 @@ print_options()
 		printf("mountpoint: gfarm:%s\n", gfarm_mount_point);
 	}
 #if ENABLE_ASYNC_REPLICATION
-	if (enable_replication == REP_GFREP_N
-#ifdef USE_GFREP_H
-	    || enable_replication == REP_GFREP_H
+	if (enable_replication != REP_DISABLE
+#ifdef USE_GFARM_SCRAMBLE
+	    && enable_replication != REP_SCRAMBLE
 #endif
 		) {
-		if (gfrep_dom == NULL) {
-			printf("enable '%s -N %d' to run automatically\n",
+		printf("auto replication: ");
+		if (enable_replication == REP_GFREP_N) {
+			printf("%s -N %d\n", gfrep_path, gfrep_target_num);
+#ifdef USE_SCHEDULER
+		} else if (enable_replication == REP_GFREP_HN) {
+			printf("%s -H hostlist -N %d (%d copies)\n",
+			       gfrep_path, gfrep_target_num - 1,
+				gfrep_target_num);
+		} else if (enable_replication == REP_GFREP_d) {
+			printf("%s -d hostname (%d times)\n",
 			       gfrep_path, gfrep_target_num);
-		} else {
-			printf("enable '%s -N %d -D %s' "
-			       "to run automatically\n",
-			       gfrep_path, gfrep_target_num, gfrep_dom);
+#endif
 		}
+		if (gfrep_dom != NULL) {
+			printf("destination domainname: %s\n", gfrep_dom);
+		}
+
 #ifdef USE_GFARM_SCRAMBLE
 	} else if (enable_replication == REP_SCRAMBLE){
 		printf("enable 'gfs_scramble_make_replica()' "
@@ -4355,7 +4453,11 @@ print_options()
 	if (enable_syslog) {
 		printf("enable syslog\n");
 	}
-	printf("force FUSE options: %s -o %s\n", opt_str_s, opt_str_kopts);
+	printf("implicit FUSE options: %s", opt_str_s);
+	if (strlen(opt_str_kopts) > 0)
+		printf("-o %s\n", opt_str_kopts);
+	else
+		printf("\n");
 }
 
 int
