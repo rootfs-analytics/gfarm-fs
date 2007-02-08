@@ -57,11 +57,11 @@
 /* using gfs_pio_set_view_scramble() */
 #undef USE_GFARM_SCRAMBLE
 
-/* using gfrep -H */
-#undef USE_GFREP_H
-
 /* gfs_statfsnode() */
 #undef USE_GFS_STATFSNODE
+
+/* using scheduler */
+#undef USE_SCHEDULER
 
 /* Version number of package */
 #undef VERSION
