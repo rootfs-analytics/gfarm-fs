@@ -16,15 +16,6 @@
  * Copyright (c) 2005-2006 National Institute of Advanced Industrial
  * Science and Technology (AIST).  All Rights Reserved.
  */
-#if FUSE_USE_VERSION >= 25
-#if DISABLE_FUSE_CREATE
-#define ENABLE_FASTCREATE 1
-#endif
-#elif FUSE_USE_VERSION == 22
-#define ENABLE_FASTCREATE 1
-#else
-#  error Please install FUSE 2.2 or later
-#endif
 #include <fuse.h>
 
 #include <stdio.h>
@@ -61,6 +52,16 @@
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
+#endif
+
+#if FUSE_USE_VERSION >= 25
+#ifdef DISABLE_FUSE_CREATE
+#define ENABLE_FASTCREATE 1
+#endif
+#elif FUSE_USE_VERSION == 22
+#define ENABLE_FASTCREATE 1
+#else
+#  error Please install FUSE 2.2 or later
 #endif
 
 #define GFARMFS_VER  PACKAGE_VERSION
@@ -140,7 +141,7 @@ static int force_gfrep_N = 0;
 static int use_old_functions = 0;
 
 /* default: enable */
-#if ENABLE_FASTCREATE
+#ifdef ENABLE_FASTCREATE
 static int enable_fastcreate = 1;  /* used on FUSE version 2.2 only */
                                    /* >0: enable, 0: disable, <0: ignore */
 #endif
@@ -4374,6 +4375,11 @@ print_options()
 		return;
 
 	gfarmfs_version(0);
+#ifdef ENABLE_FASTCREATE
+	if (enable_fastcreate == 1) {
+		printf("enable fastcreate\n");
+	}
+#endif
 	if (enable_symlink == 1) {
 		printf("enable symlink\n");
 	}
