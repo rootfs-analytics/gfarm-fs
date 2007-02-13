@@ -3,6 +3,7 @@
  *
  * Gfarm:
  *   http://datafarm.apgrid.org/
+ *   http://sourceforge.net/projects/gfarm/
  *
  * FUSE:
  *   http://fuse.sourceforge.net/
@@ -13,7 +14,7 @@
  * Unmount:
  *   $ fusermount -u <mountpoint>
  *
- * Copyright (c) 2005-2006 National Institute of Advanced Industrial
+ * Copyright (c) 2005-2007 National Institute of Advanced Industrial
  * Science and Technology (AIST).  All Rights Reserved.
  */
 #include <fuse.h>
@@ -3594,10 +3595,53 @@ gfarmfs_truncate_share_gf(const char *path, off_t size)
 	if (!gfarmfs_fh_is_opened(fh))
 		fh = NULL;
 #endif
-	if (fh != NULL)
-		e = gfs_pio_truncate(fh->gf, size);
-	else
+	if (fh != NULL) {
+		e = gfs_access(url, W_OK);
+		if (e != NULL)
+			goto free_url;
+		if ((fh->flags & GFARM_FILE_ACCMODE) == GFARM_FILE_RDONLY) {
+			char *e2;
+			mode_t save_mode = 0;
+			int is_saved = 0;
+			gfs_pio_close(fh->gf);
+			e = gfarmfs_truncate_common(url, size);
+			e2 = gfs_pio_open(url, GFARM_FILE_RDONLY, &fh->gf);
+			if (e2 != NULL) { /* retry */
+				struct gfs_stat gs;
+				e2 = gfs_stat(url, &gs);
+				if (e2 == NULL) {
+					save_mode = gs.st_mode;
+					e2 = gfs_chmod(url, save_mode|0400);
+					if (e2 == NULL)
+						is_saved = 1;
+					gfs_stat_free(&gs);
+				}
+				e2 = gfs_pio_open(url, GFARM_FILE_RDONLY,
+						  &fh->gf);
+			}
+			if (e2 == NULL) {
+				e2 = gfarmfs_set_view(fh->gf);
+			} else {
+				fh->gf = NULL;
+				gfarmfs_errlog("TRUNCATE: ERROR: reopen: "
+					       "%s: %s", path, e2);
+			}
+			if (is_saved) {
+				e2 = gfs_fchmod(fh->gf, save_mode);
+				if (e2 != NULL) {
+					gfarmfs_errlog("TRUNCATE: WARNING: "
+						       "can't change mode(%o):"
+						       " %s: %s",
+						       save_mode, path, e2);
+				}
+			}
+		} else { /* WRONLY or RDWR */
+			e = gfs_pio_truncate(fh->gf, size);
+		}
+	} else {
 		e = gfarmfs_truncate_common(url, size);
+	}
+free_url:
 	free(url);
 end:
 	return gfarmfs_final(&prof_truncate, e, 0, path);
