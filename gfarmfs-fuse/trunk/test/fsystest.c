@@ -4,6 +4,7 @@
  * This program is based on test.c from FUSE project.
  *     http://fuse.cvs.sourceforge.net/fuse/fuse/test/
  */
+#define _XOPEN_SOURCE 500
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
@@ -475,19 +476,33 @@ test_truncate(int len)
 	return 0;
 }
 
+#define test_ftruncate(l, m) test_ftruncate_common(l, m, 0, O_WRONLY, NULL, 0, NULL)
+#define test_open_truncate(f, m, l, e) test_ftruncate_common(l, m, 1, f, #f, e, #e)
+
 static int
-test_ftruncate(int len, int mode)
+test_ftruncate_common(int len, int mode, int open_truncate,
+		      int flags, const char *flags_str,
+		      int err, const char *err_str)
 {
-	static char func[] = "test_ftruncate";
+	char *func;
+	static char f1[] = "test_ftruncate";
+	static char f2[] = "test_open_truncate";
 	const char *data = testdata;
 	int datalen = testdatalen;
 	int res;
 	int fd;
-	start_test("ftruncate(%u) mode=0%03o", len, mode);
+	if (open_truncate) {
+		start_test("open(%s) fchmod(0%03o) truncate(%u) errno=%s",
+			   flags_str, mode, len, err_str);
+		func = f2;
+	} else {
+		start_test("ftruncate(%u) mode=0%03o", len, mode);
+		func = f1;
+	}
 	res = create_file(testfile, data, datalen);
 	if (res == -1)
 		return -1;
-	fd = open(testfile, O_WRONLY);
+	fd = open(testfile, flags);
 	if (fd == -1) {
 		test_perror(func, "open");
 		return -1;
@@ -503,11 +518,26 @@ test_ftruncate(int len, int mode)
 		close(fd);
 		return -1;
 	}
-	res = ftruncate(fd, len);
-	if (res == -1) {
-		test_perror(func, "ftruncate");
-		close(fd);
-		return -1;
+	if (open_truncate) {
+		res = truncate(testfile, len);
+		if (res == -1 && err != errno) {
+			test_perror(func, "truncate");
+			close(fd);
+			return -1;
+		} else if (res == 0 && err) {
+			test_error(func, "truncate should have failed");
+			close(fd);
+			return -1;
+		} else if (err) {
+			len = datalen;
+		}
+	} else {
+		res = ftruncate(fd, len);
+		if (res == -1) {
+			test_perror(func, "ftruncate");
+			close(fd);
+			return -1;
+		}
 	}
 	close(fd);
 	res = check_size(testfile, len);
@@ -1579,6 +1609,12 @@ main(int argc, char *argv[])
 	err += test_creat_open(O_WRONLY, O_RDWR);
 	err += test_creat_open(O_RDWR, O_RDONLY);
 	err += test_creat_open(O_RDWR, O_WRONLY);
+	err += test_open_truncate(O_RDONLY, 0200, 0, 0);
+	/* err += test_open_truncate(O_RDONLY, 0200, 5, 0); -- EBADF */
+	err += test_open_truncate(O_RDONLY, 0600, 5, 0);
+	err += test_open_truncate(O_RDONLY, 0400, 5, EACCES);
+	err += test_open_truncate(O_WRONLY, 0600, 5, 0);
+	err += test_open_truncate(O_WRONLY, 0400, 5, EACCES);
 
 	return test_finalize(err);
 }
