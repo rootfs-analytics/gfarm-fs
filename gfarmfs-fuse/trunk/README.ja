@@ -1,4 +1,4 @@
-Copyright (c) 2005-2006 National Institute of Advanced Industrial
+Copyright (c) 2005-2007 National Institute of Advanced Industrial
 Science and Technology (AIST).  All Rights Reserved.
 
 ============
@@ -10,6 +10,7 @@ GfarmFS-FUSE は，Gfarm ファイルシステムをユーザ権限でマウントすること
 
   Gfarm:
       http://datafarm.apgrid.org/
+      http://sourceforge.net/projects/gfarm/
 
   FUSE:
       http://fuse.sourceforge.net/
@@ -28,13 +29,48 @@ Fedora Core 5 の例です．
 
     $ Gfarm のクライアント設定ファイル確認 (~/.gfarmrc など)
     $ Gfarm の認証関係確認 (gfhost, gfkey, grid-proxy-init など)
-    $ tar zxvf gfarmfs-fuse-1.4.0.tar.gz
-    $ cd gfarmfs-fuse-1.4.0
+    $ tar zxvf gfarmfs-fuse-2.0.0.tar.gz
+    $ cd gfarmfs-fuse-2.0.0
     $ ./configure
     $ make
     $ mkdir ~/mountpoint
     $ ./gfarmfs ~/mountpoint
     $ cd ~/mountpoint
+
+
+========
+動作環境
+========
+
+*** オペレーティングシステム
+
+    必要環境:
+        FUSE の仕組みを使用できるオペレーティングシステム．
+        例えば，FUSE version 2.6 は Linux kernel version 2.6.9 以降で
+        使用できます．
+    推奨環境:
+        Linux kernel version 2.6.15 以降.
+    開発テスト環境:
+        Fedora Core 5 (2.6.18), CentOS 4.4 (2.6.9)
+    ビルドのみ確認:
+        FreeBSD 6.1-RELEASE
+
+*** FUSE
+
+    必要環境:
+        FUSE version 2.2 以降
+    推奨環境:
+        FUSE version 2.6.3 以降
+
+    FUSE version 2.5 以降であれば，gfarmfs に実装している機能をすべて
+    使用することができます．
+
+*** Gfarm
+
+    必要環境:
+        Gfarm version 1.2 以降
+    推奨環境:
+        Gfarm version 1.4 以降
 
 
 ========
@@ -45,10 +81,6 @@ GfarmFS-FUSE の構築には，Gfarm version 1.2 以降の開発パッケージ，および
 FUSE version 2.2 以降の開発パッケージが導入されている必要があります．
 Gfarm の開発パッケージは，RPM の場合は gfarm-gsi-devel（あるいは
 gfarm-devel）となります．
-
-FUSE version 2.5 以降で，かつ Linux Kernel 2.6.15 以降を使用している場
-合は FUSE version 2.5 互換モードで gfarmfs コマンドがコンパイルされます．
-そうでない場合は FUSE version 2.2 互換モードでコンパイルされます．
 
 GfarmFS-FUSE を構築するには，下記のようにします．
 
@@ -144,6 +176,10 @@ gfarmfs でファイルを更新しても，もう一方には見えないことがあるので，注
 
   ヘルプを表示します．
 
+-v
+
+  バージョンを表示します．
+
 -m <directory on Gfarm>
 
   Gfarm 上に存在するディレクトリを指定して，それ以下がマウントポイ
@@ -207,6 +243,9 @@ gfarmfs でファイルを更新しても，もう一方には見えないことがあるので，注
   ファイル複製の数を指定します．ファイルを新規作成や修正したあと，
   自動的に gfrep コマンドを非同期で実行するようになります．
 
+  Gfarm v1 においてこのオプションを使用した場合は，他のクライアントから
+  ディレクトリやファイルを rename しないようにしてください．
+
 -D <複製先ドメイン名>
 
   複製先のファイルシステムノードのドメイン名を指定します．
@@ -216,6 +255,10 @@ gfarmfs でファイルを更新しても，もう一方には見えないことがあるので，注
 
   errno では返せないエラー情報をファイルに記録します．例えば，-N オプ
   ションを指定した場合にエラーが起きたかどうかなどを記録します．
+
+--syslog
+
+  --errlog と同じ内容を syslogd へ記録します．
 
 -a <architecture>
 
@@ -232,6 +275,45 @@ gfarmfs でファイルを更新しても，もう一方には見えないことがあるので，注
   指定しなければなりません．<architecture> には通常，
   sparc-sun-solaris8 のような計算機アーキテクチャを表す名称を指定しま
   す．詳しくは man gfhost をご覧ください．
+
+
+==========
+マウント例
+==========
+
+*** ひとりのユーザがひとつの gfarmfs を使用する場合．
+
+  $ gfarmfs -lsub /mountpoint -o kernel_cache
+
+  一度作成したファイルを二度と更新しないならば，この方法で複数箇所から
+  マウントしても大丈夫です．
+
+*** 複数ユーザがひとつの gfarmfs を使用する場合．
+
+  $ gfarmfs -lsub /mountpoint -o allow_other,default_permissions,kernel_cache
+
+  新規作成されたファイルの所有者は，常にマウントしたユーザになることに注
+  意します．
+
+*** 複数の gfarmfs を使用する場合．
+
+  gfarm_agent -m を一つ用意して，すべての gfarmfs からそれを利用するよう
+  設定しておきます．
+
+  $ gfarmfs -lsuF /mountpoint
+
+*** 大きなファイルを Gfarm 環境から取り出す場合．
+
+  $ gfarmfs -b /mountpoint -o direct_io
+  $ dd if=/mountpoint/inputfile of=outputfile bs=64K
+  (direct_io を使用すると，逆に通常の読み書きが遅くなったりします．
+   また，実行ファイルを実行できなくなります)
+
+*** 大きなファイルを Gfarm 環境へ登録する場合．
+
+  $ gfarmfs -b /mountpoint -o direct_io
+  $ dd if=inputfile of=/mountpoint/outputfile bs=64K
+  (これよりも gfreg コマンドの方が速いです．)
 
 
 ==========
@@ -269,6 +351,7 @@ gfarmfs でファイルを更新しても，もう一方には見えないことがあるので，注
   メタデータが書き込まれていない可能性があります．
 
   対処は未定です．
+  このエラーは --errlog や --syslog で記録するようになります．
 
 *** フラグメント数が 2 個以上の場合，そのファイルを open(2) 中に，同一
     の gfarmfs 上で，chmod(2) や fchmod(2) ができない．
@@ -278,14 +361,52 @@ gfarmfs でファイルを更新しても，もう一方には見えないことがあるので，注
 
 *** FUSE 2.2 互換モードで gfarmfs をコンパイルした場合の制限事項．
 
-  FUSE 2.2 互換で gfarmfs がコンパイルされた場合は，open(2), creat(2),
-  access(2), ftruncate(2) が正しく動かないことがあります．
-  これは FUSE 2.2 の制限事項です．
+  open(2), creat(2), access(2), ftruncate(2) が正しく動かないことがあり
+  ます．
 
-  Linux Kernel 2.6.15 以降かつ，FUSE 2.5 以降の環境の場合は，この問題は
-  ありません．
+  これは FUSE 2.2 の制限事項です．
+  FUSE 2.5 以降を使用すれば問題ありません．
 
 *** gfarmfs 上で 'svn co' コマンドに失敗することがある．
 
-  原因を調査中です．
+  原因は不明です．https の場合にときどき失敗するようです．
+
+*** du が失敗する．
+
+  たくさんファイルやディレクトリがある場合，du が失敗することがあること
+  がわかっています．FUSE のオプションである -o use_ino を付けてマウント
+  するとこの問題を回避できます．具体的なファイル数はわかっていません．
+
+  しかし，-o use_ino と Gfarm v1 には制限事項があります．
+  以下をご覧ください．
+
+*** FUSE オプションの -o use_ino について．
+
+  Gfarm v1 では，gfs_rename() をすると inode 番号が変化してしまいます．
+  gfarmfs は，通常は FUSE の仕組みが数えた inode 番号を返しますが，
+  -o use_ino を使うと，Gfarm ライブラリが数えた inode 番号を返します．
+  よって，-o use_ino を使うと，inode 番号を意識したアプリケーションが
+  動かなくなることがあります．
+  例えば，mv 直後に rm -rf をするとエラーで停止してしまうことがわかって
+  います．
+
+  Gfarm v2 では，inode 番号が変化しなくなる予定ですので，そのときは
+  -o use_ino を gfarmfs 内部で強制的に使用する予定です．
+
+*** mmap(2) が No such device になる．
+
+  この挙動は FUSE 2.6.3 現在では制限事項です.
+
+*** open(2) での O_RDONLY | O_TRUNC について．
+
+  この場合，ファイルの mode が 0200 ならば，open(2) 時に一応 EACCES には
+  なりますが，ファイルサイズが 0 になってしまいます．
+
+  FUSE 2.6.3 現在では制限事項です.
+
+*** オプションの組みあわせによる制限事項
+
+  GfarmFS-FUSE パッケージの test/expected/ ディレクトリ以下に Linux 環
+  境における，マウント方法ごとのテスト結果を保存してあります．
+  test/fsystest.c と併せて参考にしてください．
 

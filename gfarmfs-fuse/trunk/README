@@ -1,4 +1,4 @@
-Copyright (c) 2005-2006 National Institute of Advanced Industrial
+Copyright (c) 2005-2007 National Institute of Advanced Industrial
 Science and Technology (AIST).  All Rights Reserved.
 
 ============
@@ -9,6 +9,7 @@ GfarmFS-FUSE enables you to mount a Gfarm filesystem in userspace.
 
   Gfarm:
       http://datafarm.apgrid.org/
+      http://sourceforge.net/projects/gfarm/
 
   FUSE:
       http://fuse.sourceforge.net/
@@ -28,13 +29,48 @@ For example, on Fedora Core 5 :
     $ (Check if your Gfarm configuration file (ex.: ~/.gfarmrc) is correct.)
     $ (Check if your authenticaion to a Gfarm filesystem is successful
        by commands (ex.: gfhost, gfkey or grid-proxy-init).)
-    $ tar zxvf gfarmfs-fuse-1.4.0.tar.gz
-    $ cd gfarmfs-fuse-1.4.0
+    $ tar zxvf gfarmfs-fuse-2.0.0.tar.gz
+    $ cd gfarmfs-fuse-2.0.0
     $ ./configure
     $ make
     $ mkdir ~/mountpoint
     $ ./gfarmfs ~/mountpoint
     $ cd ~/mountpoint
+
+
+============
+Dependencies
+============
+
+*** Operating System
+
+    require:
+        The operating system which can use FUSE mechanism.
+        (ex. FUSE version 2.6 can work on Linux kernel version 2.6.9
+             or later.)
+    recommend:
+        Linux kernel version 2.6.15 or later.
+    test:
+        Fedora Core 5 (2.6.18), CentOS 4.4 (2.6.9)
+    build only:
+        FreeBSD 6.1-RELEASE
+
+*** FUSE
+
+    require:
+        FUSE version 2.2 or later.
+    recommend:
+        FUSE version 2.6.3 or later.
+
+    On FUSE version 2.5 (or later) and Linux kernel, you can use all
+    features of GfarmFS-FUSE.
+
+*** Gfarm
+
+    require:
+        Gfarm version 1.2 or later.
+    recommend:
+        Gfarm version 1.4 or later.
 
 
 ============
@@ -45,10 +81,6 @@ To build GfarmFS-FUSE, development packages of Gfarm (later than
 version 1.2) and FUSE (later than version 2.2) are required.
 When you install Gfarm using RPM binary packages, you should
 install gfarm-gsi-devel (or gfarm-devel) package together.
-
-On FUSE version 2.5 (or later) and Linux Kernel 2.6.15 (or later),
-GfarmFS-FUSE works with FUSE 2.5 compatible mode.
-Otherwise GfarmFS-FUSE works with FUSE 2.2 compatible mode.
 
 Installation steps of GfarmFS-FUSE:
 
@@ -145,6 +177,10 @@ GfarmFS options:
 
   Print help message.
 
+-v
+
+  Show version.
+
 -m <directory on a Gfarm filesystem>
 
   The specified directory on a Gfarm filesystem will be a top
@@ -206,6 +242,9 @@ GfarmFS options:
   file or modifying existng file, the command of gfrep is running in
   async automatically.
 
+  Don't rename a file or directory from other clients when using this
+  option on Gfarm v1.
+
 -D <destination-domainname>
 
   Specifies the domain name of destination filesystem nodes to which
@@ -216,6 +255,10 @@ GfarmFS options:
   Specifies a filename for recording error messages that is not
   returned as errno to the running application on the gfarmfs
   mountpoint.  For example, the errors in using -N option are recorded.
+
+--syslog
+
+  Recodes error messages same as --errlog into syslogd.
 
 -a <architecture>
 
@@ -233,9 +276,46 @@ GfarmFS options:
   has execution bits.  <architecture> is typically a canonical
   system name like sparc-sun-solaris8. (See man page of gfhost.)
 
+========
+Examples
+========
+
+*** A single user uses a single gfarmfs.
+
+  $ gfarmfs -lsub /mountpoint -o kernel_cache
+
+  If a file is never updated, you can mount a Gfarm filesystem from
+  plural gfarmfs in this way.
+
+*** Plural users use a single gfarmfs.
+
+  $ gfarmfs -lsub /mountpoint -o allow_other,default_permissions,kernel_cache
+
+  Please be careful a new file's owner is always the user who mount
+  the mountpoint of gfarmfs.
+
+*** Using plural gfarmfs.
+
+  Please setup a single `gfarm_agent -m' and access to it from the 
+  all gfarmfs.
+
+  $ gfarmfs -lsuF /mountpoint
+
+*** Exporting large files from gfarmfs.
+
+  $ gfarmfs -b /mountpoint -o direct_io
+  $ dd if=/mountpoint/inputfile of=outputfile bs=64K
+  (Mostly direct_io is slow.)
+
+*** Importing large files into gfarmfs.
+
+  $ gfarmfs -b /mountpoint -o direct_io
+  $ dd if=inputfile of=/mountpoint/outputfile bs=64K
+  (The gfreg command is faster than this.)
+
 
 ==============
-KNOWN PROBLEMS
+Known problems
 ==============
 
 First, please see doc/KNOWN_PROBLEMS included in the Gfarm source
@@ -256,7 +336,7 @@ Some limitations of Gfarm are avoided in GfarmFS-FUSE.
 
 Peculiar PROBLEMS of GfarmFS-FUSE:
 
-*** '-l' option of gfarmfs is not a hardlink behavior.
+*** `-l' option of gfarmfs is not a hardlink behavior.
 
   The hardlink emulation creates a copy instead of a hardlink.
   Applications which expect the hardlink behavior cannot work
@@ -273,6 +353,7 @@ Peculiar PROBLEMS of GfarmFS-FUSE:
   Sometimes, there is an error.
 
   A plan to fix this problem has not been decided yet.
+  This errors are recorded by --errlog or --syslog options.
 
 *** While open(2)ing a file which has two or more fragments,
     chmod(2) and fchmod(2) cannot work on the same gfarmfs client.
@@ -284,11 +365,50 @@ Peculiar PROBLEMS of GfarmFS-FUSE:
 *** Limitations on FUSE 2.2 compatible mode.
 
   open(2), open(2), creat(2), access(2), ftruncate(2) cannot work
-  correctly in some cases.  This is a limitation of FUSE 2.2.
+  correctly in some cases.
 
-  When you use gfarmfs compiled on FUSE version 2.5 (or later) with
-  Linux Kernel 2.6.15 (or later), you will not have this problem.
+  This is a limitation of FUSE 2.2.
+  When you use gfarmfs compiled on FUSE version 2.5 (or later), you
+  will not have this problem.
 
-*** 'svn co' command does not work on gfarmfs.
+*** `svn co' command sometimes does not work on gfarmfs.
 
-  Now investigating.
+  This cause is unknown.
+  This sometimes fails when using https.
+
+*** du command sometimes do not work.
+
+  When there are a lot of files or directries, du command sometimes
+  fails.  You can avoid this problem by using `-o use_ino' of FUSE
+  option.
+
+  But `-o use_ino' option has a limitation.  Please read the following.
+
+*** About `-o use_ino' of FUSE option.
+
+  On Gfarm v1 specification, gfs_reanme() changes the inode number.
+  The gfarmfs usually returns an inode number counted by FUSE mechanism.
+  Therefore an application which expects the behavior of the inode numbers 
+  cannot work on the gfarmfs with `-o use_ino'.
+
+  For example, rm -rf command just after mv command cannot work on the
+  gfarmfs with `-o use_ino'.
+
+  On Gfarm v2, an inode number will be not changed by gfs_rename().
+  On that occasion, gfarmfs will use `-o use_ino' implicitly.
+
+*** mmap(2) behaves in `No such device'.
+
+  This is a limitation of FUSE.
+
+*** About open(2) with O_RDONLY | O_TRUNC.
+
+  In this case, if the mode of a file is 0200, the open(2) fails and
+  gets EACCES.  But the file's size is zero.
+
+  This is a limitation of FUSE.
+
+*** Limitations with each options.
+
+  Please check the files in test/expected/ directory and test/fsystest.c
+  in GfarmFS-FUSE package.  These results are generated on Linux.
