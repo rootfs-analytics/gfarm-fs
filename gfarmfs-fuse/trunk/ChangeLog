@@ -1,20 +1,32 @@
 GfarmFS-FUSE - ChangeLog
 
-[2006.11.??] Version 1.4
+[2007.02.19] Version 2.0
 
 New Features
 
-  * add -S and -D options which enable replication to work asynchronously.
-  * add --errlog option.
+  * add -N and -D options which enable replication to work asynchronously.
+  * add --errlog and --syslog options.
+  * add `make check'. (for Linux only)
 
 Update Features
 
+  * use FUSE 2.5 interface in all condition on FUSE 2.5 or later.
   * -a option can work correctly.
+  * gfarmfs-exec.sh, mount.gfarmfs, umount.gfarmfs are installed by 
+   `make install'.  These usage is explained in the files oneself.
+
+Documentation
+
+  * README: example of mounting gfarmfs.
 
 Bug fix
 
+  * fix a bug such that `umask' is not effective on gfarmfs.
+  * fix a bug such that write(2) cannot write anymore when read(2)
+    gets EOF.
   * When filesystem nodes are added or removed, statfs(2) can calculate
     definitely.
+  * fix a bug such that f_frsize is not set.
 
 [2006.10.12] Version 1.3
 

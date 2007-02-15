@@ -1,7 +1,7 @@
 Summary: GfarmFS-FUSE
 Name: gfarmfs-fuse
-Version: 1.4.0
-Release: 1
+Version: 2.0.0
+Release: 0
 License: BSD
 Group: Applications/Internet
 Vendor: National Institute of Advanced Industrial Science and Technology
@@ -42,6 +42,8 @@ make DESTDIR=${RPM_BUILD_ROOT} install
 %doc README README.ja ChangeLog ChangeLog.ja
 
 %changelog
+* Thu Feb 15 2007  <takuya@soum.co.jp> 2.0.0-0
+- Update version.
 * Fri Nov 17 2006  <takuya@soum.co.jp> 1.4.0-1
 - Use "make install". ("contrib/" is included in Makefile by automake.)
 * Tue Nov 14 2006  <takuya@soum.co.jp> 1.4.0-0
