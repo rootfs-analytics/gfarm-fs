@@ -56,8 +56,10 @@
 #endif
 
 #if FUSE_USE_VERSION >= 25
-#ifdef DISABLE_FUSE_CREATE
+#ifdef USE_KERNEL_2_6_14 /* Linux kernel 2.6.14 or earlier */
 #define ENABLE_FASTCREATE 1
+#define DISABLE_FUSE_CREATE
+#define IGNORE_TRUNCATE_EACCES
 #endif
 #elif FUSE_USE_VERSION == 22
 #define ENABLE_FASTCREATE 1
@@ -784,10 +786,6 @@ gfarmfs_exact_filesize(char *url, file_offset_t *sizep, mode_t mode)
 
 	if (mode & 0444) {
 		flags = GFARM_FILE_RDONLY;
-#if 0
-	} else if (mode & 0200) {
-		flags = GFARM_FILE_WRONLY;
-#endif
 	} else {
 		save_mode = mode;
 		e = gfs_chmod(url, mode|0400);
@@ -2456,7 +2454,7 @@ gfarmfs_gfrep_schedule(char *url, char **srchostp,
 		gfarm_path, &nsections, &sections);
 	if (e != NULL)
 		goto free_gfarm_path;
-	if (nsections <= 0 || nsections >= 2) { /* unexpected */
+	if (nsections != 1) { /* unexpected */
 		gfarm_file_section_info_free_all(nsections, sections);
 		e = NULL;
 		*nhostsp = -1; /* gfrep -N */
@@ -3597,9 +3595,13 @@ gfarmfs_truncate_share_gf(const char *path, off_t size)
 		fh = NULL;
 #endif
 	if (fh != NULL) {
+#ifdef IGNORE_TRUNCATE_EACCES
+		/* do not check the permission */
+#else
 		e = gfs_access(url, W_OK);
 		if (e != NULL)
 			goto free_url;
+#endif /* IGNORE_TRUNCATE_EACCES */
 		if ((fh->flags & GFARM_FILE_ACCMODE) == GFARM_FILE_RDONLY) {
 			char *e2;
 			mode_t save_mode = 0;
@@ -3620,9 +3622,9 @@ gfarmfs_truncate_share_gf(const char *path, off_t size)
 				e2 = gfs_pio_open(url, GFARM_FILE_RDONLY,
 						  &fh->gf);
 			}
-			if (e2 == NULL) {
+			if (e2 == NULL)
 				e2 = gfarmfs_set_view(fh->gf);
-			} else {
+			if (e2 != NULL) {
 				fh->gf = NULL;
 				gfarmfs_errlog("TRUNCATE: ERROR: reopen: "
 					       "%s: %s", path, e2);
@@ -3639,10 +3641,12 @@ gfarmfs_truncate_share_gf(const char *path, off_t size)
 		} else { /* WRONLY or RDWR */
 			e = gfs_pio_truncate(fh->gf, size);
 		}
-	} else {
+	} else { /* Nobody open this file. */
 		e = gfarmfs_truncate_common(url, size);
 	}
+#ifndef IGNORE_TRUNCATE_EACCES
 free_url:
+#endif
 	free(url);
 end:
 	return gfarmfs_final(&prof_truncate, e, 0, path);
@@ -4300,11 +4304,9 @@ setup_options()
 		gfarmfs_oper_p = &gfarmfs_oper_base;
 	}
 
-#if FUSE_USE_VERSION >= 25
 #ifdef DISABLE_FUSE_CREATE
 	/* disable CREATE for old Linux kernel */
 	gfarmfs_oper_p->create = NULL;
-#endif
 #endif
 
 	/* validate gfarm_mount_point */
