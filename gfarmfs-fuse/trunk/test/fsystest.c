@@ -4,7 +4,9 @@
  * This program is based on test.c from FUSE project.
  *     http://fuse.cvs.sourceforge.net/fuse/fuse/test/
  */
-#define _XOPEN_SOURCE 500
+#ifdef __linux__
+#define _GNU_SOURCE
+#endif
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
@@ -1526,6 +1528,7 @@ main(int argc, char *argv[])
 	sigaction(SIGHUP, &sa, NULL);
 	sigaction(SIGINT, &sa, NULL);
 
+#if 1
 	err += test_create();
 	err += test_symlink();
 	err += test_link();
@@ -1615,6 +1618,7 @@ main(int argc, char *argv[])
 	err += test_open_truncate(O_RDONLY, 0400, 5, EACCES);
 	err += test_open_truncate(O_WRONLY, 0600, 5, 0);
 	err += test_open_truncate(O_WRONLY, 0400, 5, EACCES);
+#endif
 
 	return test_finalize(err);
 }
