@@ -1843,7 +1843,6 @@ gfarmfs_statfs(const char *path, struct statfs *stfs)
 				     (file_offset_t*)&favail);
 }
 #elif FUSE_USE_VERSION >= 25
-
 static int
 gfarmfs_statfs(const char *path, struct statvfs *stvfs)
 {
@@ -2578,6 +2577,8 @@ free_gfarm_path:
 	return (e);
 }
 
+#define CHANGE_DEV_NULL(fd)  dup2(open("/dev/null", O_WRONLY), fd);
+
 static int
 gfarmfs_gfrep_d_exec(char *url, char *srchost, int nhosts, char **hosts,
 		     int disable_stderr)
@@ -2592,9 +2593,9 @@ gfarmfs_gfrep_d_exec(char *url, char *srchost, int nhosts, char **hosts,
 			return (-1);
 		} else if (p == 0) { /* grandchild */
 			int r;
-			close(1);
+			CHANGE_DEV_NULL(1);
 			if (disable_stderr)
-				close(2);
+				CHANGE_DEV_NULL(2);
 			if (srchost != NULL) {
 				r = execl(gfrep_path, gfrep_path,
 					  "-s", srchost,
@@ -2640,9 +2641,9 @@ gfarmfs_gfrep_HN_exec(char *url, int nhosts, char **hosts, int disable_stderr)
 		}
 		close(pfds[0]);
 		snprintf(numstr, sizeof(numstr), "%d", nhosts);
-		close(1);
+		CHANGE_DEV_NULL(1);
 		if (disable_stderr)
-			close(2);
+			CHANGE_DEV_NULL(2);
 		if (execl(gfrep_path, gfrep_path,
 			  "-H", "-", "-N", numstr, url, (char*)NULL) == -1)
 			gfarmfs_errlog("REPLICATE: execvp: %s",
