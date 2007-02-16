@@ -42,6 +42,9 @@ For example, on Fedora Core 5 :
 Dependencies
 ============
 
+If all recommended environments are satisfied, you can use full features
+of GfarmFS-FUSE.
+
 *** Operating System
 
     require:
@@ -51,7 +54,7 @@ Dependencies
     recommend:
         Linux kernel version 2.6.15 or later.
     test:
-        Fedora Core 5 (2.6.18), CentOS 4.4 (2.6.9)
+        Fedora Core 5, CentOS 4.4
     build only:
         FreeBSD 6.1-RELEASE
 
@@ -60,10 +63,9 @@ Dependencies
     require:
         FUSE version 2.2 or later.
     recommend:
-        FUSE version 2.6.3 or later.
-
-    On FUSE version 2.5 (or later) and Linux kernel, you can use all
-    features of GfarmFS-FUSE.
+        FUSE version 2.5 or later.
+    test:
+        FUSE version 2.6.3
 
 *** Gfarm
 
@@ -241,6 +243,10 @@ GfarmFS options:
   Specifies the required number of file replicas.  After creating new
   file or modifying existng file, the command of gfrep is running in
   async automatically.
+
+  Please use gfarm_agent when using this option, because gfrep command
+  is called many times.  If you are not permitted to read a file, the
+  file is not replicated.
 
   Don't rename a file or directory from other clients when using this
   option on Gfarm v1.
