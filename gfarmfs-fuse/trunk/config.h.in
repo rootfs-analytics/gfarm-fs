@@ -1,8 +1,5 @@
 /* config.h.in.  Generated from configure.in by autoheader.  */
 
-/* disable FUSE CREATE */
-#undef DISABLE_FUSE_CREATE
-
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
 
@@ -57,13 +54,16 @@
 /* Define to 1 if you have the ANSI C header files. */
 #undef STDC_HEADERS
 
-/* using gfs_pio_set_view_scramble() */
+/* Use gfs_pio_set_view_scramble() */
 #undef USE_GFARM_SCRAMBLE
 
-/* using gfs_statfsnode() */
+/* Use gfs_statfsnode() */
 #undef USE_GFS_STATFSNODE
 
-/* using scheduler */
+/* Use Linux kernel 2.6.14 or earlier */
+#undef USE_KERNEL_2_6_14
+
+/* Use scheduler */
 #undef USE_SCHEDULER
 
 /* Version number of package */

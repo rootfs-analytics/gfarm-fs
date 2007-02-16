@@ -4135,7 +4135,7 @@ rm -f conftest.err conftest.$ac_ext
   if test $fuse_interface = 25; then
     echo "using FUSE version 2.5 interface"
   else
-    echo "using FUSE version 2.2 interface"
+    echo "using FUSE version 2.2 interface (limited spec)"
   fi
 
   if test $fuse_interface = 25; then
@@ -4147,12 +4147,12 @@ rm -f conftest.err conftest.$ac_ext
       if test x"$MAJVER" = x"2.6"; then
         MINVER=`echo $KERNEL_RELEASE | cut -f 3 -d. | cut -f 1 -d. | cut -f 1 -d- `
         if test $MINVER -ge 15; then  ## >= 2.6.15
-          echo "found Linux Kernel version 2.6.15 or later"
+          echo "found Linux Kernel version 2.6.15 or later (full spec)"
         else
-          echo "found Linux Kernel version 2.6.14 or earlier (disable CREATE)"
+          echo "found Linux Kernel version 2.6.14 or earlier (disable CREATE, FTRUNCATE)"
 
 cat >>confdefs.h <<\_ACEOF
-#define DISABLE_FUSE_CREATE 1
+#define USE_KERNEL_2_6_14 1
 _ACEOF
 
         fi
