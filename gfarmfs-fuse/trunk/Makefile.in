@@ -148,6 +148,7 @@ build_alias = @build_alias@
 datadir = @datadir@
 exec_prefix = @exec_prefix@
 fuse_interface = @fuse_interface@
+fuse_mode = @fuse_mode@
 gfarm_libs = @gfarm_libs@
 host_alias = @host_alias@
 includedir = @includedir@
@@ -429,6 +430,7 @@ distclean-tags:
 distdir: $(DISTFILES)
 	$(am__remove_distdir)
 	mkdir $(distdir)
+	$(mkdir_p) $(distdir)/test
 	@srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`; \
 	topsrcdirstrip=`echo "$(top_srcdir)" | sed 's|.|.|g'`; \
 	list='$(DISTFILES)'; for file in $$list; do \

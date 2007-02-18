@@ -1,22 +1,32 @@
-*** Preconditon
+*** Expected files and target environment
 
-The expected files (./expected/*.out) is depend on:
+./expected/default/*.out
 
-  - FUSE version 2.6
-  - Gfarm version 1.4
+  - Linux kernel 2.6.15 or later
+  - FUSE 2.5 or later
+  - Gfarm 1.4 or later
 
-The test for gfarmfs expects that the Gfarm environment setting is finished.
+./expected/linux_old/*.out
+
+  - Linx kernel 2.6.X where X <= 14
+  - FUSE 2.5 or later
+
+./expected/freebsd/*.out
+
+  - FreeBSD 6.1-RELEASE
+  - FUSE 2.5 or later
 
 *** Do test
 
+  (make sure your the installation and the environment setting of Gfarm.)
   $ make check
 
 *** Check files if errors happen
 
   $ cat ./diffs/*.out
 
-*** Update expected results (for another version of FUSE or Gfarm)
+*** How to update the expected results
 
   $ make check
-  (make sure ./_output/*.out files)
-  $ mv ./output/*.out ./expected/
+  (make sure ./output/*.out files)
+  $ mv ./output/*.out ./expected/{target directory}/
