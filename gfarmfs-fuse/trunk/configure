@@ -309,7 +309,7 @@ ac_includes_default="\
 # include <unistd.h>
 #endif"
 
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA CYGPATH_W PACKAGE VERSION ACLOCAL AUTOCONF AUTOMAKE AUTOHEADER MAKEINFO install_sh STRIP ac_ct_STRIP INSTALL_STRIP_PROGRAM mkdir_p AWK SET_MAKE am__leading_dot AMTAR am__tar am__untar MAINTAINER_MODE_TRUE MAINTAINER_MODE_FALSE MAINT CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT DEPDIR am__include am__quote AMDEP_TRUE AMDEP_FALSE AMDEPBACKSLASH CCDEPMODE am__fastdepCC_TRUE am__fastdepCC_FALSE PKG_CONFIG ac_pt_PKG_CONFIG GFARMFS_CFLAGS GFARMFS_LIBS gfarm_libs CPP EGREP fuse_interface LIBOBJS LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA CYGPATH_W PACKAGE VERSION ACLOCAL AUTOCONF AUTOMAKE AUTOHEADER MAKEINFO install_sh STRIP ac_ct_STRIP INSTALL_STRIP_PROGRAM mkdir_p AWK SET_MAKE am__leading_dot AMTAR am__tar am__untar MAINTAINER_MODE_TRUE MAINTAINER_MODE_FALSE MAINT CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT DEPDIR am__include am__quote AMDEP_TRUE AMDEP_FALSE AMDEPBACKSLASH CCDEPMODE am__fastdepCC_TRUE am__fastdepCC_FALSE PKG_CONFIG ac_pt_PKG_CONFIG GFARMFS_CFLAGS GFARMFS_LIBS gfarm_libs CPP EGREP fuse_interface fuse_mode LIBOBJS LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -4157,14 +4157,12 @@ rm -f conftest.err conftest.$ac_ext
   if test $fuse_interface = 0; then
     echo "Please install FUSE 2.2 or later."
     exit 1
-  fi
-  if test $fuse_interface = 25; then
-    echo "using FUSE version 2.5 interface"
-  else
+  elif test $fuse_interface = 22; then
+    fuse_mode="FUSE22_Linux"
     echo "using FUSE version 2.2 interface (limited spec)"
-  fi
-
-  if test $fuse_interface = 25; then
+  elif test $fuse_interface = 25; then
+    fuse_mode="FUSE25_Linux"
+    echo "using FUSE version 2.5 interface"
     KERNEL_RELEASE=`uname -r`
     KLEN=`expr length $KERNEL_NAME`
     RLEN=`expr length $KERNEL_RELEASE`
@@ -4181,6 +4179,7 @@ cat >>confdefs.h <<\_ACEOF
 #define USE_KERNEL_2_6_14 1
 _ACEOF
 
+          fuse_mode="FUSE25_Linux26_old"
         fi
       fi
     fi
@@ -4227,7 +4226,13 @@ sed 's/^/| /' conftest.$ac_ext >&5
 fi
 rm -f conftest.err conftest.$ac_ext
   echo "using FUSE version 2.5 interface"
+  if  x"$KERNEL_NAME" = x"FreeBSD" ; then
+    fuse_mode="FUSE25_FreeBSD"
+  else
+    fuse_mode="FUSE25_unknown"
+  fi
 fi
+
 
 
 
@@ -4403,7 +4408,7 @@ rm -f conftest.err conftest.$ac_objext \
 
 LIBS=
 
-                                                            ac_config_files="$ac_config_files Makefile test/Makefile test/expected/Makefile contrib/Makefile contrib/gfarmfs-exec/Makefile contrib/mount.gfarmfs/Makefile"
+                                                                                                    ac_config_files="$ac_config_files Makefile test/Makefile test/conf.sh test/expected/Makefile test/expected/default/Makefile test/expected/fuse25_linux26_old/Makefile test/expected/freebsd/Makefile contrib/Makefile contrib/gfarmfs-exec/Makefile contrib/mount.gfarmfs/Makefile"
 
 
 cat >confcache <<\_ACEOF
@@ -4964,7 +4969,11 @@ do
   # Handling of arguments.
   "Makefile" ) CONFIG_FILES="$CONFIG_FILES Makefile" ;;
   "test/Makefile" ) CONFIG_FILES="$CONFIG_FILES test/Makefile" ;;
+  "test/conf.sh" ) CONFIG_FILES="$CONFIG_FILES test/conf.sh" ;;
   "test/expected/Makefile" ) CONFIG_FILES="$CONFIG_FILES test/expected/Makefile" ;;
+  "test/expected/default/Makefile" ) CONFIG_FILES="$CONFIG_FILES test/expected/default/Makefile" ;;
+  "test/expected/fuse25_linux26_old/Makefile" ) CONFIG_FILES="$CONFIG_FILES test/expected/fuse25_linux26_old/Makefile" ;;
+  "test/expected/freebsd/Makefile" ) CONFIG_FILES="$CONFIG_FILES test/expected/freebsd/Makefile" ;;
   "contrib/Makefile" ) CONFIG_FILES="$CONFIG_FILES contrib/Makefile" ;;
   "contrib/gfarmfs-exec/Makefile" ) CONFIG_FILES="$CONFIG_FILES contrib/gfarmfs-exec/Makefile" ;;
   "contrib/mount.gfarmfs/Makefile" ) CONFIG_FILES="$CONFIG_FILES contrib/mount.gfarmfs/Makefile" ;;
@@ -5104,6 +5113,7 @@ s,@gfarm_libs@,$gfarm_libs,;t t
 s,@CPP@,$CPP,;t t
 s,@EGREP@,$EGREP,;t t
 s,@fuse_interface@,$fuse_interface,;t t
+s,@fuse_mode@,$fuse_mode,;t t
 s,@LIBOBJS@,$LIBOBJS,;t t
 s,@LTLIBOBJS@,$LTLIBOBJS,;t t
 CEOF

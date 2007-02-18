@@ -37,14 +37,15 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 noinst_PROGRAMS = fsystest$(EXEEXT)
 subdir = test
-DIST_COMMON = README $(srcdir)/Makefile.am $(srcdir)/Makefile.in
+DIST_COMMON = README $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
+	$(srcdir)/conf.sh.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.in
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = $(top_builddir)/config.h
-CONFIG_CLEAN_FILES =
+CONFIG_CLEAN_FILES = conf.sh
 PROGRAMS = $(noinst_PROGRAMS)
 fsystest_SOURCES = fsystest.c
 fsystest_OBJECTS = fsystest.$(OBJEXT)
@@ -132,6 +133,7 @@ build_alias = @build_alias@
 datadir = @datadir@
 exec_prefix = @exec_prefix@
 fuse_interface = @fuse_interface@
+fuse_mode = @fuse_mode@
 gfarm_libs = @gfarm_libs@
 host_alias = @host_alias@
 includedir = @includedir@
@@ -150,7 +152,7 @@ sharedstatedir = @sharedstatedir@
 sysconfdir = @sysconfdir@
 target_alias = @target_alias@
 fsystest_SOURCE = fsystest.c
-noinst_SCRIPTS = test.sh
+noinst_SCRIPTS = test.sh func.sh
 EXTRA_DIST = $(noinst_SCRIPTS) README KNOWN_ERRORS
 SUBDIRS = expected
 all: all-recursive
@@ -186,6 +188,8 @@ $(top_srcdir)/configure: @MAINTAINER_MODE_TRUE@ $(am__configure_deps)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
 $(ACLOCAL_M4): @MAINTAINER_MODE_TRUE@ $(am__aclocal_m4_deps)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
+conf.sh: $(top_builddir)/config.status $(srcdir)/conf.sh.in
+	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
 
 clean-noinstPROGRAMS:
 	-test -z "$(noinst_PROGRAMS)" || rm -f $(noinst_PROGRAMS)
