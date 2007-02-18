@@ -1,6 +1,10 @@
 gfarmfs: opt="--oldio -nlsu", fuse_opt="-o attr_timeout=0"
 NG [link] check_nlink(): nlink 1 instead of 2
 NG [mkfifo] test_mkfifo(): mkfifo: Operation not permitted
+NG [ftruncate(0) mode=0600] check_size(): length 26 instead of 0
+NG [ftruncate(0) mode=0400] test_ftruncate(): ftruncate: Permission denied
+NG [ftruncate(0) mode=0200] check_size(): length 26 instead of 0
+NG [ftruncate(0) mode=0000] test_ftruncate(): ftruncate: Permission denied
 NG [open(-, O_RDWR | O_CREAT, 0600)] check_size(): length 0 instead of 26
 NG [open(-, O_RDWR | O_CREAT, 0600)] do_check_data(): testfile: short read: 0 instead of 26
 NG [open(-, O_RDWR | O_CREAT, 0600)] do_test_open(): read is short: 0 instead of 26
@@ -39,4 +43,4 @@ NG [open utime close] check_times(): different atime
 NG [open utime close] check_times(): different mtime
 NG [chmod(0600) open chmod(0700) close] check_mode(): mode 0600 instead of 0700
 NG [chmod(0700) open chmod(0600) close] check_mode(): mode 0700 instead of 0600
-23 tests failed
+27 tests failed
