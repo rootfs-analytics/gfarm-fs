@@ -71,7 +71,8 @@ AC_TRY_CPP([
         if test $MINVER -ge 15; then  ## >= 2.6.15
           echo "found Linux Kernel version 2.6.15 or later (full spec)"
         else
-          echo "found Linux Kernel version 2.6.14 or earlier (disable CREATE, FTRUNCATE)"
+          echo "found Linux Kernel version 2.6.14 or earlier (disable CREATE)"
+          echo "(FTRUNCATE, ACCESS and FGETATTR cannot work too.)"
           AC_DEFINE(USE_KERNEL_2_6_14, 1, [Use Linux kernel 2.6.14 or earlier])
           fuse_mode="FUSE25_Linux26_old"
         fi
@@ -88,7 +89,7 @@ AC_TRY_CPP([
   exit 1
 ])
   echo "using FUSE version 2.5 interface"
-  if [ x"$KERNEL_NAME" = x"FreeBSD" ]; then
+  if test x"$KERNEL_NAME" = x"FreeBSD"; then
     fuse_mode="FUSE25_FreeBSD"
   else
     fuse_mode="FUSE25_unknown"

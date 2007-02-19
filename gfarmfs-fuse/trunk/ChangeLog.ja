@@ -10,8 +10,6 @@ GfarmFS-FUSE - ChangeLog
 
 仕様変更
 
-  * Linux カーネルが古いときでも，FUSE 2.5 のインターフェースを使用する
-    ようにしました．
   * -a オプションが正しく動くようになりました．
   * make install で gfarmfs-exec.sh, mount.gfarmfs, umount.gfarmfs を
     インストールするようになりました．使用方法は，それぞれのスクリプト

@@ -54,7 +54,8 @@ of GfarmFS-FUSE.
     recommend:
         Linux kernel version 2.6.15 or later.
     test:
-        Fedora Core 5, CentOS 4.4
+        Fedora Core 5 (Linux kernel version 2.6.19)
+        CentOS 4.4    (Linux kernel version 2.6.9)
     build only:
         FreeBSD 6.1-RELEASE
 
@@ -333,7 +334,7 @@ Some limitations of Gfarm are avoided in GfarmFS-FUSE.
     gfarmfs client.
   * Using -F option, stat(2) can return an exact st_size during open(2)
     from another gfarmfs client.
-  * utime(2) and chmod(2) is effective during open(2) on the same
+  * utime(2) and chmod(2) are effective during open(2) on the same
     gfarmfs client.
   * rename(2) and chmod(2) do not destroy metadata during open(2)
     on the same gfarmfs client.
@@ -367,15 +368,6 @@ Peculiar PROBLEMS of GfarmFS-FUSE:
   This problem is fixed in the Gfarm v1.4.
   (However, we don't have a plan that executable bits of the file
    which has two or more fragments can be changed safely.)
-
-*** Limitations on FUSE 2.2 compatible mode.
-
-  open(2), open(2), creat(2), access(2), ftruncate(2) cannot work
-  correctly in some cases.
-
-  This is a limitation of FUSE 2.2.
-  When you use gfarmfs compiled on FUSE version 2.5 (or later), you
-  will not have this problem.
 
 *** `svn co' command sometimes does not work on gfarmfs.
 
@@ -416,5 +408,5 @@ Peculiar PROBLEMS of GfarmFS-FUSE:
 
 *** Limitations with each options.
 
-  Please check the files in test/expected/ directory and test/fsystest.c
-  in GfarmFS-FUSE package.  These results are generated on Linux.
+  Please check the files of test/expected/{your environment}/*.out
+  and test/fsystest.c in GfarmFS-FUSE package.

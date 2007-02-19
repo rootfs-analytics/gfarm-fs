@@ -10,7 +10,6 @@ New Features
 
 Update Features
 
-  * use FUSE 2.5 interface in all condition on FUSE 2.5 or later.
   * -a option can work correctly.
   * gfarmfs-exec.sh, mount.gfarmfs, umount.gfarmfs are installed by 
    `make install'.  These usage is explained in the files oneself.

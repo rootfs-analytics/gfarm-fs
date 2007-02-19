@@ -52,9 +52,10 @@ Fedora Core 5 の例です．
         例えば，FUSE version 2.6 は Linux kernel version 2.6.9 以降で
         使用できます．
     推奨環境:
-        Linux kernel version 2.6.15 以降.
+        Linux kernel version 2.6.15 以降
     動作確認環境:
-        Fedora Core 5, CentOS 4.4
+        Fedora Core 5 (Linux kernel version 2.6.19)
+        CentOS 4.4    (Linux kernel version 2.6.9)
     ビルドのみ確認:
         FreeBSD 6.1-RELEASE
 
@@ -364,14 +365,6 @@ gfarmfs でファイルを更新しても，もう一方には見えないことがあるので，注
   Gfarm v1.4 以降を利用すれば可能です．
   (実行ビットの付加ができるようになる予定はありません．)
 
-*** FUSE 2.2 互換モードで gfarmfs をコンパイルした場合の制限事項．
-
-  open(2), creat(2), access(2), ftruncate(2) が正しく動かないことがあり
-  ます．
-
-  これは FUSE 2.2 の制限事項です．
-  FUSE 2.5 以降を使用すれば問題ありません．
-
 *** gfarmfs 上で 'svn co' コマンドに失敗することがある．
 
   原因は不明です．https の場合にときどき失敗するようです．
@@ -411,7 +404,7 @@ gfarmfs でファイルを更新しても，もう一方には見えないことがあるので，注
 
 *** オプションの組みあわせによる制限事項
 
-  GfarmFS-FUSE パッケージの test/expected/ ディレクトリ以下に Linux 環
-  境における，マウント方法ごとのテスト結果を保存してあります．
-  test/fsystest.c と併せて参考にしてください．
+  GfarmFS-FUSE パッケージの test/expected/ ディレクトリ以下に，環境や
+  マウント方法ごとのテスト結果を保存してあります．test/fsystest.c と併
+  せて参考にしてください．
 
