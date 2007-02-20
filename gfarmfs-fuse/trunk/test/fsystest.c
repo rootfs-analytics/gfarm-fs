@@ -26,10 +26,16 @@
 # define __attribute__(a)
 #endif
 
-static char testfile[] = "./__testfile";
-static char testfile2[] = "./__testfile2";
-static char testdir[] = "./__testdir";
-static char testdir2[] = "./__testdir2";
+
+#define FILE1 "./__testfile1"
+#define FILE2 "./__testfile2"
+#define DIR1 "./__testdir1"
+#define DIR2 "./__testdir2"
+
+static char *testfile;
+static char *testfile2;
+static char *testdir;
+static char *testdir2;
 static char testname[256];
 static char testdata[] = "abcdefghijklmnopqrstuvwxyz";
 static char testdata2[] = "1234567890-=qwertyuiop[]\asdfghjkl;'zxcvbnm,./";
@@ -1487,6 +1493,35 @@ do_test_open_open(int creat_mode,
 	return 0;
 }
 
+static void
+filename_set(char **namep, char *prefix, char *hostname, char *pid)
+{
+	size_t len = (strlen(prefix) + strlen(hostname) + strlen(pid))
+		* sizeof(char *);
+	*namep = malloc(len);
+	if (*namep == NULL)
+		exit(1);
+	snprintf(*namep, len, "%s_%s_%s", prefix, hostname, pid);
+}
+
+static void
+test_initialize()
+{
+	char hostname[HOST_NAME_MAX];
+	char pid[16];
+	int res;
+
+	res = gethostname(hostname, HOST_NAME_MAX);
+	if (res == -1)
+		snprintf(hostname, HOST_NAME_MAX, "tmp");
+	snprintf(pid, 16, "%d", (int)getpid());
+
+	filename_set(&testfile, FILE1, hostname, pid);
+	filename_set(&testfile2, FILE2, hostname, pid);
+	filename_set(&testdir, DIR1, hostname, pid);
+	filename_set(&testdir2, DIR2, hostname, pid);
+}
+
 static int
 test_finalize(int err)
 {
@@ -1511,23 +1546,46 @@ signal_exit(int sig)
 	exit(res);
 }
 
+static void
+usage(char *name)
+{
+	fprintf(stderr, "usage: %s [-m] testdir\n", name);
+}
+
 int
 main(int argc, char *argv[])
 {
 	int err = 0;
 	struct sigaction sa;
+	char c;
+	char *progname = argv[0];
+	int enable_mmap = 0;
 
-	if (argc != 2) {
-		fprintf(stderr, "usage: %s testdir\n", argv[0]);
+	while ((c = getopt(argc, argv, "m")) != EOF) {
+		switch(c) {
+		case 'm':
+			enable_mmap = 1;
+			break;
+		default:
+			usage(progname);
+			return 1;
+		}
+	}
+	argc -= optind;
+	argv += optind;
+	if (argc != 1) {
+		usage(progname);
 		return 1;
 	}
 	umask(0);
-	chdir(argv[1]);
-
+	chdir(argv[0]);
+	setvbuf(stdout, NULL, _IOLBF, 0);
+	setvbuf(stderr, NULL, _IOLBF, 0);
 	sa.sa_handler = signal_exit;
 	sigaction(SIGHUP, &sa, NULL);
 	sigaction(SIGINT, &sa, NULL);
 
+	test_initialize();
 #if 1
 	err += test_create();
 	err += test_symlink();
@@ -1590,9 +1648,11 @@ main(int argc, char *argv[])
 	err += test_open_acc(O_RDONLY | O_TRUNC, 0200, EACCES);
 	err += test_open_acc(O_WRONLY | O_TRUNC, 0200, 0);
 	err += test_open_acc(O_RDWR   | O_TRUNC, 0200, EACCES);
-	err += test_mmap(PROT_READ, MAP_SHARED);
-	err += test_mmap(PROT_WRITE, MAP_SHARED);
-	err += test_mmap(PROT_READ | PROT_WRITE, MAP_SHARED);
+	if (enable_mmap) {
+		err += test_mmap(PROT_READ, MAP_SHARED);
+		err += test_mmap(PROT_WRITE, MAP_SHARED);
+		err += test_mmap(PROT_READ | PROT_WRITE, MAP_SHARED);
+	}
 	err += test_seek_eof(10);
 	err += test_open_size();
 	err += test_open_rename();
