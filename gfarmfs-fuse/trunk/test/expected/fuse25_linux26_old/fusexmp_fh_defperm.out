@@ -9,6 +9,4 @@ NG [open(-, O_RDWR | O_CREAT, 0400)] do_test_open(): open: Permission denied
 NG [open(-, O_RDWR | O_CREAT, 0200)] do_test_open(): open: Permission denied
 NG [open(-, O_RDWR | O_CREAT, 0000)] do_test_open(): open: Permission denied
 NG [open(-, O_RDWR | O_CREAT | O_EXCL, 0000)] do_test_open(): open: Permission denied
-NG [mmap(PROT_WRITE, MAP_SHARED)] do_test_mmap(): mmap: No such device
-NG [mmap(PROT_READ | PROT_WRITE, MAP_SHARED)] do_test_mmap(): mmap: No such device
-12 tests failed
+10 tests failed
