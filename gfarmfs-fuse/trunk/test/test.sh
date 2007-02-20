@@ -29,7 +29,7 @@ elif [ x"$FUSE_MODE" = x"FUSE25_Linux26_old" ]; then
     EXPECTDIR=./expected/fuse25_linux26_old
 elif [ x"$FUSE_MODE" = x"FUSE22_Linux" ]; then
     EXPECTDIR=./expected/default  ### TODO fuse22_linux
-elif [ x"$FUSE_MODE" = x"FreeBSD" ]; then
+elif [ x"$FUSE_MODE" = x"FUSE25_FreeBSD" ]; then
     EXPECTDIR=./expected/freebsd
 else ### unknown
     EXPECTDIR=./expected/default
