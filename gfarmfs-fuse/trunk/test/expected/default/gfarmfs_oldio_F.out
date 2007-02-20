@@ -3,12 +3,10 @@ NG [link] check_nlink(): nlink 1 instead of 2
 NG [mkfifo] test_mkfifo(): mkfifo: Operation not permitted
 NG [open_acc(O_RDONLY | O_TRUNC) mode=0200 errno=EACCES] check_size(): length 0 instead of 26
 NG [open_acc(O_RDWR | O_TRUNC) mode=0200 errno=EACCES] check_size(): length 0 instead of 26
-NG [mmap(PROT_WRITE, MAP_SHARED)] do_test_mmap(): mmap: No such device
-NG [mmap(PROT_READ | PROT_WRITE, MAP_SHARED)] do_test_mmap(): mmap: No such device
 NG [open rename utime close] check_times(): different atime
 NG [open rename utime close] check_times(): different mtime
 NG [open utime close] check_times(): different atime
 NG [open utime close] check_times(): different mtime
 NG [chmod(0600) open chmod(0700) close] check_mode(): mode 0600 instead of 0700
 NG [chmod(0700) open chmod(0600) close] check_mode(): mode 0700 instead of 0600
-10 tests failed
+8 tests failed
