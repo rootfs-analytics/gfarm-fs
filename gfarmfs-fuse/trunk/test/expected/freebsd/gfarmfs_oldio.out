@@ -1,37 +1,22 @@
 gfarmfs: opt="--oldio -nlsu", fuse_opt="-o attr_timeout=0"
 NG [link] check_nlink(): nlink 1 instead of 2
 NG [mkfifo] test_mkfifo(): mkfifo: Operation not permitted
+NG [ftruncate(0) mode=0400] test_ftruncate(): ftruncate: Permission denied
+NG [ftruncate(0) mode=0200] check_size(): length 26 instead of 0
+NG [ftruncate(0) mode=0000] test_ftruncate(): ftruncate: Permission denied
 NG [open(-, O_RDWR | O_CREAT, 0600)] check_size(): length 0 instead of 26
-NG [open(-, O_RDWR | O_CREAT, 0600)] do_check_data(): testfile: short read: 0 instead of 26
-NG [open(-, O_RDWR | O_CREAT, 0600)] do_test_open(): read is short: 0 instead of 26
 NG [open(-, O_RDWR | O_CREAT | O_TRUNC, 0600)] check_size(): length 0 instead of 26
-NG [open(-, O_RDWR | O_CREAT | O_TRUNC, 0600)] do_check_data(): testfile: short read: 0 instead of 26
-NG [open(-, O_RDWR | O_CREAT | O_TRUNC, 0600)] do_test_open(): read is short: 0 instead of 26
 NG [open(+, O_RDWR | O_CREAT | O_TRUNC, 0600)] check_size(): length 0 instead of 26
-NG [open(+, O_RDWR | O_CREAT | O_TRUNC, 0600)] do_check_data(): testfile: short read: 0 instead of 26
-NG [open(+, O_RDWR | O_CREAT | O_TRUNC, 0600)] do_test_open(): read is short: 0 instead of 26
 NG [open(-, O_WRONLY | O_CREAT, 0600)] check_size(): length 0 instead of 26
-NG [open(-, O_WRONLY | O_CREAT, 0600)] do_check_data(): testfile: short read: 0 instead of 26
 NG [open(-, O_WRONLY | O_CREAT, 0400)] check_size(): length 0 instead of 26
-NG [open(-, O_WRONLY | O_CREAT, 0400)] do_check_data(): testfile: short read: 0 instead of 26
 NG [open(-, O_WRONLY | O_CREAT, 0200)] check_size(): length 0 instead of 26
 NG [open(-, O_WRONLY | O_CREAT, 0000)] check_size(): length 0 instead of 26
-NG [open(-, O_RDWR | O_CREAT, 0400)] check_size(): length 0 instead of 26
-NG [open(-, O_RDWR | O_CREAT, 0400)] do_check_data(): testfile: short read: 0 instead of 26
-NG [open(-, O_RDWR | O_CREAT, 0400)] do_test_open(): read is short: 0 instead of 26
+NG [open(-, O_RDWR | O_CREAT, 0400)] do_test_open(): write: Input/output error
 NG [open(-, O_RDWR | O_CREAT, 0200)] check_size(): length 0 instead of 26
-NG [open(-, O_RDWR | O_CREAT, 0200)] do_test_open(): read is short: 0 instead of 26
-NG [open(-, O_RDWR | O_CREAT, 0000)] check_size(): length 0 instead of 26
-NG [open(-, O_RDWR | O_CREAT, 0000)] do_test_open(): read is short: 0 instead of 26
+NG [open(-, O_RDWR | O_CREAT, 0000)] do_test_open(): write: Input/output error
 NG [open(-, O_RDWR | O_CREAT | O_EXCL, 0600)] check_size(): length 0 instead of 26
-NG [open(-, O_RDWR | O_CREAT | O_EXCL, 0600)] do_check_data(): testfile: short read: 0 instead of 26
-NG [open(-, O_RDWR | O_CREAT | O_EXCL, 0600)] do_test_open(): read is short: 0 instead of 26
-NG [open(-, O_RDWR | O_CREAT | O_EXCL, 0000)] check_size(): length 0 instead of 26
-NG [open(-, O_RDWR | O_CREAT | O_EXCL, 0000)] do_test_open(): read is short: 0 instead of 26
-NG [open_acc(O_RDONLY | O_TRUNC) mode=0200 errno=EACCES] check_size(): length 0 instead of 26
-NG [open_acc(O_RDWR | O_TRUNC) mode=0200 errno=EACCES] check_size(): length 0 instead of 26
-NG [mmap(PROT_WRITE, MAP_SHARED)] do_test_mmap(): mmap: No such device
-NG [mmap(PROT_READ | PROT_WRITE, MAP_SHARED)] do_test_mmap(): mmap: No such device
+NG [open(-, O_RDWR | O_CREAT | O_EXCL, 0000)] do_test_open(): write: Input/output error
+NG [open_acc(O_WRONLY | O_TRUNC) mode=0200 errno=0] check_size(): length 26 instead of 0
 NG [open size] check_size(): length 0 instead of 1
 NG [open rename utime close] check_times(): different atime
 NG [open rename utime close] check_times(): different mtime
