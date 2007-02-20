@@ -1,4 +1,1 @@
 fusexmp_fh: fuse_opt="-o default_permissions"
-NG [mmap(PROT_WRITE, MAP_SHARED)] do_test_mmap(): mmap: No such device
-NG [mmap(PROT_READ | PROT_WRITE, MAP_SHARED)] do_test_mmap(): mmap: No such device
-2 tests failed
