@@ -1,8 +1,6 @@
 gfarmfs: opt="-nlsu -N2", fuse_opt=""
 NG [link] check_nlink(): nlink 1 instead of 2
 NG [mkfifo] test_mkfifo(): mkfifo: Operation not permitted
-NG [open_acc(O_RDONLY | O_TRUNC) mode=0200 errno=EACCES] check_size(): length 0 instead of 26
-NG [open_acc(O_RDWR | O_TRUNC) mode=0200 errno=EACCES] check_size(): length 0 instead of 26
-NG [mmap(PROT_WRITE, MAP_SHARED)] do_test_mmap(): mmap: No such device
-NG [mmap(PROT_READ | PROT_WRITE, MAP_SHARED)] do_test_mmap(): mmap: No such device
-6 tests failed
+NG [ftruncate(0) mode=0400] test_ftruncate(): ftruncate: Permission denied
+NG [ftruncate(0) mode=0000] test_ftruncate(): ftruncate: Permission denied
+4 tests failed

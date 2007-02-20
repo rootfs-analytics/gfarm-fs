@@ -1,4 +1,7 @@
 fusexmp_fh: fuse_opt="-o default_permissions"
-NG [mmap(PROT_WRITE, MAP_SHARED)] do_test_mmap(): mmap: No such device
-NG [mmap(PROT_READ | PROT_WRITE, MAP_SHARED)] do_test_mmap(): mmap: No such device
-2 tests failed
+NG [ftruncate(0) mode=0400] test_ftruncate(): ftruncate: Permission denied
+NG [ftruncate(0) mode=0000] test_ftruncate(): ftruncate: Permission denied
+NG [open(-, O_RDWR | O_CREAT, 0400)] do_test_open(): write: Input/output error
+NG [open(-, O_RDWR | O_CREAT, 0000)] do_test_open(): write: Input/output error
+NG [open(-, O_RDWR | O_CREAT | O_EXCL, 0000)] do_test_open(): write: Input/output error
+5 tests failed
