@@ -4266,7 +4266,7 @@ check_gfrep()
 	char url[] = "gfarm:_gfarmfs_gfrep";
 	char *srchost = NULL, *srcsection = NULL;
 	int nhosts = 0;
-	char *hosts[2];
+	char *hosts[2] = {NULL, NULL};
 	int res = REP_DISABLE;
 	int i;
 
