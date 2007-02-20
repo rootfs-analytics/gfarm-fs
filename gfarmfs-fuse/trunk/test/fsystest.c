@@ -1504,6 +1504,10 @@ filename_set(char **namep, char *prefix, char *hostname, char *pid)
 	snprintf(*namep, len, "%s_%s_%s", prefix, hostname, pid);
 }
 
+#ifndef HOST_NAME_MAX
+#define HOST_NAME_MAX 256
+#endif
+
 static void
 test_initialize()
 {
