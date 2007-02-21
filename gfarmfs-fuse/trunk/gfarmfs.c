@@ -4259,47 +4259,26 @@ check_gfarmfs_options(int *argcp, char ***argvp)
 
 #ifdef USE_SCHEDULER
 static int
-check_gfrep()
+is_new_gfrep()
 {
-	char *e;
-	GFS_File gf;
-	char url[] = "gfarm:_gfarmfs_gfrep";
-	char *srchost = NULL, *srcsection = NULL;
-	int nhosts = 0;
-	char *hosts[2] = {NULL, NULL};
-	int res = REP_DISABLE;
-	int i;
+	int p, status;
 
-	e = gfs_pio_create(url, GFARM_FILE_WRONLY, 0600, &gf);
-	if (e == NULL) {
-		gfarmfs_set_view(gf);
-		gfs_pio_close(gf);
-		e = gfarmfs_gfrep_schedule(url, &srchost, &srcsection, 2,
-					   &nhosts, hosts);
-		if (e == NULL) {
-			int r;
-			r = gfarmfs_gfrep_d_exec(url, srchost, srcsection,
-						 nhosts, hosts, 1);
-			if (r == 0) {
-				res = REP_GFREP_d;
-			} else {
-				r = gfarmfs_gfrep_HN_exec(url, nhosts,
-							  hosts, 1);
-				if (r == 0)
-					res = REP_GFREP_HN;
-			}
-		}
+	p = fork();
+	if (p == -1) {
+		gfarmfs_errlog("gfrep_V_exec: fork: %s", strerror(errno));
+		return (1);
+	} else if (p == 0) {
+		CHANGE_DEV_NULL(1);
+		CHANGE_DEV_NULL(2);
+		execl(gfrep_path, gfrep_path, "-V", (char*)NULL);
+		_exit(1);
 	}
-	gfs_unlink(url);
-	if (srchost != NULL)
-		free(srchost);
-	if (srcsection != NULL)
-		free(srcsection);
-	for (i = 0; i < nhosts; i++)
-		if (hosts[i])
-			free(hosts[i]);
+	waitpid(p, &status, 0);
 
-	return (res);
+	if (WEXITSTATUS(status) == 0)
+		return (1); /* new */
+	else
+		return (0); /* old */
 }
 #endif /* USE_SCHEDULER */
 
@@ -4345,8 +4324,8 @@ setup_options()
 		exit(1);
 	}
 
+	/* checks for replication */
 #if ENABLE_ASYNC_REPLICATION
-	/* check for gfrep */
 	if (gfrep_target_num == 0 || gfrep_target_num == 1) {
 		enable_replication = REP_DISABLE;
 	} else if (gfrep_target_num <= -1) { /* without -N option */
@@ -4359,10 +4338,9 @@ setup_options()
 	} else { /* gfrep_target_num >= 2 */
 #ifdef USE_SCHEDULER
 		if (force_gfrep_N)
-			enable_replication = REP_GFREP_N;
+			enable_replication = REP_GFREP_N; /* force N */
 		else
-			enable_replication = REP_GFREP_HN;
-		
+			enable_replication = REP_GFREP_HN; /* normal */
 #else
 		enable_replication = REP_GFREP_N;
 #endif  /* USE_SCHEDULER */
@@ -4385,6 +4363,12 @@ setup_options()
 			exit(1);
 		}
 	}
+#ifdef USE_SCHEDULER
+	/* checking the version of gfrep */
+	if (enable_replication == REP_GFREP_HN)
+		if (is_new_gfrep() == 0) /* gfarm 1.4 or earlier */
+			enable_replication = REP_GFREP_d;
+#endif
 
 #ifdef USE_GFS_STATFSNODE
 	/* -S, --disable-statfs */
@@ -4427,12 +4411,6 @@ setup_options()
 	if (enable_syslog == 1) {
 		openlog("gfarmfs", LOG_PID, LOG_LOCAL0);
 	}
-
-#ifdef USE_SCHEDULER
-	/* checking the version of gfrep */
-	if (enable_replication == REP_GFREP_HN)
-		enable_replication = check_gfrep();
-#endif
 }
 
 static void
