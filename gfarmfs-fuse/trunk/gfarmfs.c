@@ -67,7 +67,8 @@
 #  error Please install FUSE 2.2 or later
 #endif
 
-#define GFARMFS_VER  PACKAGE_VERSION
+#define GFARMFS_VERSION  PACKAGE_VERSION
+#define GFARMFS_REVISION "$Revision$"
 
 #ifndef GFS_DEV
 #define GFS_DEV ((dev_t)-1);
@@ -85,7 +86,11 @@
 #define SYMLINK_SUFFIX_LEN (sizeof(SYMLINK_SUFFIX)-1)
 #endif
 
+#ifdef GFARM_MAJOR_VERSION
+#define GFARM_USE_VERSION GFARM_MAJOR_VERSION
+#else
 #define GFARM_USE_VERSION 1
+#endif
 
 #if GFARM_USE_VERSION == 1
 #define REVISE_UTIME 1  /* problem of gfarm v1 */
@@ -3355,6 +3360,7 @@ gfarmfs_rename_share_gf_check_open(char *from_url, char *to_url,
 		}
 	} /* (fh != NULL) */
 #else   /* for Gfarm version 2 or lator */
+	(void)from_mode;
 	fh = FH_GET2(from_url, from_ino);
 #if ENABLE_ASYNC_REPLICATION
 	gfarmfs_async_wait(fh);
@@ -3960,8 +3966,13 @@ gfarmfs_version(int print_fuse_version)
 {
 	const char *fusever[] = { program_name, "-V", NULL };
 
-	printf("GfarmFS-FUSE version %s\n", GFARMFS_VER);
+	printf("GfarmFS-FUSE version %s (%s)\n",
+	       GFARMFS_VERSION, GFARMFS_REVISION);
 	printf("Build: %s %s\n", __DATE__, __TIME__);
+#ifdef GFARM_VERSION
+	printf("using Gfarm version %s (%s)\n",
+	       gfarm_version_string(), gfarm_revision_string());
+#endif
 #if FUSE_USE_VERSION >= 25
 	printf("using FUSE version 2.5 interface\n");
 #else
