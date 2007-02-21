@@ -3970,8 +3970,11 @@ gfarmfs_version(int print_fuse_version)
 	       GFARMFS_VERSION, GFARMFS_REVISION);
 	printf("Build: %s %s\n", __DATE__, __TIME__);
 #ifdef GFARM_VERSION
-	printf("using Gfarm version %s (%s)\n",
-	       gfarm_version_string(), gfarm_revision_string());
+	printf("using Gfarm version %s", gfarm_version_string());
+#ifdef GFARM_REVISION
+	printf(" (%s)", gfarm_revision_string());
+#endif
+	printf("\n");
 #endif
 #if FUSE_USE_VERSION >= 25
 	printf("using FUSE version 2.5 interface\n");
