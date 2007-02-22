@@ -4,7 +4,7 @@
  * This program is based on test.c from FUSE project.
  *     http://fuse.cvs.sourceforge.net/fuse/fuse/test/
  */
-#ifdef __linux__
+#if defined(__linux__) && !defined(_GNU_SOURCE)
 #define _GNU_SOURCE
 #endif
 #include <stdio.h>
