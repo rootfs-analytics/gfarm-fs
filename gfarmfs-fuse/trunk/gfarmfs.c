@@ -99,7 +99,6 @@
 /* limitation in global view of gfarm v1.3.1 or earlier */
 #define REVISE_CHMOD 0
 
-#define ENABLE_NOFLAGMENTINFO_AUTO_DELETE 0
 #define ENABLE_ASYNC_REPLICATION 1
 #define ENABLE_XATTR 0
 
@@ -852,6 +851,28 @@ revert_mode:
 	return (e);
 }
 
+static char *
+gfarmfs_gfs_stat_from_pi_only(const char *path, struct gfs_stat *gsp)
+{
+	char *e;
+	struct gfarm_path_info pi;
+	char *p;
+
+	e = gfarm_canonical_path(path, &p);
+	if (e == NULL) {
+		e = gfarm_path_info_get(p, &pi);
+		if (e == NULL) {
+			*gsp = pi.status;
+			gsp->st_user = strdup(pi.status.st_user);
+			gsp->st_group = strdup(pi.status.st_group);
+			gfarm_path_info_free(&pi);
+			gsp->st_size = 0;
+		}
+		free(p);
+	}
+	return (e);
+}
+
 static int
 gfarmfs_getattr(const char *path, struct stat *buf)
 {
@@ -892,36 +913,9 @@ gfarmfs_getattr(const char *path, struct stat *buf)
 		if (e2 == NULL)
 			gs.st_size = size;
 	}
-#if ENABLE_NOFLAGMENTINFO_AUTO_DELETE == 1 /* to delete invalid path_info */
-	if (e == NULL &&
-	    !GFARM_S_ISDIR(gs.st_mode) &&
-	    !GFARM_S_ISREG(gs.st_mode)) {
-		struct gfarm_path_info pi;
-		char *e2;
-		char *p;
-		printf("GETATTR: repair invalid entry: %s\n", path);
-		e2 = gfarm_canonical_path(path, &p);
-		if (e2 == NULL) {
-			e2 = gfarm_path_info_get(p, &pi);
-			if (e2 == NULL) {
-				pi.status.st_mode = 0100600;
-				e2 = gfarm_path_info_replace(p, &pi);
-			}
-			free(p);
-		}
-	}
-	if (e == GFARM_ERR_NO_FRAGMENT_INFORMATION) {
-		char *e2;
-		e2 = gfs_unlink(url);
-		printf("GETATTR: unlink: ");
-		if (e2 == NULL) {
-			printf("%s\n", path);
-		} else {
-			printf("%s: %s\n", path, e2);
-		}
-		e = GFARM_ERR_NO_SUCH_OBJECT;
-	}
-#endif
+	if (e == GFARM_ERR_NO_FRAGMENT_INFORMATION &&
+	    gfarmfs_gfs_stat_from_pi_only(path, &gs) == NULL)
+		e = NULL;
 	if (e == NULL) {
 		e = convert_gfs_stat_to_stat(url, &gs, buf, symlinkmode);
 		gfs_stat_free(&gs);
@@ -2592,7 +2586,7 @@ free_gfarm_path:    /* [1] */
 	return (e);
 }
 
-#define CHANGE_DEV_NULL(fd)  dup2(open("/dev/null", O_WRONLY), fd);
+#define CHANGE_DEV_NULL(fd)  dup2(open("/dev/null", O_WRONLY), fd)
 
 static int
 gfarmfs_gfrep_d_exec(char *url, char *srchost, char *section,
@@ -3446,7 +3440,7 @@ gfarmfs_getattr_share_gf(const char *path, struct stat *stbuf)
 {
 	char *e;
 	FH fh;
-	struct gfs_stat gs1, gs2;
+	struct gfs_stat gs1;
 	int symlinkmode = 0;
 	char *url;
 
@@ -3468,6 +3462,9 @@ gfarmfs_getattr_share_gf(const char *path, struct stat *stbuf)
 		symlinkmode = 1;
 	}
 #endif
+	if (e == GFARM_ERR_NO_FRAGMENT_INFORMATION &&
+	    gfarmfs_gfs_stat_from_pi_only(path, &gs1) == NULL)
+		e = NULL;
 	if (e != NULL)
 		goto free_url;
 	e = convert_gfs_stat_to_stat(url, &gs1, stbuf, symlinkmode);
@@ -3484,6 +3481,7 @@ gfarmfs_getattr_share_gf(const char *path, struct stat *stbuf)
 	 * But gfs_fstat can do it.
 	 */
 	if (fh != NULL) {  /* somebody opens this file. */
+		struct gfs_stat gs2;
 #if REVISE_CHMOD
 		if (fh->mode_changed)
 			stbuf->st_mode = fh->save_mode;
