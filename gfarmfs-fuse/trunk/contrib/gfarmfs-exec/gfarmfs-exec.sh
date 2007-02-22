@@ -22,11 +22,35 @@ ABORT() {
 	exit 1
 }
 
-if [ X"$GFS_PROG" = X ]; then
+USAGE()
+{
+	echo "usage: gfarmfs-exec.sh [ -u username ] [ -m mountdir ]"
+	echo "           [ -wdir working_directory_from_home ]"
+	echo "           [ -stdout file ] [ -stderr file] cmd args ..."
+	exit 1
+}
+
+PARSE_ARG() {
+	while [ $# -gt 0 ]; do
+		case $1 in
+		-u)    shift; GFS_USERNAME=$1 ;;
+		-m)    shift; GFS_MOUNTDIR=$1 ;;
+		-wdir) shift; GFS_WDIR=$1 ;;
+		-stdout) shift; GFS_STDOUT=$1 ;;
+		-stderr) shift; GFS_STDERR=$1 ;;
+		-*) USAGE ;;
+		*) break ;;
+		esac
+		shift
+	done
 	[ $# -lt 1 ] && ABORT "no program specified"
-	: ${GFS_PROG:=$1}
+	GFS_PROG=$1
 	shift
-	: ${GFS_ARGS:=$*}
+	GFS_ARGS=$*
+}
+
+if [ X"$GFS_PROG" = X ]; then
+	PARSE_ARG $*
 fi
 : ${GFS_USERNAME:=$LOGNAME}
 : ${GFS_MOUNTDIR:=/tmp/$GFS_USERNAME}
@@ -53,7 +77,9 @@ cd $GFS_MOUNTDIR/$GFS_USERNAME && cd $GFS_WDIR &&
 STATUS=$?
 cd /
 # unmount Gfarm file system
-fusermount -u $GFS_MOUNTDIR || :
+if grep $GFS_MOUNTDIR /etc/mtab > /dev/null; then
+	fusermount -u $GFS_MOUNTDIR || :
+fi
 [ $DELETE_MOUNTDIR = 1 ] && rmdir $GFS_MOUNTDIR
 
 exit $STATUS
