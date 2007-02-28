@@ -376,14 +376,15 @@ gfarmfs_prof_init()
 }
 
 static void
-prof_print(struct gfarmfs_prof *profp)
+prof_print(struct gfarmfs_prof *profp, double total)
 {
 	double time =
 		(((double)profp->op_total_time.tv_sec) * SECOND_BY_MICROSEC
 		 + profp->op_total_time.tv_usec) / SECOND_BY_MICROSEC;
 	if (time != 0)
-		printf("%13s: %11.6f s  (%8.6f avg)\n",
-		       profp->opname, time, time / profp->op_count);
+		printf("%13s: %11.6f s (%4.1f %%)  =  %8.6f * %lu\n",
+		       profp->opname, time, time * 100 / total,
+		       time / profp->op_count, profp->op_count);
 }
 
 static void
@@ -393,39 +394,40 @@ gfarmfs_prof_final()
 
 	if (!enable_timer)
 		return;
-	printf("====== gfarmfs profiler (successful operation only) ======\n");
-	prof_print(&prof_getattr);
-	prof_print(&prof_readlink);
-	prof_print(&prof_getdir);
-	prof_print(&prof_mknod);
-	prof_print(&prof_mkdir);
-	prof_print(&prof_symlink);
-	prof_print(&prof_unlink);
-	prof_print(&prof_rmdir);
-	prof_print(&prof_rename);
-	prof_print(&prof_link);
-	prof_print(&prof_chmod);
-	prof_print(&prof_chown);
-	prof_print(&prof_truncate);
-	prof_print(&prof_utime);
-	prof_print(&prof_open);
-	prof_print(&prof_read);
-	prof_print(&prof_write);
-	prof_print(&prof_release);
-	prof_print(&prof_fsync);
-	prof_print(&prof_statfs);
-	prof_print(&prof_create);
-	prof_print(&prof_fgetattr);
-	prof_print(&prof_ftruncate);
-	prof_print(&prof_access);
-	prof_print(&prof_flush);
-	prof_print(&prof_setxattr);
-	prof_print(&prof_getxattr);
-	prof_print(&prof_listxattr);
-	prof_print(&prof_removexattr);
-
 	total = (((double)total_time.tv_sec) * SECOND_BY_MICROSEC
 		 + total_time.tv_usec) / SECOND_BY_MICROSEC;
+
+	printf("====== gfarmfs profiler (successful operation only) ======\n");
+	prof_print(&prof_getattr, total);
+	prof_print(&prof_readlink, total);
+	prof_print(&prof_getdir, total);
+	prof_print(&prof_mknod, total);
+	prof_print(&prof_mkdir, total);
+	prof_print(&prof_symlink, total);
+	prof_print(&prof_unlink, total);
+	prof_print(&prof_rmdir, total);
+	prof_print(&prof_rename, total);
+	prof_print(&prof_link, total);
+	prof_print(&prof_chmod, total);
+	prof_print(&prof_chown, total);
+	prof_print(&prof_truncate, total);
+	prof_print(&prof_utime, total);
+	prof_print(&prof_open, total);
+	prof_print(&prof_read, total);
+	prof_print(&prof_write, total);
+	prof_print(&prof_release, total);
+	prof_print(&prof_fsync, total);
+	prof_print(&prof_statfs, total);
+	prof_print(&prof_create, total);
+	prof_print(&prof_fgetattr, total);
+	prof_print(&prof_ftruncate, total);
+	prof_print(&prof_access, total);
+	prof_print(&prof_flush, total);
+	prof_print(&prof_setxattr, total);
+	prof_print(&prof_getxattr, total);
+	prof_print(&prof_listxattr, total);
+	prof_print(&prof_removexattr, total);
+
 	printf("Total time in gfarmfs (including errors): %10.6f s\n",
 	       total);
 }
@@ -4000,7 +4002,14 @@ gfarmfs_version(int print_fuse_version)
 	       GFARMFS_VERSION, GFARMFS_REVISION);
 	printf("Build: %s %s\n", __DATE__, __TIME__);
 #ifdef GFARM_VERSION
-	printf("using Gfarm version %s", gfarm_version_string());
+	printf("using Gfarm header  version %s", GFARM_VERSION);
+#ifdef GFARM_REVISION
+	printf(" (%s)", GFARM_REVISION);
+#endif
+	printf("\n");
+#endif
+#ifdef GFARM_VERSION
+	printf("using Gfarm library version %s", gfarm_version_string());
 #ifdef GFARM_REVISION
 	printf(" (%s)", gfarm_revision_string());
 #endif
