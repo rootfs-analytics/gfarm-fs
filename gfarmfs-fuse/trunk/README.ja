@@ -448,9 +448,10 @@ FUSE のオプションについては，gfarmfs のヘルプ (-h オプション) と FUSE
 お問い合わせ，バグ報告
 ======================
 
-  些細なことでも結構ですので，メーリングリストや Bugzilla へ，ご質問や
-  ご報告をよろしくお願いいたします．
+  些細なことでも結構ですので，メーリングリストやバグトラッキングシステ
+  ムへ，ご質問やご報告をよろしくお願いいたします．
 
      http://datafarm.apgrid.org/ml/
-     http://datafarm.apgrid.org/bugzilla-ja/
+     http://sourceforge.net/tracker/?group_id=172718
+     http://datafarm.apgrid.org/bugzilla-ja/  (日本語 Bugzilla)
 
