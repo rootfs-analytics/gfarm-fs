@@ -21,14 +21,18 @@ Quick start
 
 For example, on Fedora Core 5 :
 
+  FUSE:
     # yum install fuse fuse-libs fuse-devel
     # (GfarmFS-FUSE users should belong to 'fuse' group.)
+
+  Gfarm:
     # rpm -ivh gfarm-libs-1.4-0.i386.rpm gfarm-client-1.4-0.i386.rpm \
       gfarm-devel-1.4-0.i386.rpm
-
     $ (Check if your Gfarm configuration file (ex.: ~/.gfarmrc) is correct.)
     $ (Check if your authenticaion to a Gfarm filesystem is successful
        by commands (ex.: gfhost, gfkey or grid-proxy-init).)
+
+  GfarmFS-FUSE:
     $ tar zxvf gfarmfs-fuse-2.0.0.tar.gz
     $ cd gfarmfs-fuse-2.0.0
     $ ./configure
@@ -80,10 +84,9 @@ of GfarmFS-FUSE.
 Installation
 ============
 
-To build GfarmFS-FUSE, development packages of Gfarm (later than
-version 1.2) and FUSE (later than version 2.2) are required.
-When you install Gfarm using RPM binary packages, you should
-install gfarm-gsi-devel (or gfarm-devel) package together.
+To build GfarmFS-FUSE, development packages of Gfarm and FUSE are
+required.  When you install Gfarm using RPM binary packages, you
+should install gfarm-gsi-devel (or gfarm-devel) package together.
 
 Installation steps of GfarmFS-FUSE:
 
@@ -133,7 +136,7 @@ filesystem:
 <mountpoint> needs to be a directory where a user can access in read
 and write mode.  By default, other users who are not a user that
 mounts a Gfarm file system cannot access files or directories under
-the mountpoint.  
+the mountpoint.
 
 If you cannot mount a Gfarm filesystem, make sure the 'fuse' kernel
 module is loaded, and you are the user(group) which is permitted to
@@ -168,11 +171,29 @@ Options
 Please print help message by '-h' option and see README of FUSE in
 order to get information of FUSE options.
 
-By specifying the 'kernel_cache' option of FUSE, speed of reading
-the same file will be faster from the second time.  However,
-update of the file will not be reflected to another gfarmfs's
-cache.  Please be aware of this risk when you use the
-'kernel_cache' option.
+  RPM package: (ex.) /usr/share/doc/fuse-2.6.3/README
+  SourceForge: http://fuse.cvs.sourceforge.net/fuse/fuse/
+
+Additional notes of FUSE options:
+
+-o kernel_cache
+
+  By specifying the kernel_cache option of FUSE, speed of reading
+  the same file will be faster from the second time.  However,
+  update of the file will not be reflected to another gfarmfs's
+  cache.  Please be aware of this risk when you use the
+  kernel_cache option.
+  
+-o default_permissions
+
+  This option is recommended.  Some behavior about invalid file access
+  permissions work correctly by this option.  And, performance
+  improvement (at EACCES) and consideration of the group permissions
+  are provided.
+
+  To ignore the group permissions, you cannot use this option.
+  Because Gfarm v1 does not have group ID, a group name of a file
+  is the group which the file-owner belong to.
 
 GfarmFS options:
 
@@ -218,8 +239,9 @@ GfarmFS options:
 
 -n, --dirnlink
 
-  Counts the nlink of a directory precisely.  If this option is not
-  specified, the nlink of a directory is always 32000.
+  Counts the nlink of a directory precisely.  But performance becomes
+  worse.  If this option is not specified, the nlink of a directory is
+  always 32000.
 
 -F, --exactfilesize
 
@@ -242,15 +264,18 @@ GfarmFS options:
 -N <num-of-replicas>
 
   Specifies the required number of file replicas.  After creating new
-  file or modifying existng file, the command of gfrep is running in
-  async automatically.
+  file or modifying existng file, replication processing is running
+  in async automatically.
 
-  Please use gfarm_agent when using this option, because gfrep command
-  is called many times.  If you are not permitted to read a file, the
-  file is not replicated.
+  In this case, the use of gfarm_agent is strongly recommended.  If
+  gfarm_agent is not used, the peformance of auto replication is worse.
+  And note that an unreadable file is not replicated.
 
   Don't rename a file or directory from other clients when using this
   option on Gfarm v1.
+
+  At present, any emulated entry as symlink or hardlink is not
+  replicated. (not implememted)
 
 -D <destination-domainname>
 
@@ -312,7 +337,8 @@ Examples
 
   $ gfarmfs -b /mountpoint -o direct_io
   $ dd if=/mountpoint/inputfile of=outputfile bs=64K
-  (Mostly direct_io is slow.)
+  (Most applications are worse peformance by direct_io.)
+  (And in addition, you cannot execute an executable file.)
 
 *** Importing large files into gfarmfs.
 
@@ -371,8 +397,7 @@ Peculiar PROBLEMS of GfarmFS-FUSE:
 
 *** `svn co' command sometimes does not work on gfarmfs.
 
-  This cause is unknown.
-  This sometimes fails when using https.
+  This cause is unknown.  This sometimes fails in https access.
 
 *** du command sometimes do not work.
 
@@ -402,11 +427,29 @@ Peculiar PROBLEMS of GfarmFS-FUSE:
 *** About open(2) with O_RDONLY | O_TRUNC.
 
   In this case, if the mode of a file is 0200, the open(2) fails and
-  gets EACCES.  But the file's size is zero.
+  gets EACCES.  But the filesize is zero.
 
   This is a limitation of FUSE.
+  This problem is aboided by `-o default_permissions' (FUSE option).
 
-*** Limitations with each options.
+====
+TEST
+====
 
-  Please check the files of test/expected/{your environment}/*.out
-  and test/fsystest.c in GfarmFS-FUSE package.
+  GfarmFS-FUSE is tested by the test tool included in this package.
+
+  If `./configure && make && make check' of GfarmFS-FUSE (with getting
+  ready for Gfarm) has no error, your environment is equal to the
+  expected environment.
+
+
+======================
+Questions / Bug report
+======================
+
+  If you have any question or comment, feel free to send to email list
+  or Bug Tracking System.
+
+    http://datafarm.apgrid.org/ml/
+    http://sourceforge.net/tracker/?group_id=172718
+
