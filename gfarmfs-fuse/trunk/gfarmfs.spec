@@ -1,7 +1,8 @@
+# How to build (ex.): rpmbuild --bb --define 'dist .fc5' gfarmfs.spec
 Summary: GfarmFS-FUSE
 Name: gfarmfs-fuse
 Version: 2.0.0
-Release: 0
+Release: 1%{?dist}
 License: BSD
 Group: Applications/Internet
 Vendor: National Institute of Advanced Industrial Science and Technology
@@ -42,6 +43,8 @@ make DESTDIR=${RPM_BUILD_ROOT} install
 %doc README README.ja ChangeLog ChangeLog.ja
 
 %changelog
+* Tue Mar  6 2007  <takuya@soum.co.jp> 2.0.0-1
+- Use 'dist' definition for filename.
 * Thu Feb 15 2007  <takuya@soum.co.jp> 2.0.0-0
 - Update version.
 * Fri Nov 17 2006  <takuya@soum.co.jp> 1.4.0-1
@@ -49,7 +52,7 @@ make DESTDIR=${RPM_BUILD_ROOT} install
 * Tue Nov 14 2006  <takuya@soum.co.jp> 1.4.0-0
 - Depend on gfarm-libs and gfarm-client.
 - Add BuildRequires.
-* Thu Sep 07 2006  <tatebe@gmail.com> 1.3.0-2
+* Thu Sep  7 2006  <tatebe@gmail.com> 1.3.0-2
 - Add mount.gfarmfs and umount.gfarmfs.
 * Wed Aug 30 2006  <tatebe@gmail.com> 1.3.0-1
 - Add gfarmfs-exec.sh that is a wrapper script to execute a program via
