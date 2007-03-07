@@ -15,7 +15,8 @@
  *   $ fusermount -u <mountpoint>
  *
  * Copyright (c) 2005-2007 National Institute of Advanced Industrial
- * Science and Technology (AIST).  All Rights Reserved.
+ * Science and Technology (AIST).
+ * Copyright (c) 2006-2007 Osamu Tatebe.
  */
 #include <fuse.h>
 
