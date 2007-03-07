@@ -1,12 +1,12 @@
 GfarmFS-FUSE - ChangeLog
 
-[2007.02.19] Version 2.0
+[2007.03.??] Version 2.0
 
 新機能
 
   * -N と -D オプションを追加しました．非同期で複製を作成します．
   * --errlog と --syslog オプションを追加しました．
-  * make check を追加しました．現在は Linux 上での動作確認用です．
+  * make check を追加しました．
 
 仕様変更
 

@@ -1,18 +1,18 @@
 GfarmFS-FUSE - ChangeLog
 
-[2007.02.19] Version 2.0
+[2007.03.??] Version 2.0
 
 New Features
 
   * add -N and -D options which enable replication to work asynchronously.
   * add --errlog and --syslog options.
-  * add `make check'. (for Linux only)
+  * add `make check'.
 
 Update Features
 
   * -a option can work correctly.
-  * gfarmfs-exec.sh, mount.gfarmfs, umount.gfarmfs are installed by 
-   `make install'.  These usage is explained in the files oneself.
+  * gfarmfs-exec.sh, mount.gfarmfs, umount.gfarmfs are installed by
+   `make install'.  These usages are explained in the files themselves.
 
 Documentation
 
@@ -21,9 +21,9 @@ Documentation
 Bug fix
 
   * fix a bug such that `umask' is not effective on gfarmfs.
-  * fix a bug such that write(2) cannot write anymore when read(2)
+  * fix a bug such that write(2) cannot write anymore after read(2)
     gets EOF.
-  * When filesystem nodes are added or removed, statfs(2) can calculate
+  * If filesystem nodes are added or removed, statfs(2) can calculate
     definitely.
   * fix a bug such that f_frsize is not set.
 
