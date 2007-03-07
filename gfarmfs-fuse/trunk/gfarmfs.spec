@@ -12,7 +12,7 @@ BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
 
 %define prefix   %{_prefix}
 
-BuildRequires: fuse-devel >= 2.5, gfarm-libs >= 1.4, gfarm-devel >= 1.4
+#BuildRequires: fuse-devel >= 2.5, gfarm-libs >= 1.4, gfarm-devel >= 1.4
 
 Requires: fuse >= 2.5, fuse-libs >= 2.5, gfarm-libs >= 1.4, gfarm-client >= 1.4
 
@@ -45,6 +45,7 @@ make DESTDIR=${RPM_BUILD_ROOT} install
 %changelog
 * Tue Mar  6 2007  <takuya@soum.co.jp> 2.0.0-1
 - Use 'dist' definition for filename.
+- Comment out BuildRequires.
 * Thu Feb 15 2007  <takuya@soum.co.jp> 2.0.0-0
 - Update version.
 * Fri Nov 17 2006  <takuya@soum.co.jp> 1.4.0-1
