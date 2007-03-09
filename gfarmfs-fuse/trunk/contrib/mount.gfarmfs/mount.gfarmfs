@@ -1,18 +1,26 @@
 #!/bin/sh
 #
-# mount.gfarmfs [ username mount_point options ]
-#
-# Environment variable:
-#
-#	GFS_USERNAME	global user name in Gfarm  (default: $LOGNAME)
-#	GFS_MOUNTDIR	mount point	 (default: /gfs/home/$GFS_USERNAME)
-#	GFARMFS_OPTIONS gfarmfs mount options	   (default: -lsu)
-#	FUSE_OPTIONS	fuse mount options
+# $Id$
+
+USAGE() {
+cat <<EOF
+mount.gfarmfs [ username mount_point options ]
+
+Environment variable:
+    GFS_USERNAME     global user name in Gfarm  (default: $LOGNAME)
+    GFS_MOUNTDIR     mount point    (default: /gfs/home/$GFS_USERNAME)
+    GFARMFS_OPTIONS  gfarmfs mount options      (default: -lsu)
+    FUSE_OPTIONS     fuse mount options
+EOF
+	exit 1
+}
 
 ABORT() {
 	[ $# -gt 0 ] && echo 1>&2 $*
 	exit 1
 }
+
+[ x"$1" = x"-h" -o x"$1" = x"--help" ] && USAGE
 
 if [ $# -gt 0 ]; then
 	GFS_USERNAME=$1

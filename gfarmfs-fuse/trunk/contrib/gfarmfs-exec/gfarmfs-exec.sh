@@ -1,32 +1,37 @@
 #!/bin/sh
 #
-# wrapper script to execute a program in Gfarm file system using GfarmFS-FUSE
-#
-#	gfarmfs-exec.sh prog arg ...
-#	or
-#	GFS_PROG=prog GFS_ARGS="arg ..." gfarmfs-exec.sh
-#
-# Environment variable:
-#
-#	GFS_USERNAME	global user name in Gfarm   (defaut: $LOGNAME)
-#	GFS_MOUNTDIR	mount point		    (defaut: /tmp/$GFS_USERNAME)
-#	GFS_WDIR	working directory relative to the home directory
-#			in Gfarm file system	    (default: .)
-#	GFS_STDOUT	Filename for the standard output (default: STDOUT.$$)
-#	GFS_STDERR	Filename for the standard error  (default: STDERR.$$)
-#	
 # $Id$
 
-ABORT() {
-	[ $# -gt 0 ] && echo 1>&2 $*
+USAGE() {
+cat <<EOF
+wrapper script to execute a program in Gfarm file system using GfarmFS-FUSE
+
+Usage:
+    gfarmfs-exec.sh [OPTIONS] prog arg ...
+    or
+    GFS_PROG=prog GFS_ARGS="arg ..." gfarmfs-exec.sh
+
+Environment variable:
+
+    GFS_USERNAME  global user name in Gfarm    (defaut: \$LOGNAME)
+    GFS_MOUNTDIR  mount point                  (defaut: /tmp/\$GFS_USERNAME)
+    GFS_WDIR      working directory relative to the home directory
+                  in Gfarm file system         (default: .)
+    GFS_STDOUT    Filename for the standard output  (default: STDOUT.\$\$)
+    GFS_STDERR    Filename for the standard error   (default: STDERR.\$\$)
+
+Options:
+    -u username
+    -m mountdir
+    -wdir working_directory_from_home
+    -stdout filename
+    -stderr filename
+EOF
 	exit 1
 }
 
-USAGE()
-{
-	echo "usage: gfarmfs-exec.sh [ -u username ] [ -m mountdir ]"
-	echo "           [ -wdir working_directory_from_home ]"
-	echo "           [ -stdout file ] [ -stderr file] cmd args ..."
+ABORT() {
+	[ $# -gt 0 ] && echo 1>&2 $*
 	exit 1
 }
 
@@ -43,10 +48,28 @@ PARSE_ARG() {
 		esac
 		shift
 	done
-	[ $# -lt 1 ] && ABORT "no program specified"
+	[ $# -lt 1 ] && USAGE
 	GFS_PROG=$1
 	shift
 	GFS_ARGS=$*
+}
+
+UMOUNT_FUSE()
+{
+	MNTDIR=$1
+	retry=10
+	i=0
+	while true; do
+		fusermount -u $MNTDIR > /dev/null 2>&1
+		if [ $? -eq 0 ]; then
+			return 0
+		fi
+		ls -l $MNTDIR > /dev/null 2>&1
+		if [ $i -ge $retry ]; then
+			return 1
+		fi
+		i=`expr $i + 1`
+	done
 }
 
 if [ X"$GFS_PROG" = X ]; then
@@ -78,7 +101,7 @@ STATUS=$?
 cd /
 # unmount Gfarm file system
 if grep $GFS_MOUNTDIR /etc/mtab > /dev/null; then
-	fusermount -u $GFS_MOUNTDIR || :
+	UMOUNT_FUSE $GFS_MOUNTDIR
 fi
 [ $DELETE_MOUNTDIR = 1 ] && rmdir $GFS_MOUNTDIR
 
