@@ -1,6 +1,5 @@
 Copyright (c) 2005-2007 National Institute of Advanced Industrial
-Science and Technology (AIST).
-Copyright (c) 2006-2007 Osamu Tatebe.
+Science and Technology (AIST).  All Rights Reserved.
 
 ============
 GfarmFS-FUSE
@@ -58,9 +57,6 @@ Fedora Core 5 の例です．
         使用できます．
     推奨環境:
         Linux kernel version 2.6.15 以降
-    テスト環境:
-        Fedora Core 5 (Linux kernel version 2.6.19)
-        CentOS 4.4    (Linux kernel version 2.6.9)
     ビルドのみ確認:
         FreeBSD 6.1-RELEASE
 
@@ -70,8 +66,6 @@ Fedora Core 5 の例です．
         FUSE version 2.2 以降
     推奨環境:
         FUSE version 2.5 以降
-    テスト環境:
-        FUSE version 2.6.3
 
 *** Gfarm
 
@@ -79,6 +73,23 @@ Fedora Core 5 の例です．
         Gfarm version 1.2 以降
     推奨環境:
         Gfarm version 1.4 以降
+
+*** テスト環境
+
+    Fedora Core 5 (for development)
+        Linux kernel version 2.6.19
+        FUSE version 2.6.3
+        Gfarm version 1.4 / Gfarm development code (SourceForge)
+
+    Fedora Core 6 (for daily test)
+        Linux kernel version 2.6.19
+        FUSE version 2.6.3
+        Gfarm development code (SourceForge)
+
+    CentOS 4.4 (for daily test)
+        Linux kernel version 2.6.9
+        FUSE version 2.6.1
+        Gfarm development code (SourceForge)
 
 
 ========
@@ -433,16 +444,34 @@ FUSE のオプションについては，gfarmfs のヘルプ (-h オプション) と FUSE
   FUSE の -o default_permissions オプションを使用すれば正しく動作します．
 
 
+================
+contrib について
+================
+
+*** gfarmfs-exec.sh
+
+  gfarmfs 上でプログラムを実行する場合に便利です．
+  たとえば，リモートで実行する時などに役に立ちます。
+  標準出力，標準エラー出力は，Gfarm 上に置かれます．
+  環境変数，または引数オプションで動作を変更できます．
+  詳細は -h オプションで確認してください．
+  これは make install によってインストールされます．
+
+*** mount.gfarmfs / umount.gfarmfs
+
+  gfarmfs でユーザごとにマウント，アンマウントする場合に便利です．
+  環境変数で動作を変更できます．
+  詳細は -h オプションで確認してください．
+  これらは make install によってインストールされます．
+
+
 ==============
 テストについて
 ==============
 
-  GfarmFS-FUSE のソースパッケージには，開発時の動作確認に使用している
-  テストツールを同梱しています．
-
   あらかじめ Gfarm を利用するための設定をしておき，GfarmFS-FUSE のソー
-  スパッケージで ./configure && make && make check を実行し，エラーに
-  ならなければ，開発時に想定した動作をする環境です．
+  スパッケージで ./configure && make && make check が成功すれば，必要
+  最低限の環境が整っています．
 
 
 ======================
