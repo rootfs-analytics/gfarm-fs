@@ -7,12 +7,9 @@ New Features
   * add -N and -D options which enable replication to work asynchronously.
   * add --errlog and --syslog options.
   * add `make check'.
-
-Update Features
-
-  * -a option can work correctly.
+  * -a option which had limitations can work correctly.
   * gfarmfs-exec.sh, mount.gfarmfs, umount.gfarmfs are installed by
-   `make install'.  These usages are explained in the files themselves.
+   `make install'.
 
 Documentation
 
