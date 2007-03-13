@@ -7,13 +7,9 @@ GfarmFS-FUSE - ChangeLog
   * -N と -D オプションを追加しました．非同期で複製を作成します．
   * --errlog と --syslog オプションを追加しました．
   * make check を追加しました．
-
-仕様変更
-
-  * -a オプションが正しく動くようになりました．
-  * make install で gfarmfs-exec.sh, mount.gfarmfs, umount.gfarmfs を
-    インストールするようになりました．使用方法は，それぞれのスクリプト
-    自体を参照してください．
+  * 制限があった -a オプションが正しく動作するようになりました．
+  * make install で，contrib 以下にある gfarmfs-exec.sh, mount.gfarmfs,
+    umount.gfarmfs をインストールするようにしました．
 
 ドキュメント
 
@@ -24,8 +20,8 @@ GfarmFS-FUSE - ChangeLog
   * umask が反映されるようにしました．
   * 読み込みで一度 EOF になると，その後書き込めなくなっていた問題を修正
     しました．
-  * マウント中にファイルシステムノードを追加や削除をしても，statfs(2)
-    が正しく計算できるようにしました．
+  * マウント中にファイルシステムノードを追加や削除しても，statfs(2) が
+    正しく計算できるようにしました．
   * f_frsize をセットしていなかったので，修正しました．
 
 [2006.10.12] Version 1.3
