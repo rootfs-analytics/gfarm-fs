@@ -1,5 +1,6 @@
 Copyright (c) 2005-2007 National Institute of Advanced Industrial
-Science and Technology (AIST).  All Rights Reserved.
+Science and Technology (AIST).
+Copyright (c) 2006-2007 Osamu Tatebe.
 
 ============
 GfarmFS-FUSE
@@ -73,23 +74,6 @@ Fedora Core 5 の例です．
         Gfarm version 1.2 以降
     推奨環境:
         Gfarm version 1.4 以降
-
-*** テスト環境
-
-    Fedora Core 5 (for development)
-        Linux kernel version 2.6.19
-        FUSE version 2.6.3
-        Gfarm version 1.4 / Gfarm development code (SourceForge)
-
-    Fedora Core 6 (for daily test)
-        Linux kernel version 2.6.19
-        FUSE version 2.6.3
-        Gfarm development code (SourceForge)
-
-    CentOS 4.4 (for daily test)
-        Linux kernel version 2.6.9
-        FUSE version 2.6.1
-        Gfarm development code (SourceForge)
 
 
 ========
@@ -365,7 +349,11 @@ FUSE のオプションについては，gfarmfs のヘルプ (-h オプション) と FUSE
 
 まず，Gfarm パッケージに含まれる doc/KNOWN_PROBLEMS.ja をご覧ください．
 
-それらの中から，いくつかの制限を GfarmFS-FUSE では回避しています．
+特に，ある Linux のバージョンにおいて，/etc/nsswitch.conf に ldap を記
+述している場合は gfarmfs や gfsd がハングアップする場合があるので，ご
+注意ください．
+
+Gfarm の制限事項のうち，いくつかを GfarmFS-FUSE では回避しています．
 
   * open(2) 中に，同一の gfarmfs 上で stat(2) をしても，正確なファイル
     サイズを取得できます．
@@ -450,43 +438,77 @@ contrib について
 
 *** gfarmfs-exec.sh
 
-  gfarmfs 上でプログラムを実行する場合に便利です．
-  たとえば，リモートで実行する時などに役に立ちます。
-  標準出力，標準エラー出力は，Gfarm 上に置かれます．
-  環境変数，または引数オプションで動作を変更できます．
-  詳細は -h オプションで確認してください．
-  これは make install によってインストールされます．
+  gfarmfs を利用して Gfarm ファイルシステムにアクセスするプログラムを
+  実行する際に，自動的に Gfarm ファイルシステムのマウント，アンマウント
+  を実行するためのスクリプトです．例えば，バッチシステムや Globus 経由
+  でのリモート実行を行う際に役に立ちます．デフォルトでは，標準出力と
+  標準エラー出力は Gfarm ファイルシステム上に置かれます．環境変数，
+  または引数オプションで動作を変更できます．詳細は -h オプションで確認
+  してください．
 
 *** mount.gfarmfs / umount.gfarmfs
 
-  gfarmfs でユーザごとにマウント，アンマウントする場合に便利です．
-  環境変数で動作を変更できます．
-  詳細は -h オプションで確認してください．
-  これらは make install によってインストールされます．
+  gfarmfs を mount コマンド風のインタフェースで実行するためのラッパス
+  クリプトです．環境変数でデフォルトの動作を変更できます．
+  使い方については -h オプションで確認してください．
 
+======================
+動作確認 (Test Suites)
+======================
 
-========
-動作確認
-========
+GfarmFS-FUSE のソースパッケージでは，実装している機能が正常に動作するか
+を確認するテストプログラムを同梱しています．カーネルや FUSE のバージョン
+によっては，想定しない動作をする可能性もあるので，ユーザ・アプリケーショ
+ンを本格的に実行する前に，必ずこのテストを実行して動作確認をすることをお
+奨めします．
 
-GfarmFS-FUSE の機能全てが動作するかどうか，テストすることができます．
-実際には，開発者が想定した動作をするかどうかを比較しています．
+テストに際しては Gfarm 環境を整備した上で，GfarmFS-FUSE のソースパッケ
+ージにおいて，
 
-テストするには，あらかじめ Gfarm を利用するための設定をしておき，
-GfarmFS-FUSE のソースパッケージで「./configure && make && make check」
-を実行します．
+    $ ./configure && make && make check
 
-実行結果に NG が表示される場合は，開発者が想定していない環境です．どの
-ような環境 (カーネル，FUSE, Gfarm の組み合わせ) で失敗したかを，メーリ
-ングリストに報告していただき，情報を共有していただければ幸いです．その
-ような場合でも，gfarmfs 上で動作させるアプリケーションによっては支障が
-ないこともあります．make check のプログラムや実行結果は，ソースパッケー
-ジのtest ディレクトリ以下にあります．
+を実行して下さい．
 
-状況によっては make check 実行中にハングアップすることもあります．例え
-ば，/etc/nsswitch.conf に ldap を記述している場合はハングアップすること
-があるので，ご注意ください．(これは Gfarm の KNOWN_PROBLEMS にも記述さ
-れています．)
+以下のように，実行結果に１つでも NG が表示される場合は，開発者が想定し
+ていない環境です．
+
+    sh ./test.sh gfarmfs
+    expected directory: ./expected/default (FUSE25_Linux)
+    OK: gfarmfs: opt="", fuse_opt=""
+    OK: gfarmfs: opt="-nlsu", fuse_opt=""
+    OK: gfarmfs: opt="-nlsu", fuse_opt="-o default_permissions"
+    OK: gfarmfs: opt="-nlsu", fuse_opt="-o attr_timeout=0"
+    OK: gfarmfs: opt="-nlsu -N2", fuse_opt=""
+    OK: gfarmfs: opt="-nlsu -b", fuse_opt=""
+    OK: gfarmfs: opt="-nlsu -b", fuse_opt="-o direct_io"
+    NG: gfarmfs: opt="-nlsu", fuse_opt="-o direct_io": different results
+
+テストプログラムや実行結果は，ソースパッケージの test ディレクトリ以下
+にあります．test/diffs ディレクトリ内に，想定された結果との差が保存され
+ます．test/output ディレクトリ内に，マウント方法ごとの実行結果が保存さ
+れます．(オプションの組み合わせで，何が動作しないのかもわかります．)
+
+また，make check が途中でハングアップしてしまう可能性もあります．その
+ような場合は，どのような環境 (カーネル，FUSE，Gfarm の組み合わせ) で，
+NG になったりハングアップしたかを，Gfarm メーリングリストに報告してい
+ただき，情報を共有していただければ幸いです．
+
+なお，開発側では以下の環境において動作確認をしています．
+
+    Fedora Core 5
+        Linux kernel version 2.6.19
+        FUSE version 2.6.3
+        Gfarm version 1.4 / Gfarm development code (SourceForge, Revision 3657)
+
+    Fedora Core 6
+        Linux kernel version 2.6.19
+        FUSE version 2.6.3
+        Gfarm development code (SourceForge, Revision 3655)
+
+    CentOS 4.4
+        Linux kernel version 2.6.9
+        FUSE version 2.6.1
+        Gfarm development code (SourceForge, Revision 3655)
 
 
 ======================
