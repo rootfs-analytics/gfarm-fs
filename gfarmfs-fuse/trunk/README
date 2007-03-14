@@ -52,32 +52,30 @@ of GfarmFS-FUSE.
 
 *** Operating System
 
-    require:
+    Require:
         The operating system which can use FUSE mechanism.
         (ex. FUSE version 2.6 can work on Linux kernel version 2.6.9
              or later.)
-    recommend:
+    Recommend:
         Linux kernel version 2.6.15 or later.
-    test:
+    Test:
         Fedora Core 5 (Linux kernel version 2.6.19)
         CentOS 4.4    (Linux kernel version 2.6.9)
-    build only:
+    Build only:
         FreeBSD 6.1-RELEASE
 
 *** FUSE
 
-    require:
+    Require:
         FUSE version 2.2 or later.
-    recommend:
+    Recommend:
         FUSE version 2.5 or later.
-    test:
-        FUSE version 2.6.3
 
 *** Gfarm
 
-    require:
+    Require:
         Gfarm version 1.2 or later.
-    recommend:
+    Recommend:
         Gfarm version 1.4 or later.
 
 
@@ -355,6 +353,10 @@ Known problems
 First, please see doc/KNOWN_PROBLEMS included in the Gfarm source
 distribution.
 
+Be careful in paticular from that, on some Linux distributions,
+Gfarm programs and gfsd sometimes hang, if ldap is specified in
+/etc/nsswitch.conf.
+
 Some limitations of Gfarm are avoided in GfarmFS-FUSE.
 
   * stat(2) can return an exact st_size during open(2) on the same
@@ -433,23 +435,89 @@ Peculiar PROBLEMS of GfarmFS-FUSE:
   This is a limitation of FUSE.
   This problem is aboided by `-o default_permissions' (FUSE option).
 
-====
-TEST
-====
 
-  GfarmFS-FUSE is tested by the test tool included in this package.
+=======
+contrib 
+=======
 
-  If `./configure && make && make check' of GfarmFS-FUSE (with getting
-  ready for Gfarm) has no error, your environment is equal to the
-  expected environment.
+*** gfarmfs-exec.sh
+
+  This is a script to do mount and unmount a Gfarm filesystem
+  using gfarmfs automatically when programs are executed on the
+  filesystem.  For example, this is a useful to execute programs
+  from remoteness on batch system or Globus.  By default, standard
+  output and standard error output are written on the Gfarm filesystem.
+  Environment variables or command options can change the behavior.
+  Please see the details in -h option.
+
+*** mount.gfarmfs / umount.gfarmfs
+
+  This is a wrapper script to mount or unmount a Gfarm filesystem
+  using gfarmfs like mount command.  Environment variables can change
+  the default behavior.  Please see this usage in -h option.
+
+
+===========
+Test Suites
+===========
+
+Test program is included in GfarmFS-FUSE source package.  That is able
+to check whether gfarmfs command works normally.  Depending on
+combination of Kernel and FUSE versions, gfarmfs may do the behavior
+that is not assumed.  Therefore you should run the test program.
+
+How to test at the top directory of GfarmFS-FUSE source package:
+
+    ./configure && make && make check
+
+If you have any errors as follows, the environment is not assumed
+by developers.
+
+    sh ./test.sh gfarmfs
+    expected directory: ./expected/default (FUSE25_Linux)
+    OK: gfarmfs: opt="", fuse_opt=""
+    OK: gfarmfs: opt="-nlsu", fuse_opt=""
+    OK: gfarmfs: opt="-nlsu", fuse_opt="-o default_permissions"
+    OK: gfarmfs: opt="-nlsu", fuse_opt="-o attr_timeout=0"
+    OK: gfarmfs: opt="-nlsu -N2", fuse_opt=""
+    OK: gfarmfs: opt="-nlsu -b", fuse_opt=""
+    OK: gfarmfs: opt="-nlsu -b", fuse_opt="-o direct_io"
+    NG: gfarmfs: opt="-nlsu", fuse_opt="-o direct_io": different results
+
+There are the test program and results in ./test/ directory of
+GfarmFS-FUSE source package.  ./test/diffs/ directory has differences
+from assumed results.  ./test/output/ directory has your results of
+each combination of options.  (It shows what operation does not work.)
+
+And, `make check' may sometimes hang.  If you have the situations,
+please report what kind of environment (combination of Kernel, FUSE
+and Gfarm versions) you failed (NG or hanging) at, and share the
+informations on Gfarm email list.
+
+Test environments for development:
+
+    Fedora Core 5
+        Linux kernel version 2.6.19
+        FUSE version 2.6.3
+        Gfarm version 1.4 / Gfarm development code (SourceForge, Revision 3657)
+
+    Fedora Core 6
+        Linux kernel version 2.6.19
+        FUSE version 2.6.3
+        Gfarm development code (SourceForge, Revision 3655)
+
+    CentOS 4.4
+        Linux kernel version 2.6.9
+        FUSE version 2.6.1
+        Gfarm development code (SourceForge, Revision 3655)
 
 
 ======================
 Questions / Bug report
 ======================
 
-  If you have any question or comment, feel free to send to email list
-  or Bug Tracking System.
+If you have any question or comment, feel free to send to email list
+or Bug Tracking System.
 
     http://datafarm.apgrid.org/ml/
     http://sourceforge.net/tracker/?group_id=172718
