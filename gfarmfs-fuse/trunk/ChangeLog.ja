@@ -6,8 +6,8 @@ GfarmFS-FUSE - ChangeLog
 
   * -N と -D オプションを追加しました．非同期で複製を作成します．
   * --errlog と --syslog オプションを追加しました．
-  * make check を追加しました．
-  * 制限があった -a オプションが正しく動作するようになりました．
+  * 動作確認を行うための Test Suites (make check) を追加しました．
+  * 制限があった -a オプションが制限なく利用できるようになりました．
   * make install で，contrib 以下にある gfarmfs-exec.sh, mount.gfarmfs,
     umount.gfarmfs をインストールするようにしました．
 
