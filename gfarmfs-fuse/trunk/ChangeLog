@@ -4,16 +4,16 @@ GfarmFS-FUSE - ChangeLog
 
 New Features
 
-  * add -N and -D options which enable replication to work asynchronously.
+  * add -N and -D options for asynchronous file replication.
   * add --errlog and --syslog options.
-  * add Test Suites (make check) for operations check.
-  * You can use -a option which had limitations without a limit.
-  * gfarmfs-exec.sh, mount.gfarmfs, umount.gfarmfs are installed by
+  * add Test Suites (make check) for operations test.
+  * get rid of limitation in use of -a option.
+  * gfarmfs-exec.sh, mount.gfarmfs and umount.gfarmfs are installed by
    `make install'.
 
 Documentation
 
-  * README: example of mounting gfarmfs.
+  * README: add examples of mounting gfarmfs.
 
 Bug fix
 
@@ -21,7 +21,7 @@ Bug fix
   * fix a bug such that write(2) cannot write anymore after read(2)
     gets EOF.
   * If filesystem nodes are added or removed, statfs(2) can calculate
-    definitely.
+    exactly.
   * fix a bug such that f_frsize is not set.
 
 [2006.10.12] Version 1.3
