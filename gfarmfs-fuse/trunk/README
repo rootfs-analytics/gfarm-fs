@@ -47,35 +47,34 @@ For example, on Fedora Core 5 :
 Dependencies
 ============
 
-If all recommended environments are satisfied, you can use full features
+If all recommended environments are satisfied, you can use full functions
 of GfarmFS-FUSE.
 
 *** Operating System
 
-    Require:
+    Requirement:
         The operating system which can use FUSE mechanism.
         (ex. FUSE version 2.6 can work on Linux kernel version 2.6.9
              or later.)
-    Recommend:
+    Recommendation:
         Linux kernel version 2.6.15 or later.
-    Test:
+    Tested environments:
         Fedora Core 5 (Linux kernel version 2.6.19)
         CentOS 4.4    (Linux kernel version 2.6.9)
-    Build only:
-        FreeBSD 6.1-RELEASE
+        (Build test only) FreeBSD 6.1-RELEASE
 
 *** FUSE
 
-    Require:
+    Requirement:
         FUSE version 2.2 or later.
-    Recommend:
+    Recommendation:
         FUSE version 2.5 or later.
 
 *** Gfarm
 
-    Require:
+    Requirement:
         Gfarm version 1.2 or later.
-    Recommend:
+    Recommendation:
         Gfarm version 1.4 or later.
 
 
@@ -101,7 +100,7 @@ Configure options:
   command is installed in 'directory'/bin.  Default <directory> is
   /usr/local.
 
-If Gfarm and/or FUSE are not installed to a default location, you may
+If Gfarm or FUSE is not installed to a default location, you may
 need to specify the location by CPPFLAGS and LDFLAGS environment
 variables in configure.  In the case of sh or bash,
 
@@ -144,13 +143,13 @@ use FUSE.
 Please read README included in FUSE package which explains details
 of FUSE.
 
-You can also specify the mount point in /etc/fstab.
+You can also specify the mount point in /etc/fstab,
 
 Examble of /etc/fstab:
 
   gfarmfs#-lsu  <mountpoint>  fuse  noauto,user,exec  0  0
 
-How to mount in this case:
+and then run this command.
 
   $ mount <mountpoint>
 
@@ -186,7 +185,7 @@ Additional notes of FUSE options:
 -o default_permissions
 
   This option is recommended.  Some behavior about invalid file access
-  permissions work correctly by this option.  And, performance
+  permissions work correctly by this option.  In addition, performance
   improvement (at EACCES) and consideration of the group permissions
   are provided.
 
@@ -262,50 +261,52 @@ GfarmFS options:
 
 -N <num-of-replicas>
 
-  Specifies the required number of file replicas.  After creating new
-  file or modifying existng file, replication processing is running
-  in async automatically.
+  Specifies a number of file replicas.  After creating a new file
+  or modifying an existng file, the file is automatically and 
+  asynchronously replicated.
 
   In this case, the use of gfarm_agent is strongly recommended.  If
-  gfarm_agent is not used, the peformance of auto replication is worse.
-  And note that an unreadable file is not replicated.
+  gfarm_agent is not used, the peformance of auto replication will be
+  worse.  Note that an unreadable file is not replicated.
 
-  Don't rename a file or directory from other clients when using this
-  option on Gfarm v1.
+  Don't rename a file or directory from other clients when you use
+  this option on Gfarm v1.
 
   At present, any emulated entry as symlink or hardlink is not
   replicated. (not implememted)
 
 -D <destination-domainname>
 
-  Specifies the domain name of destination filesystem nodes to which
-  replicas will be copied.  This option is used with -N option.
+  Specifies destination nodes for replication by the domain name.
+  All replicas will be created on the nodes with -N option.
 
 --errlog <filename>
 
   Specifies a filename for recording error messages that is not
-  returned as errno to the running application on the gfarmfs
-  mountpoint.  For example, the errors in using -N option are recorded.
+  returned as errno to the application accessing the gfarm filesystem
+  through gfarmfs.  For example, errors for replication are recorded
+  in the file.
 
 --syslog
 
-  Recodes error messages same as --errlog into syslogd.
+  Records the same error messages as --errlog but logs them into
+  syslog.
 
 -a <architecture>
 
   Specifies the architecture name of the client host.
-  This is given priority to over the 'client_architecture' directive
-  of gfarm.conf or the environment variable of GFARM_ARCHITECTURE.
-  This is effective in Gfarm version 1.2 or later.
+  This option is prior to the 'client_architecture' directive in
+  gfarm.conf and the GFARM_ARCHITECTURE environment variable.
+  The option is effective in Gfarm version 1.2 or later.
 
-  In a Gfarm file system, an architecture name is required to access
-  a file that has execution bits since the file can consists of
-  multiple binaries for each different architecture.  When the client
-  host is a filesystem node, the architecture is automatically
-  determined by the Gfarm meta database.  Otherwise, you need to
-  specify a client architecture explicitly to access a file that
-  has execution bits.  <architecture> is typically a canonical
-  system name like sparc-sun-solaris8. (See man page of gfhost.)
+  In the Gfarm filesystem, an architecture name is required to access
+  a file that has execution bits since the file may consist of
+  multiple binaries for each architecture.  When the client host is
+  a filesystem node, the architecture is automatically retrieved from
+  the Gfarm meta database.  Otherwise, users need to specify their
+  client hosts' architecture explicitly to access the file that has
+  execution bits.  <architecture> is typically a canonical system name
+  like sparc-sun-solaris8. (See man page of gfhost.)
 
 ========
 Examples
@@ -316,34 +317,33 @@ Examples
   $ gfarmfs -lsub /mountpoint -o kernel_cache
 
   If a file is never updated, you can mount a Gfarm filesystem from
-  plural gfarmfs in this way.
+  multiple gfarmfs in this way.
 
-*** Plural users use a single gfarmfs.
+*** Multiple users use a single gfarmfs.
 
   $ gfarmfs -lsub /mountpoint -o allow_other,default_permissions,kernel_cache
 
   Please be careful a new file's owner is always the user who mount
-  the mountpoint of gfarmfs.
+  the mountpoint with gfarmfs.
 
-*** Using plural gfarmfs.
+*** Multiple users use multiple gfarmfs.
 
-  Please setup a single `gfarm_agent -m' and access to it from the 
-  all gfarmfs.
+  Please setup a single `gfarm_agent -m' for all gfarmfs.
 
   $ gfarmfs -lsuF /mountpoint
 
-*** Exporting large files from gfarmfs.
+*** Exporting a large file from gfarmfs.
 
   $ gfarmfs -b /mountpoint -o direct_io
   $ dd if=/mountpoint/inputfile of=outputfile bs=64K
-  (Most applications are worse peformance by direct_io.)
-  (And in addition, you cannot execute an executable file.)
+  (Most applications suffer worse peformance with direct_io.)
+  (In addition, you cannot execute an executable file.)
 
-*** Importing large files into gfarmfs.
+*** Importing a large file into gfarmfs.
 
   $ gfarmfs -b /mountpoint -o direct_io
   $ dd if=inputfile of=/mountpoint/outputfile bs=64K
-  (The gfreg command is faster than this.)
+  (The gfreg command is faster than this way.)
 
 
 ==============
@@ -353,11 +353,10 @@ Known problems
 First, please see doc/KNOWN_PROBLEMS included in the Gfarm source
 distribution.
 
-Be careful in paticular from that, on some Linux distributions,
-Gfarm programs and gfsd sometimes hang, if ldap is specified in
-/etc/nsswitch.conf.
+Be careful for that Gfarm programs and gfsd sometimes hang up on some
+Linux distributions when ldap is specified in /etc/nsswitch.conf.
 
-Some limitations of Gfarm are avoided in GfarmFS-FUSE.
+Several limitations of Gfarm are avoided in GfarmFS-FUSE.
 
   * stat(2) can return an exact st_size during open(2) on the same
     gfarmfs client.
@@ -389,7 +388,7 @@ Peculiar PROBLEMS of GfarmFS-FUSE:
   Sometimes, there is an error.
 
   A plan to fix this problem has not been decided yet.
-  This errors are recorded by --errlog or --syslog options.
+  The errors are recorded by --errlog or --syslog options.
 
 *** While open(2)ing a file which has two or more fragments,
     chmod(2) and fchmod(2) cannot work on the same gfarmfs client.
@@ -400,28 +399,29 @@ Peculiar PROBLEMS of GfarmFS-FUSE:
 
 *** `svn co' command sometimes does not work on gfarmfs.
 
-  This cause is unknown.  This sometimes fails in https access.
+  The cause is unknown.  The command sometimes fails in https access.
 
-*** du command sometimes do not work.
+*** du command sometimes does not work.
 
   When there are a lot of files or directries, du command sometimes
   fails.  You can avoid this problem by using `-o use_ino' of FUSE
   option.
 
-  But `-o use_ino' option has a limitation.  Please read the following.
+  However, `-o use_ino' option has a limitation.  Please read the
+  next issue.
 
-*** About `-o use_ino' of FUSE option.
+*** Limitation of `-o use_ino' of FUSE option.
 
-  On Gfarm v1 specification, gfs_reanme() changes the inode number.
-  The gfarmfs usually returns an inode number counted by FUSE mechanism.
-  Therefore an application which expects the behavior of the inode numbers 
-  cannot work on the gfarmfs with `-o use_ino'.
+  In the Gfarm v1 specification, gfs_reanme() changes an inode number
+  and the number may be different from the number which gfarmfs usually
+  returns by the FUSE mechanism.  Therefore some applications may not
+  work on gfarmfs with `-o use_ino' option.
 
-  For example, rm -rf command just after mv command cannot work on the
+  For example, rm -rf command just after mv command does not work on
   gfarmfs with `-o use_ino'.
 
-  On Gfarm v2, an inode number will be not changed by gfs_rename().
-  On that occasion, gfarmfs will use `-o use_ino' implicitly.
+  In the Gfarm v2, an inode number will not be changed by gfs_rename().
+  Thus gfarmfs will use `-o use_ino' implicitly.
 
 *** mmap(2) behaves in `No such device'.
 
@@ -429,11 +429,12 @@ Peculiar PROBLEMS of GfarmFS-FUSE:
 
 *** About open(2) with O_RDONLY | O_TRUNC.
 
-  In this case, if the mode of a file is 0200, the open(2) fails and
-  gets EACCES.  But the filesize is zero.
+  When the file mode is 0200, the open(2) fails and gets EACCES
+  but the filesize is zero.
 
   This is a limitation of FUSE.
-  This problem is aboided by `-o default_permissions' (FUSE option).
+  The problem can be aboided by `-o default_permissions'
+  (FUSE option).
 
 
 =======
@@ -442,36 +443,39 @@ contrib
 
 *** gfarmfs-exec.sh
 
-  This is a script to do mount and unmount a Gfarm filesystem
-  using gfarmfs automatically when programs are executed on the
-  filesystem.  For example, this is a useful to execute programs
-  from remoteness on batch system or Globus.  By default, standard
-  output and standard error output are written on the Gfarm filesystem.
-  Environment variables or command options can change the behavior.
-  Please see the details in -h option.
+  This is a script for mounting and unmounting a Gfarm filesystem 
+  automatically with gfarmfs when users execute their programs on
+  remote.  In fact, the script is useful to submit a job into the
+  batch system or Globus GRAM.  By default, standard output and
+  standard error output are a file on the Gfarm filesystem.  The
+  script behavior can be changed by environment variables or
+  command options.  Please see help messages (run with -h option). 
 
 *** mount.gfarmfs / umount.gfarmfs
 
   This is a wrapper script to mount or unmount a Gfarm filesystem
-  using gfarmfs like mount command.  Environment variables can change
-  the default behavior.  Please see this usage in -h option.
+  using gfarmfs like mount command.  The default behavior of the
+  script can be changed by Environment variables.  Please see
+  usage by -h option.
 
 
 ===========
 Test Suites
 ===========
 
-Test program is included in GfarmFS-FUSE source package.  That is able
-to check whether gfarmfs command works normally.  Depending on
-combination of Kernel and FUSE versions, gfarmfs may do the behavior
-that is not assumed.  Therefore you should run the test program.
+Test programs are included in the GfarmFS-FUSE source package.  They
+check whether gfarmfs command works normally or not.  Depending on
+combination of Kernel and FUSE versions, gfarmfs may not behave
+what developers expected.  In order to avoid possible future troubles,
+users should run the test suites before their daily operation.
 
-How to test at the top directory of GfarmFS-FUSE source package:
+Go the top directory of GfarmFS-FUSE source package and run this
+command for test:
 
     ./configure && make && make check
 
-If you have any errors as follows, the environment is not assumed
-by developers.
+If you have any errors (shown as `NG') as follows, the environment is
+not fully known by developers.
 
     sh ./test.sh gfarmfs
     expected directory: ./expected/default (FUSE25_Linux)
@@ -484,17 +488,18 @@ by developers.
     OK: gfarmfs: opt="-nlsu -b", fuse_opt="-o direct_io"
     NG: gfarmfs: opt="-nlsu", fuse_opt="-o direct_io": different results
 
-There are the test program and results in ./test/ directory of
-GfarmFS-FUSE source package.  ./test/diffs/ directory has differences
-from assumed results.  ./test/output/ directory has your results of
-each combination of options.  (It shows what operation does not work.)
+There are the test programs and results in ./test/ directory of the
+GfarmFS-FUSE source package.  ./test/diffs/ directory has a file which
+shows differences from expected results.  ./test/output/ directory has
+a file of your results for each combinated options.  (They show what
+operation does not work on the user's environment.)
 
-And, `make check' may sometimes hang.  If you have the situations,
+Moreover, `make check' may sometimes hang.  If you have the situations,
 please report what kind of environment (combination of Kernel, FUSE
-and Gfarm versions) you failed (NG or hanging) at, and share the
-informations on Gfarm email list.
+and Gfarm versions) you failed (NG or hanging) on, and share your
+information on the Gfarm mailing list.
 
-Test environments for development:
+Tested environments in development:
 
     Fedora Core 5
         Linux kernel version 2.6.19
