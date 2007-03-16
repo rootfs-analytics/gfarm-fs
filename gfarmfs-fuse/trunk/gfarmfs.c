@@ -119,6 +119,7 @@ static char *errlog_name = NULL; /* filename */
 static FILE *errlog_out;
 static int enable_syslog = 0;
 static char *gfarm_mount_point = "";
+static int gfarm_mount_point_len = 0;
 static int enable_gfarm_iobuf = 0; /* about GFARM_FILE_UNBUFFERED */
 static int enable_exact_filesize = 0;
 static int path_info_timeout = 0;
@@ -162,17 +163,13 @@ static int enable_statfs = 1; /* default: enable */
 
 /* ################################################################### */
 
-static int gmplen = -1;
-
 static char *
 add_gfarm_prefix(const char *path, char **urlp)
 {
 	char *url;
 	int len;
 
-	if (gmplen == -1)
-		gmplen = strlen(gfarm_mount_point);
-	len = gmplen + strlen(path) + 7;
+	len = gfarm_mount_point_len + strlen(path) + 7;
 	url = malloc(sizeof(char) * len);
 	if (url == NULL)
 		return (GFARM_ERR_NO_MEMORY);
@@ -188,9 +185,7 @@ add_gfarm_prefix_symlink_suffix(const char *path, char **urlp)
 	char *url;
 	int len;
 
-	if (gmplen == -1)
-		gmplen = strlen(gfarm_mount_point);
-	len = gmplen + strlen(path) + 7 + SYMLINK_SUFFIX_LEN;
+	len = gfarm_mount_point_len + strlen(path) + 7 + SYMLINK_SUFFIX_LEN;
 	url = malloc(sizeof(char) * len);
 	if (url == NULL)
                 return (GFARM_ERR_NO_MEMORY);
@@ -463,7 +458,8 @@ gfarmfs_final_normal(struct gfarmfs_prof *profp, char *e,
 	} else {
 		return_errno = gfarm_error_to_errno(e);
 		if (return_errno == EINVAL || profp->opname == OP_RELEASE)
-			gfarmfs_errlog("%s: %s: %s", profp->opname, name, e);
+			gfarmfs_errlog("%s: %s%s: %s", profp->opname,
+				       gfarm_mount_point, name, e);
 		return -return_errno;
 	}
 }
@@ -491,27 +487,32 @@ gfarmfs_final_prof(struct gfarmfs_prof *profp, char *e,
 	if (e == NULL) {
 		if (enable_trace != NULL) {
 			if (enable_timer)
-				fprintf(enable_trace, "OK: %s(%8.6f): %s\n",
-					profp->opname, time, name);
+				fprintf(enable_trace, "OK: %s(%8.6f): %s%s\n",
+					profp->opname, time,
+					gfarm_mount_point, name);
 			else
-				fprintf(enable_trace, "OK: %s: %s\n",
-					profp->opname, name);
+				fprintf(enable_trace, "OK: %s: %s%s\n",
+					profp->opname,
+					gfarm_mount_point, name);
 		}
 		return (val_noerror);
 	} else {
 		if (enable_trace != NULL) {
 			if (enable_timer)
 				fprintf(enable_trace,
-					"NG: %s(%8.6f): %s: %s\n",
-					profp->opname, time, name, e);
+					"NG: %s(%8.6f): %s%s: %s\n",
+					profp->opname, time,
+					gfarm_mount_point, name, e);
 			else
 				fprintf(enable_trace,
-					"NG: %s: %s: %s\n",
-					profp->opname, name, e);
+					"NG: %s: %s%s: %s\n",
+					profp->opname,
+					gfarm_mount_point, name, e);
 		}
 		return_errno = gfarm_error_to_errno(e);
 		if (return_errno == EINVAL || profp->opname == OP_RELEASE)
-			gfarmfs_errlog("%s: %s: %s", profp->opname, name, e);
+			gfarmfs_errlog("%s: %s%s: %s", profp->opname,
+				       gfarm_mount_point, name, e);
 		return -return_errno;
 	}
 }
@@ -634,12 +635,13 @@ gfarmfs_fastcreate_flush()
 		char *e;
 
 		if (gfarmfs_debug >= 2) {
-			printf("FASTCREATE: flush: %s\n", fc.path);
+			printf("FASTCREATE: flush: %s%s\n",
+			       gfarm_mount_point, fc.path);
 		}
 		e = gfarmfs_create_empty_file(fc.path, fc.mode);
 		if (e != NULL) {
-			gfarmfs_errlog("FASTCREATE: flush: %s: %s",
-				       fc.path, e);
+			gfarmfs_errlog("FASTCREATE: flush: %s%s: %s",
+				       gfarm_mount_point, fc.path, e);
 		}
 		gfarmfs_fastcreate_free();
 		return (e);
@@ -986,8 +988,8 @@ gfarmfs_mknod(const char *path, mode_t mode, dev_t rdev)
 #endif
 	} else {
 		gfarmfs_errlog(
-			"MKNOD: not supported: %s: mode=%o, rdev=%o",
-			path, mode, (int)rdev);
+			"MKNOD: not supported: %s%s: mode=%o, rdev=%o",
+			gfarm_mount_point, path, mode, (int)rdev);
 		e = GFARM_ERR_OPERATION_NOT_PERMITTED;
 	}
 end:
@@ -2599,26 +2601,29 @@ gfarmfs_replicate_from_to(char *url, char *srchost, char *section,
 
 	e = gfarm_terminate();
 	if (e != NULL)
-		goto emsg;
+		goto end;
 	e = gfarm_initialize(NULL, NULL);
 	if (e != NULL)
-		goto emsg;
+		goto end;
 	for (i = 0; i < nhosts; i++) {
 		e = gfarm_url_section_replicate_from_to(url, section,
 							srchost, hosts[i]);
-		if (e != NULL && e_save == NULL)
-			e_save = e;
+		if (e != NULL) {
+			gfarmfs_errlog("REPLICATE: %s -> %s: %s: %s",
+				       srchost, hosts[i],
+				       gfarm_url2path(url), e);
+			if (e_save == NULL)
+				e_save = e;
+		}
 	}
 	if (e_save != NULL)
 		e = e_save;
 	gfarm_terminate();
-emsg:
-	if (e == NULL) {
+end:
+	if (e == NULL)
 		return (0);
-	} else {
-		gfarmfs_errlog("REPLICATE: %s: %s", gfarm_url2path(url), e);
+	else
 		return (1);
-	}
 }
 
 #define CHANGE_DEV_NULL(fd)  dup2(open("/dev/null", O_WRONLY), fd)
@@ -3117,8 +3122,10 @@ gfarmfs_open_common_share_gf(struct gfarmfs_prof *profp,
 					/* What happen ? */
 					gfarmfs_errlog("OPEN: WARN: "
 						       "chmod failed: "
-						       "%o: %s: %s",
-						       save_mode, path, e2);
+						       "%o: %s%s: %s",
+						       save_mode,
+						       gfarm_mount_point,
+						       path, e2);
 				}
 			}
 		}
@@ -3593,7 +3600,8 @@ gfarmfs_release_share_gf(const char *path, struct fuse_file_info *fi)
 		    e == NULL) {
 			e = gfarmfs_async_replicate(url, fh);
 			if (e != NULL) {
-				gfarmfs_errlog("REPLICATE: %s", e);
+				gfarmfs_errlog("REPLICATE: %s: %s",
+					       gfarm_url2path(url), e);
 				e = NULL;
 			}
 		} else { /* disable or read-open or error */
@@ -3684,15 +3692,18 @@ gfarmfs_truncate_share_gf(const char *path, off_t size)
 			if (e2 != NULL) {
 				fh->gf = NULL;
 				gfarmfs_errlog("TRUNCATE: ERROR: reopen: "
-					       "%s: %s", path, e2);
+					       "%s%s: %s",
+					       gfarm_mount_point, path, e2);
 			}
 			if (is_saved) {
 				e2 = gfs_fchmod(fh->gf, save_mode);
 				if (e2 != NULL) {
-					gfarmfs_errlog("TRUNCATE: WARNING: "
+					gfarmfs_errlog("TRUNCATE: WARN: "
 						       "can't change mode(%o):"
-						       " %s: %s",
-						       save_mode, path, e2);
+						       " %s%s: %s",
+						       save_mode,
+						       gfarm_mount_point,
+						       path, e2);
 				}
 			}
 		} else { /* WRONLY or RDWR */
@@ -4369,6 +4380,7 @@ setup_options()
 #endif
 
 	/* validate gfarm_mount_point */
+	gfarm_mount_point_len = strlen(gfarm_mount_point);
 	e = add_gfarm_prefix("/", &url);
 	if (e == NULL) {
 		e = gfs_stat(url, &st);
