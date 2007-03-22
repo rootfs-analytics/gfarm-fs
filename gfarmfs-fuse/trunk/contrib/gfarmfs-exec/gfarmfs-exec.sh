@@ -75,7 +75,10 @@ UMOUNT_FUSE()
 if [ X"$GFS_PROG" = X ]; then
 	PARSE_ARG $*
 fi
+: ${GFS_USERNAME:=`gfwhoami 2> /dev/null`}
+: ${GFS_USERNAME:=$USER}
 : ${GFS_USERNAME:=$LOGNAME}
+: ${GFS_USERNAME:=`logname 2> /dev/null`}
 : ${GFS_MOUNTDIR:=/tmp/$GFS_USERNAME}
 : ${GFS_WDIR:=.}
 : ${GFS_STDOUT:=STDOUT.$$}
