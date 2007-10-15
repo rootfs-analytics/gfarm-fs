@@ -14,7 +14,7 @@ Usage:
 Environment variable:
 
     GFS_USERNAME  global user name in Gfarm    (defaut: \$LOGNAME)
-    GFS_MOUNTDIR  mount point                  (defaut: /tmp/\$GFS_USERNAME)
+    GFS_MOUNTDIR  mount point                  (defaut: /tmp/\$GFS_USERNAME/\$\$)
     GFS_WDIR      working directory relative to the home directory
                   in Gfarm file system         (default: .)
     GFS_STDOUT    Filename for the standard output  (default: STDOUT.\$\$)
@@ -79,7 +79,7 @@ fi
 : ${GFS_USERNAME:=$USER}
 : ${GFS_USERNAME:=$LOGNAME}
 : ${GFS_USERNAME:=`logname 2> /dev/null`}
-: ${GFS_MOUNTDIR:=/tmp/$GFS_USERNAME}
+: ${GFS_MOUNTDIR:=/tmp/$GFS_USERNAME/$$}
 : ${GFS_WDIR:=.}
 : ${GFS_STDOUT:=STDOUT.$$}
 : ${GFS_STDERR:=STDERR.$$}
