@@ -9,6 +9,7 @@ mount.gfarmfs [ username mount_point options ]
 Environment variable:
     GFS_USERNAME     global user name in Gfarm  (default: $LOGNAME)
     GFS_MOUNTDIR     mount point    (default: /gfs/home/$GFS_USERNAME)
+    GFARMFS_ROOT     directory to be mounted in Gfarm (default: /$GFS_USERNAME)
     GFARMFS_OPTIONS  gfarmfs mount options      (default: -lsu)
     FUSE_OPTIONS     fuse mount options
 EOF
@@ -39,6 +40,7 @@ fi
 : ${GFS_USERNAME:=$LOGNAME}
 : ${GFS_USERNAME:=`logname 2> /dev/null`}
 : ${GFS_MOUNTDIR:=/gfs/home/$GFS_USERNAME}
+: ${GFARMFS_ROOT:=/$GFS_USERNAME}
 : ${GFARMFS_OPTIONS:=-lsu}
 : ${FUSE_OPTIONS:=}
 
@@ -55,7 +57,7 @@ fi
 # if already mounted, exit
 grep $GFS_MOUNTDIR /etc/mtab > /dev/null && exit 0
 
-gfarmfs -m /$GFS_USERNAME $GFARMFS_OPTIONS $GFS_MOUNTDIR $FUSE_OPTIONS
+gfarmfs -m $GFARMFS_ROOT $GFARMFS_OPTIONS $GFS_MOUNTDIR $FUSE_OPTIONS
 STATUS=$?
 
 if [ $STATUS = 0 ]; then
