@@ -196,7 +196,8 @@ add_gfarm_prefix_symlink_suffix(const char *path, char **urlp)
 }
 #endif
 
-#define gfarm_url2path(url)  (url + 6)  /* cut "gfarm:" */
+/* cut "gfarm:" */
+#define gfarm_url2path(url)  (url + 6 + gfarm_mount_point_len) 
 
 static void
 gfarmfs_errlog(const char *format, ...)
@@ -864,9 +865,13 @@ gfarmfs_gfs_stat_from_pi_only(const char *path, struct gfs_stat *gsp)
 {
 	char *e;
 	struct gfarm_path_info pi;
-	char *p;
+	char *p, *url;
 
-	e = gfarm_canonical_path(path, &p);
+	e = add_gfarm_prefix(path, &url);
+	if (e == NULL) {
+		e = gfarm_url_make_path(url, &p);
+		free(url);
+	}
 	if (e == NULL) {
 		e = gfarm_path_info_get(p, &pi);
 		if (e == NULL) {
