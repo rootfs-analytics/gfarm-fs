@@ -1,0 +1,26 @@
+Globus GridFTP Server DSI for Gfarm File System
+
+
+Software Dependencies:
+
+  - Globus Toolkit 4 (GT4)
+    Binary Installer or Full Toolkit Source
+
+    http://www.globus.org/toolkit/
+
+  - Gfarm version 2
+
+    http://sourceforge.net/projects/gfarm
+
+Quick Start:
+
+  - Install a GT4. 
+  - Describe options in gridftp.conf.
+  - Set the GLOBUS_LOCATION environment variable.
+  - Install a Gfarm.
+  - Copy the non-threaded globus-gridftp-server command
+    (ex. $GLOBUS_LOCATION/sbin/gcc32/shared/) into $GLOBUS_LOCATION/sbin/.
+  - Describe GFARM=Path_of_Gfarm in ./setup.conf.
+  - ./setup.sh
+  - make install
+  - globus-gridftp-server -dsi gfarm

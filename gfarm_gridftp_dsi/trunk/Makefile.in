@@ -1,0 +1,50 @@
+PACKAGE = gfarm_gridftp_dsi
+VERSION = 1.0
+
+include globus_makefile_header
+
+FLAVOR = @FLAVOR@
+GFARM = @GFARM@
+GLOBUS_LOCATION = @GLOBUS_LOCATION@
+
+SO = libglobus_gridftp_server_gfarm_$(FLAVOR).so
+SRC = globus_gridftp_server_gfarm.c
+ETCFILE = Makefile.in setup.sh README.en README.ja
+
+DISTDIR = $(PACKAGE)-$(VERSION)
+
+GFARM_INCLUDES = -I$(GFARM)/include
+GFARM_LDFLAGS = -Wl,-R$(GFARM)/lib -L$(GFARM)/lib
+GFARM_LIB = -lgfarm
+
+DSI_OPTIONS =
+
+DSI_CFLAGS = -g $(GLOBUS_CFLAGS) $(DSI_OPTIONS)
+DSI_INCLUDES = $(GLOBUS_INCLUDES) $(GFARM_INCLUDES)
+DSI_LDFLAGS = $(GLOBUS_LDFLAGS) $(GFARM_LDFLAGS)
+DSI_LIBS = $(GFARM_LIB)
+
+$(SO): $(SRC)
+	$(GLOBUS_CC) $(DSI_CFLAGS) $(DSI_INCLUDES) \
+		-shared -o $(SO) $(SRC) \
+		$(DSI_LDFLAGS) $(DSI_LIBS)
+
+install: $(SO)
+	cp -f $(SO) $(GLOBUS_LOCATION)/lib/$(SO)
+	@{ (test x`getenforce 2> /dev/null` = x"Enforcing" \
+	&& chcon -t texrel_shlib_t $(GLOBUS_LOCATION)/lib/$(SO) ) \
+	|| echo -n; }
+
+clean:
+	rm -f $(SO)
+
+distclean:
+	rm -f $(SO) globus_makefile_header Makefile
+
+dist:
+	mkdir $(DISTDIR)
+	cp -a $(SRC) $(ETCFILE) $(DISTDIR)
+	tar -h --owner=root --group=root -zcvf $(DISTDIR).tar.gz $(DISTDIR)
+	{ test ! -d $(DISTDIR) \
+	|| { find $(DISTDIR) -type d ! -perm -200 -exec chmod u+w {} ';' \
+	&& rm -rf $(DISTDIR); }; }

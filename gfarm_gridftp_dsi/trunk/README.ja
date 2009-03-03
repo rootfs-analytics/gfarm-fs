@@ -1,0 +1,143 @@
+Globus GridFTP Server DSI for Gfarm File System
+
+
+GridFTP クライアントから GridFTP サーバ (globus-gridftp-server) を経由
+して、Gfarm ファイルシステムへアクセスできます。
+
+依存ソフトウエア:
+
+  - Globus Toolkit 4 (GT4) (バージョン 4.2.1 で動作確認)
+    Binary Installer または Full Toolkit Source が必要
+
+    http://www.globus.org/toolkit/
+
+  - Gfarm version 2 (リビジョン 4065 で動作確認)
+
+    http://sourceforge.net/projects/gfarm  
+
+クイックスタート:
+
+  - GT4 インストール、設定
+  - gridftp.conf 設定
+  - GLOBUS_LOCATION 環境変数設定
+  - Gfarm インストール、設定
+  - globus-gridftp-server を non-threaded 版に置き換える
+  - ./setup.conf に GFARM=インストール先 を記述
+  - ./setup.sh
+  - make install
+  - globus-gridftp-server -dsi gfarm
+
+インストール:
+
+  1. GLOBUS_LOCATION などの環境変数を設定します。
+
+    GLOBUS_LOCATION 環境変数に GT4 インストール先パスを指定します。
+
+    例 (bash の場合):
+
+      GLOBUS_LOCATION=/usr/local/gt4
+      PATH=$PATH:$GLOBUS_LOCATION/bin:$GLOBUS_LOCATION/sbin
+      export PATH GLOBUS_LOCATION
+      . $GLOBUS_LOCATION/etc/globus-devel-env.sh
+
+  2. globus-gridftp-server を non-threaded 版に置き換えます。
+
+    例えば GT4 をソースパッケージからインストールした場合、デフォルトの
+    flavor は gcc32dbg となり、以下二つの globus-gridftp-server が作ら
+    れます。
+
+      ${GLOBUS_LOCATION}/sbin/gcc32dbgpthr/shared/globus-gridftp-server
+      ${GLOBUS_LOCATION}/sbin/gcc32dbg/shared/globus-gridftp-server
+
+    デフォルトでは前者の 'pthr' 文字列が付加された threaded 版が
+    ${GLOBUS_LOCATION}/sbin 以下にインストールされています。
+
+    Gfarm 用 DSI モジュールが動作するには、'pthr' が付かない
+    non-threaded 版の globus-gridftp-server が必要なので、後者の
+    globus-gridftp-server を
+    ${GLOBUS_LOCATION}/sbin/globus-gridftp-server としてコピーします。
+
+    flavor が gcc32dbg の場合(例)
+
+      $ cp ${GLOBUS_LOCATION}/sbin/gcc32dbg/shared/globus-gridftp-server \
+           ${GLOBUS_LOCATION}/sbin/globus-gridftp-server
+
+    flavor が gcc32 の場合(例)
+
+      $ cp ${GLOBUS_LOCATION}/sbin/gcc32/shared/globus-gridftp-server \
+           ${GLOBUS_LOCATION}/sbin/globus-gridftp-server
+
+    threaded 版の GT4 とリンクして Gfarm 用 DSI モジュールを作成しても、
+    完全に動作しません。
+
+  3. Gfarm のインストール先を指定します。
+
+    (Gfarm のインストール先)/bin が PATH に設定されていれば、設定する必
+    要はありません。
+
+    Gfarm のインストール先指定する場合は setup.conf ファイルを作成しま
+    す。
+
+    例: 
+      $ vi setup.conf
+      GFARM=/usr/local/gfarm2
+    
+  4. setup.sh を実行します。
+
+    $ ./setup.sh
+
+    時間がかかることがあります。
+    上記までの手順をきちんと行なっていない場合、すぐに失敗します。
+
+  5. インストールします。
+
+    $ make install
+
+    以下にファイルがコピーされます。
+
+      ${GLOBUS_LOCATION}/lib/libglobus_gridftp_server_gfarm_${FLAVOR}.so
+
+    アンインストールはコピーしたこのファイルを削除してください。
+
+  6. 設定を変更して再インストールする場合
+
+    $ make distclean
+    $ setup.conf を修正
+    $ ./setup.sh
+    $ make install
+
+サーバ起動:
+
+  globus-gridftp-server に -dsi gfarm オプションを付けて起動します。
+
+    $ globus-gridftp-server -dsi gfarm
+
+  または gridftp.conf へ以下を記述して globus-gridftp-server を起動しま
+  す。
+
+    load_dsi_module gfarm
+
+  その他 globus-gridftp-server の設定については以下を参照してください。
+
+    http://www.globus.org/toolkit/docs/latest-stable/data/gridftp/admin/
+
+サーバ環境変数:
+
+    GFARM_DSI_BLOCKSIZE と GFARM_DSI_CONCURRENCY を利用できます。
+
+    GFARM_DSI_BLOCKSIZE に送受信時のバッファサイズを指定できます。
+
+    クライアントとglobus-gridftp-server とが送受信する際、並列に処理で
+    きるようになっており、GFARM_DSI_CONCURRENCY にその並列度を指定でき
+    ます。しかし、globus-gridftp-server と Gfarm が通信する部分は並列に
+    処理しません。
+
+クライアント:
+
+  GridFTP クライアントについて利用例は以下を参照してください。
+
+     http://www.globus.org/toolkit/docs/latest-stable/data/gridftp/user/
+
+
+--
+以上
