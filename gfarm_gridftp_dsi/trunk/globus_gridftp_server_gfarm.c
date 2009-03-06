@@ -3,8 +3,7 @@
  *
  * Copyright (c) 1999-2006 University of Chicago
  *
- * Copyright (c) 2008 National Institute of Informatics in Japan,
- * All rights reserved.
+ * Copyright (c) 2009 University of Tsukuba.  All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
