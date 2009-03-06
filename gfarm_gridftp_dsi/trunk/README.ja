@@ -67,9 +67,6 @@ GridFTP クライアントから GridFTP サーバ (globus-gridftp-server) を�
       $ cp ${GLOBUS_LOCATION}/sbin/gcc32/shared/globus-gridftp-server \
            ${GLOBUS_LOCATION}/sbin/globus-gridftp-server
 
-    threaded 版の GT4 とリンクして Gfarm 用 DSI モジュールを作成しても、
-    完全に動作しません。
-
   3. Gfarm のインストール先を指定します。
 
     (Gfarm のインストール先)/bin が PATH に設定されていれば、設定する必
@@ -99,10 +96,10 @@ GridFTP クライアントから GridFTP サーバ (globus-gridftp-server) を�
 
     アンインストールはコピーしたこのファイルを削除してください。
 
-  6. 設定を変更して再インストールする場合
+  6. 再インストールする場合
 
     $ make distclean
-    $ setup.conf を修正
+   (setup.conf を修正)
     $ ./setup.sh
     $ make install
 
