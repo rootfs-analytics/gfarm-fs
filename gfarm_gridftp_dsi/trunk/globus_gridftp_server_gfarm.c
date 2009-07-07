@@ -655,8 +655,7 @@ globus_l_gfs_gfarm_recv(
 	umask(um);
 	e = gfs_pio_create(transfer_info->pathname,
 			   GFARM_FILE_TRUNC | GFARM_FILE_WRONLY,
-			   GFARM_S_ALLPERM & ~um
-			   & ~S_IXUSR & ~S_IXGRP & ~S_IXOTH,
+			   0666 & ~um,
 			   &gfarm_handle->gf);
 	if (e != GFARM_ERR_NO_ERROR) {
 		result = GlobusGFSErrorSystemError("gfs_pio_create",
