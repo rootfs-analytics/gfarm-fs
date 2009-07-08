@@ -309,7 +309,7 @@ ac_includes_default="\
 # include <unistd.h>
 #endif"
 
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS AWK CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT GLOBUS_LOCATION FLAVOR GFARM CPP EGREP LIBOBJS LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS AWK CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT GLOBUS_LOCATION FLAVOR GFARM CPP EGREP HEADER LIBOBJS LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -2359,7 +2359,6 @@ fi
 
 
 
-
 # make sure nonthreaded gridftp server is installed
 f_prefix=`expr "${FLAVOR}" : '\(.*\)pthr'`
 f_pthr=`expr "${FLAVOR}" : '.*\(pthr\)'`
@@ -3590,6 +3589,7 @@ echo "$as_me: error: cannot create ${HEADER}." >&2;}
    { (exit 1); exit 1; }; }
 fi
 
+
           ac_config_files="$ac_config_files Makefile"
 
 cat >confcache <<\_ACEOF
@@ -4215,6 +4215,7 @@ s,@FLAVOR@,$FLAVOR,;t t
 s,@GFARM@,$GFARM,;t t
 s,@CPP@,$CPP,;t t
 s,@EGREP@,$EGREP,;t t
+s,@HEADER@,$HEADER,;t t
 s,@LIBOBJS@,$LIBOBJS,;t t
 s,@LTLIBOBJS@,$LTLIBOBJS,;t t
 CEOF
