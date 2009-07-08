@@ -364,7 +364,7 @@ gfarm_mkdir(globus_gfs_operation_t op, const char *pathname)
 
 	um = umask(0022);
 	umask(um);
-	e = gfs_mkdir(pathname, GFARM_S_ALLPERM & ~um);
+	e = gfs_mkdir(pathname, 0777 & ~um);
 	if (e != GFARM_ERR_NO_ERROR) {
 		return GlobusGFSErrorSystemError(
 			"gfs_mkdir",
@@ -424,7 +424,7 @@ gfarm_chmod(globus_gfs_operation_t op, const char *pathname, mode_t mode)
 	gfarm_error_t e;
 	GlobusGFSName(gfarm_chmod);
 
-	e = gfs_chmod(pathname, mode & GFARM_S_ALLPERM);
+	e = gfs_chmod(pathname, mode & 0777);
 	if (e != GFARM_ERR_NO_ERROR) {
 		return GlobusGFSErrorSystemError(
 			"gfs_chmod",
