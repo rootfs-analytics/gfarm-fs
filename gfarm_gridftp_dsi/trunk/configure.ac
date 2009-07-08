@@ -62,7 +62,6 @@ fi
 if test x"$FLAVOR" = x; then
     AC_MSG_ERROR([Specify Globus flavor with --with-globus-flavor option.])
 fi
-
 AC_SUBST(GLOBUS_LOCATION)
 AC_SUBST(FLAVOR)
 AC_SUBST(GFARM)
@@ -98,6 +97,7 @@ fi
 if test ! -s $HEADER; then
     AC_MSG_ERROR([cannot create ${HEADER}.])
 fi
+AC_SUBST(HEADER)
 
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT
