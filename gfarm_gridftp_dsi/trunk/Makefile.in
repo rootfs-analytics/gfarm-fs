@@ -1,5 +1,5 @@
-PACKAGE = gfarm_gridftp_dsi
-VERSION = 1.0
+PACKAGE = @PACKAGE_NAME@
+VERSION = @PACKAGE_VERSION@
 
 include globus_makefile_header
 
@@ -9,7 +9,8 @@ GLOBUS_LOCATION = @GLOBUS_LOCATION@
 
 SO = libglobus_gridftp_server_gfarm_$(FLAVOR).so
 SRC = globus_gridftp_server_gfarm.c
-ETCFILE = Makefile.in setup.sh README.en README.ja
+ETCFILE = Makefile.in README.en README.ja \
+	config.h.in configure configure.ac
 
 DISTDIR = $(PACKAGE)-$(VERSION)
 
@@ -39,7 +40,8 @@ clean:
 	rm -f $(SO)
 
 distclean:
-	rm -f $(SO) globus_makefile_header Makefile
+	rm -f $(SO) globus_makefile_header Makefile \
+		config.h config.log config.status
 
 dist:
 	mkdir $(DISTDIR)

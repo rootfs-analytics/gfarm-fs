@@ -14,13 +14,28 @@ Software Dependencies:
 
 Quick Start:
 
-  - Install a GT4. 
-  - Describe options in gridftp.conf.
-  - Set the GLOBUS_LOCATION environment variable.
-  - Install a Gfarm.
-  - Copy the non-threaded globus-gridftp-server command
-    (ex. $GLOBUS_LOCATION/sbin/gcc32/shared/) into $GLOBUS_LOCATION/sbin/.
-  - Describe GFARM=Path_of_Gfarm in ./setup.conf.
-  - ./setup.sh
-  - make install
-  - globus-gridftp-server -dsi gfarm
+  - Install GT4 and Gfarm File System.
+
+  - Install the non-threaded globus-gridftp-server
+
+	% sudo cp ${GLOBUS_LOCATION}/sbin/gcc32/shared/globus-gridftp-server \
+	     ${GLOBUS_LOCATION}/sbin/globus-gridftp-server
+
+  - Configure, make and make install
+
+	% ./configure --with-globus=$GLOBUS_LOCATION \
+		--with-gfarm=<gfarm_prefix>
+	% make
+	% sudo make install
+
+  - Execute the GridFTP server with -dsi gfarm option
+
+	% globus-gridftp-server -dsi gfarm
+
+Environment variable:
+
+    GFARM_DSI_BLOCKSIZE
+	Specify the block size for file transfer
+
+    GFARM_DSI_CONCURRENCY
+	Specify the number of concurrency for file transfer
