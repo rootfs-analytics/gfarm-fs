@@ -10,7 +10,7 @@ GLOBUS_LOCATION = @GLOBUS_LOCATION@
 SO = libglobus_gridftp_server_gfarm_$(FLAVOR).so
 SRC = globus_gridftp_server_gfarm.c
 ETCFILE = Makefile.in README.en README.ja \
-	config.h.in configure configure.ac
+	config.h.in configure configure.ac LICENSE
 
 DISTDIR = $(PACKAGE)-$(VERSION)
 
