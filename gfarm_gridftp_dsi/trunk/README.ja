@@ -1,140 +1,116 @@
 Globus GridFTP Server DSI for Gfarm File System
 
 
-GridFTP クライアントから GridFTP サーバ (globus-gridftp-server) を経由
-して、Gfarm ファイルシステムへアクセスできます。
+GridFTP $B%/%i%$%"%s%H$+$i(B GridFTP $B%5!<%P(B (globus-gridftp-server) $B$r7PM3(B
+$B$7$F!"(BGfarm $B%U%!%$%k%7%9%F%`$X%"%/%;%9$G$-$^$9!#(B
 
-依存ソフトウエア:
+$B0MB8%=%U%H%&%(%"(B:
 
-  - Globus Toolkit 4 (GT4) (バージョン 4.2.1 で動作確認)
-    Binary Installer または Full Toolkit Source が必要
+  - Globus Toolkit 4 (GT4) ($B%P!<%8%g%s(B 4.2.1 $B$GF0:n3NG'(B)
+    Binary Installer $B$^$?$O(B Full Toolkit Source $B$,I,MW(B
 
     http://www.globus.org/toolkit/
 
-  - Gfarm version 2 (リビジョン 4065 で動作確認)
+  - Gfarm version 2 ($B%j%S%8%g%s(B 4065 $B$GF0:n3NG'(B)
 
     http://sourceforge.net/projects/gfarm  
 
-クイックスタート:
+$B%/%$%C%/%9%?!<%H(B:
 
-  - GT4 インストール、設定
-  - gridftp.conf 設定
-  - GLOBUS_LOCATION 環境変数設定
-  - Gfarm インストール、設定
-  - globus-gridftp-server を non-threaded 版に置き換える
-  - ./setup.conf に GFARM=インストール先 を記述
-  - ./setup.sh
-  - make install
+  - GT4, Gfarm $B%$%s%9%H!<%k!"@_Dj(B
+  - globus-gridftp-server $B$r(B non-threaded $BHG$KCV$-49$($k(B
+  - configure --with-globus=$GLOBUS_LOCATION --with-gfarm=<gfarm_prefix>
+  - make & sudo make install
   - globus-gridftp-server -dsi gfarm
 
-インストール:
+$B%$%s%9%H!<%k(B:
 
-  1. GLOBUS_LOCATION などの環境変数を設定します。
+  1. globus-gridftp-server $B$r(B non-threaded $BHG$KCV$-49$($^$9!#(B
 
-    GLOBUS_LOCATION 環境変数に GT4 インストール先パスを指定します。
-
-    例 (bash の場合):
-
-      GLOBUS_LOCATION=/usr/local/gt4
-      PATH=$PATH:$GLOBUS_LOCATION/bin:$GLOBUS_LOCATION/sbin
-      export PATH GLOBUS_LOCATION
-      . $GLOBUS_LOCATION/etc/globus-devel-env.sh
-
-  2. globus-gridftp-server を non-threaded 版に置き換えます。
-
-    例えば GT4 をソースパッケージからインストールした場合、デフォルトの
-    flavor は gcc32dbg となり、以下二つの globus-gridftp-server が作ら
-    れます。
+    $BNc$($P(B GT4 $B$r%=!<%9%Q%C%1!<%8$+$i%$%s%9%H!<%k$7$?>l9g!"%G%U%)%k%H$N(B
+    flavor $B$O(B gcc32dbg $B$H$J$j!"0J2<Fs$D$N(B globus-gridftp-server $B$,:n$i(B
+    $B$l$^$9!#(B
 
       ${GLOBUS_LOCATION}/sbin/gcc32dbgpthr/shared/globus-gridftp-server
       ${GLOBUS_LOCATION}/sbin/gcc32dbg/shared/globus-gridftp-server
 
-    デフォルトでは前者の 'pthr' 文字列が付加された threaded 版が
-    ${GLOBUS_LOCATION}/sbin 以下にインストールされています。
+    $B%G%U%)%k%H$G$OA0<T$N(B 'pthr' $BJ8;zNs$,IU2C$5$l$?(B threaded $BHG$,(B
+    ${GLOBUS_LOCATION}/sbin $B0J2<$K%$%s%9%H!<%k$5$l$F$$$^$9!#(B
 
-    Gfarm 用 DSI モジュールが動作するには、'pthr' が付かない
-    non-threaded 版の globus-gridftp-server が必要なので、後者の
-    globus-gridftp-server を
-    ${GLOBUS_LOCATION}/sbin/globus-gridftp-server としてコピーします。
+    Gfarm $BMQ(B DSI $B%b%8%e!<%k$,F0:n$9$k$K$O!"(B'pthr' $B$,IU$+$J$$(B
+    non-threaded $BHG$N(B globus-gridftp-server $B$,I,MW$J$N$G!"8e<T$N(B
+    globus-gridftp-server $B$r(B
+    ${GLOBUS_LOCATION}/sbin/globus-gridftp-server $B$H$7$F%3%T!<$7$^$9!#(B
 
-    flavor が gcc32dbg の場合(例)
+    flavor $B$,(B gcc32dbg $B$N>l9g(B($BNc(B)
 
       $ cp ${GLOBUS_LOCATION}/sbin/gcc32dbg/shared/globus-gridftp-server \
            ${GLOBUS_LOCATION}/sbin/globus-gridftp-server
 
-    flavor が gcc32 の場合(例)
+    flavor $B$,(B gcc32 $B$N>l9g(B($BNc(B)
 
       $ cp ${GLOBUS_LOCATION}/sbin/gcc32/shared/globus-gridftp-server \
            ${GLOBUS_LOCATION}/sbin/globus-gridftp-server
 
-  3. Gfarm のインストール先を指定します。
+  2. $B%7%9%F%`9=C[(B
 
-    (Gfarm のインストール先)/bin が PATH に設定されていれば、設定する必
-    要はありません。
+	% ./configure [$B%*%W%7%g%s(B]
+	% make
+	% sudo make install
 
-    Gfarm のインストール先指定する場合は setup.conf ファイルを作成しま
-    す。
+    configure $B%3%^%s%I$K$O!"2<5-$N%*%W%7%g%s$,$"$j$^$9!#(B
 
-    例: 
-      $ vi setup.conf
-      GFARM=/usr/local/gfarm2
-    
-  4. setup.sh を実行します。
+    --with-globus=$B%G%#%l%/%H%j(B
 
-    $ ./setup.sh
+	GLOBUS_LOCATION $B$,@_Dj$5$l$F$$$J$$>l9g!"$3$N%*%W%7%g%s$G(B
+	GLOBUS_LOCATION $B$r@_Dj$7$^$9!#(B
+	$B%G%U%)%k%H$G$O!"%$%s%9%H!<%k$5$l$F$$$k(B flavor $B$r<+F0E*$KG'<1$7(B
+	$B$^$9$,!"(B--with-globus-flavor=flavor $B$G(B flavor $B$r;XDj$9$k$3$H$b(B
+	$B$G$-$^$9!#(B
 
-    時間がかかることがあります。
-    上記までの手順をきちんと行なっていない場合、すぐに失敗します。
+    --with-gfarm=$B%G%#%l%/%H%j(B   
 
-  5. インストールします。
+	Gfarm File System$B$N%$%s%9%H!<%k$5$l$F$$$k%G%#%l%/%H%j$r;XDj$7(B
+	$B$^$9!#(B
 
-    $ make install
-
-    以下にファイルがコピーされます。
+    make install $B$G$O0J2<$N%U%!%$%k$,%3%T!<$5$l$^$9!#(B
 
       ${GLOBUS_LOCATION}/lib/libglobus_gridftp_server_gfarm_${FLAVOR}.so
 
-    アンインストールはコピーしたこのファイルを削除してください。
+    $B%"%s%$%s%9%H!<%k$O>e5-$N%U%!%$%k$r:o=|$7$F$/$@$5$$!#(B
 
-  6. 再インストールする場合
+$B%5!<%P5/F0(B:
 
-    $ make distclean
-   (setup.conf を修正)
-    $ ./setup.sh
-    $ make install
-
-サーバ起動:
-
-  globus-gridftp-server に -dsi gfarm オプションを付けて起動します。
+  globus-gridftp-server $B$K(B -dsi gfarm $B%*%W%7%g%s$rIU$1$F5/F0$7$^$9!#(B
 
     $ globus-gridftp-server -dsi gfarm
 
-  または gridftp.conf へ以下を記述して globus-gridftp-server を起動しま
-  す。
+  $B$^$?$O(B gridftp.conf $B$X0J2<$r5-=R$7$F(B globus-gridftp-server $B$r5/F0$7$^(B
+  $B$9!#(B
 
     load_dsi_module gfarm
 
-  その他 globus-gridftp-server の設定については以下を参照してください。
+  $B$=$NB>(B globus-gridftp-server $B$N@_Dj$K$D$$$F$O0J2<$r;2>H$7$F$/$@$5$$!#(B
 
     http://www.globus.org/toolkit/docs/latest-stable/data/gridftp/admin/
 
-サーバ環境変数:
+$B%5!<%P4D6-JQ?t(B:
 
-    GFARM_DSI_BLOCKSIZE と GFARM_DSI_CONCURRENCY を利用できます。
+    GFARM_DSI_BLOCKSIZE $B$H(B GFARM_DSI_CONCURRENCY $B$rMxMQ$G$-$^$9!#(B
 
-    GFARM_DSI_BLOCKSIZE に送受信時のバッファサイズを指定できます。
+    GFARM_DSI_BLOCKSIZE $B$KAw<u?.;~$N%P%C%U%!%5%$%:$r;XDj$G$-$^$9!#(B
 
-    クライアントとglobus-gridftp-server とが送受信する際、並列に処理で
-    きるようになっており、GFARM_DSI_CONCURRENCY にその並列度を指定でき
-    ます。しかし、globus-gridftp-server と Gfarm が通信する部分は並列に
-    処理しません。
+    $B%/%i%$%"%s%H$H(Bglobus-gridftp-server $B$H$,Aw<u?.$9$k:]!"JBNs$K=hM}$G(B
+    $B$-$k$h$&$K$J$C$F$*$j!"(BGFARM_DSI_CONCURRENCY $B$K$=$NJBNsEY$r;XDj$G$-(B
+    $B$^$9!#$7$+$7!"(Bglobus-gridftp-server $B$H(B Gfarm $B$,DL?.$9$kItJ,$OJBNs$K(B
+    $B=hM}$7$^$;$s!#(B
 
-クライアント:
+$B%/%i%$%"%s%H(B:
 
-  GridFTP クライアントについて利用例は以下を参照してください。
+  GridFTP $B%/%i%$%"%s%H$K$D$$$FMxMQNc$O0J2<$r;2>H$7$F$/$@$5$$!#(B
 
      http://www.globus.org/toolkit/docs/latest-stable/data/gridftp/user/
 
 
 --
-以上
+$B0J>e(B
