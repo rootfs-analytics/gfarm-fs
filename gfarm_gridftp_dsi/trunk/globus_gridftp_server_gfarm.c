@@ -45,6 +45,7 @@ typedef struct globus_l_gfs_gfarm_handle_s
 	int concurrency_count;
 	globus_off_t read_len;  /* not use */
 	globus_result_t save_result;
+	char *path;
 } globus_l_gfs_gfarm_handle_t;
 
 extern void gfarm_gsi_set_delegated_cred(gss_cred_id_t);
@@ -98,6 +99,7 @@ globus_l_gfs_gfarm_start(
 
 	globus_mutex_init(&gfarm_handle->mutex, NULL);
 	gfarm_handle->buffers_initialized = GLOBUS_FALSE;
+	gfarm_handle->path = NULL;
 
 	e = gfarm_initialize(NULL, NULL);
 	if (e != GFARM_ERR_NO_ERROR) {
@@ -207,7 +209,7 @@ stat_array_set(
 	gfarm_error_t e;
 
 	stat_array->symlink_target = NULL;
-	e = gfs_stat(path, &st);
+	e = gfs_lstat_cached(path, &st);
 	if (e != GFARM_ERR_NO_ERROR) {
 		stat_array->name = NULL;
 		return (e);
@@ -240,10 +242,10 @@ globus_l_gfs_gfarm_stat(
 	gfarm_handle = (globus_l_gfs_gfarm_handle_t *) user_arg;
 	path = stat_info->pathname;
 
-	e = gfs_stat(path, &st); /* XXX replace gfs_lstat() */
+	e = gfs_lstat_cached(path, &st);
 	if (e != GFARM_ERR_NO_ERROR) {
 		result = GlobusGFSErrorSystemError(
-			"gfs_stat",
+			"gfs_lstat",
 			gfarm_error_to_errno(e));
 		goto error;
         }
@@ -272,7 +274,7 @@ globus_l_gfs_gfarm_stat(
 		goto end; /* success */
 	}
 	/* list */
-	e = gfs_opendir(path, &dp);
+	e = gfs_opendir_caching(path, &dp);
 	if (e != GFARM_ERR_NO_ERROR) {
 		result = GlobusGFSErrorSystemError(
 			"gfs_opendir",
@@ -355,6 +357,28 @@ error:
  *      GLOBUS_GFS_CMD_SITE_CHMOD,
  *      GLOBUS_GFS_CMD_SITE_DSI
  ************************************************************************/
+static void
+uncache(const char *p)
+{
+	gfs_stat_cache_purge(p);
+}
+
+static void
+uncache_parent(const char *path)
+{
+	char *p = strdup(path), *b;
+
+	if (p == NULL) /* XXX should report an error */
+		return;
+
+	b = (char *)gfarm_path_dir_skip(p); /* UNCONST */
+	if (b > p && b[-1] == '/') {
+		b[-1] = '\0';
+		uncache(p);
+	}
+	free(p);
+}
+
 static globus_result_t
 gfarm_mkdir(globus_gfs_operation_t op, const char *pathname)
 {
@@ -370,6 +394,7 @@ gfarm_mkdir(globus_gfs_operation_t op, const char *pathname)
 			"gfs_mkdir",
 			gfarm_error_to_errno(e));
 	}
+	uncache_parent(pathname);
 	return (GLOBUS_SUCCESS);
 }
 
@@ -385,6 +410,8 @@ gfarm_rmdir(globus_gfs_operation_t op, const char *pathname)
 			"gfs_rmdir",
 			gfarm_error_to_errno(e));
 	}
+	uncache(pathname);
+	uncache_parent(pathname);
 	return (GLOBUS_SUCCESS);
 }
 
@@ -400,6 +427,8 @@ gfarm_delete(globus_gfs_operation_t op, const char *pathname)
 			"gfs_unlink",
 			gfarm_error_to_errno(e));
 	}
+	uncache(pathname);
+	uncache_parent(pathname);
 	return (GLOBUS_SUCCESS);
 }
 
@@ -415,6 +444,10 @@ gfarm_rename(globus_gfs_operation_t op, const char *from, const char *to)
 			"gfs_rename",
 			gfarm_error_to_errno(e));
 	}
+	uncache(from);
+	uncache_parent(from);
+	uncache(to);
+	uncache_parent(to);
 	return (GLOBUS_SUCCESS);
 }
 
@@ -430,6 +463,7 @@ gfarm_chmod(globus_gfs_operation_t op, const char *pathname, mode_t mode)
 			"gfs_chmod",
 			gfarm_error_to_errno(e));
 	}
+	uncache(pathname);
 	return (GLOBUS_SUCCESS);
 }
 
@@ -603,6 +637,7 @@ gfarm_import_cb(
 		gfarm_handle->eof = GLOBUS_TRUE;
                 goto finish;
 	}
+	uncache(gfarm_handle->path);
 	gfarm_handle->offset = offset + rv;
 skip:
 	if (eof) {
@@ -624,6 +659,7 @@ finish:
 	}
 	if (gfarm_handle->concurrency_count <= 0 && gfarm_handle->eof) {
 		gfs_pio_close(gfarm_handle->gf);
+		uncache(gfarm_handle->path);
 		globus_gridftp_server_finished_transfer(
 			op, gfarm_handle->save_result);
 		gfarm_handle->done = GLOBUS_TRUE;
@@ -650,6 +686,7 @@ globus_l_gfs_gfarm_recv(
 	gfarm_handle->concurrency_count = 0;
 	gfarm_handle->offset = 0;
 	gfarm_handle->save_result = GLOBUS_SUCCESS;
+	gfarm_handle->path = transfer_info->pathname;
 
 	um = umask(0022);
 	umask(um);
@@ -663,6 +700,7 @@ globus_l_gfs_gfarm_recv(
 		globus_gridftp_server_finished_transfer(op, result);
 		return;
 	}
+	uncache_parent(transfer_info->pathname);
 	globus_gridftp_server_begin_transfer(op, 0, gfarm_handle);
 
 	globus_mutex_lock(&gfarm_handle->mutex);
@@ -684,6 +722,7 @@ error:
 	gfarm_handle->done = GLOBUS_TRUE;
 	globus_mutex_unlock(&gfarm_handle->mutex);
 	gfs_pio_close(gfarm_handle->gf);
+	uncache(transfer_info->pathname);
 	globus_gridftp_server_finished_transfer(op, result);
 	return;
 }
