@@ -1,7 +1,7 @@
 PACKAGE = @PACKAGE_NAME@
 VERSION = @PACKAGE_VERSION@
 
-include globus_makefile_header
+include @HEADER@
 
 FLAVOR = @FLAVOR@
 GFARM = @GFARM@
@@ -40,7 +40,7 @@ clean:
 	rm -f $(SO)
 
 distclean:
-	rm -f $(SO) globus_makefile_header Makefile \
+	rm -f $(SO) @HEADER@ Makefile \
 		config.h config.log config.status
 
 dist:
