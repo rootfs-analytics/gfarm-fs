@@ -11,7 +11,7 @@ AC_PROG_AWK
 AC_PROG_CC
 
 ### --with-gfarm=GFARM
-AC_MSG_CHECKING([Gfarm file system package])
+AC_MSG_CHECKING([for Gfarm file system])
 AC_ARG_WITH([gfarm],
   AC_HELP_STRING([--with-gfarm=PATH], [path to gfarm file system [[/usr]]]))
 case x$with_gfarm in
@@ -35,7 +35,7 @@ AC_ARG_WITH(globus_flavor,
 ])
 
 ### --with-globus=GLOBUS_LOCATION
-AC_MSG_CHECKING([Globus toolkit])
+AC_MSG_CHECKING([for Globus toolkit])
 AC_ARG_WITH([globus],
   AC_HELP_STRING([--with-globus=PATH], [path to Globus toolkit [[$GLOBUS_LOCATION]]]))
 case x$with_globus in
@@ -43,30 +43,34 @@ case x$with_globus in
   *) GLOBUS_LOCATION=$with_globus ;;
 esac
 if test x"$GLOBUS_LOCATION" = x; then
-  AC_MSG_ERROR([GLOBUS_LOCATION is not specified.  Use --with-globus option.])
+  AC_MSG_RESULT([no])
+  AC_MSG_ERROR([Specify GLOBUS_LOCATION using --with-globus option])
 fi
 AC_MSG_RESULT([$GLOBUS_LOCATION])
 AC_SUBST(GLOBUS_LOCATION)
 
 # guess FLAVOR
-FTPSERVER=${GLOBUS_LOCATION}/sbin/globus-gridftp-server
-if test ! -f $FTPSERVER; then
-  AC_MSG_ERROR([$FTPSERVER is not found])
+AC_MSG_CHECKING([for Globus flavor])
+if test x"$FLAVOR" = x; then
+  FTPSERVER=$GLOBUS_LOCATION/sbin/globus-gridftp-server
+  FLAVOR=`ldd $FTPSERVER | $AWK '($1 ~ /^libglobus_gridftp_server_control_/){name=gensub(/^libglobus_gridftp_server_control_(.+)\.so.*/,"\\\\1","g",$1);print name}'`
 fi
 if test x"$FLAVOR" = x; then
-    FLAVOR=`ldd ${FTPSERVER} | $AWK '($1 ~ /^libglobus_gridftp_server_control_/){name=gensub(/^libglobus_gridftp_server_control_(.+)\.so.*/,"\\\\1","g",$1);print name}'`
+  AC_MSG_RESULT([no])
+  AC_MSG_ERROR([Specify Globus flavor using --with-globus-flavor option])
 fi
-if test x"$FLAVOR" = x; then
-    AC_MSG_ERROR([Specify Globus flavor with --with-globus-flavor option])
-fi
+AC_MSG_RESULT([$FLAVOR])
 AC_SUBST(FLAVOR)
 
 # make sure nonthreaded gridftp server is installed
-f_prefix=`expr "${FLAVOR}" : '\(.*\)pthr'`
-f_pthr=`expr "${FLAVOR}" : '.*\(pthr\)'`
+AC_MSG_CHECKING([whether nonthreaded GridFTP server is installed])
+f_prefix=`expr "$FLAVOR" : '\(.*\)pthr'`
+f_pthr=`expr "$FLAVOR" : '.*\(pthr\)'`
 if test x"$f_pthr" = xpthr; then
-  AC_MSG_ERROR([Copy ${GLOBUS_LOCATION}/sbin/${f_prefix}/shared/globus-gridftp-server into ${GLOBUS_LOCATION}/sbin/globus-gridftp-server])
+  AC_MSG_RESULT([no])
+  AC_MSG_ERROR([Copy $GLOBUS_LOCATION/sbin/$f_prefix/shared/globus-gridftp-server to $GLOBUS_LOCATION/sbin/globus-gridftp-server])
 fi
+AC_MSG_RESULT([yes])
 
 # Checks for libraries.
 AC_CHECK_LIB([gfarm], [gfarm_initialize],, [AC_MSG_ERROR([libgfarm not found.  Use --with-gfarm option])])
