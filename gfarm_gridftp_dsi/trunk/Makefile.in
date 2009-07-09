@@ -1,3 +1,8 @@
+# @configure_input@
+
+srcdir = @srcdir@
+VPATH = @srcdir@
+
 PACKAGE = @PACKAGE_NAME@
 VERSION = @PACKAGE_VERSION@
 
@@ -8,22 +13,19 @@ GFARM = @GFARM@
 GLOBUS_LOCATION = @GLOBUS_LOCATION@
 
 SO = libglobus_gridftp_server_gfarm_$(FLAVOR).so
-SRC = globus_gridftp_server_gfarm.c
-ETCFILE = Makefile.in README.en README.ja \
-	config.h.in configure configure.ac LICENSE
+SRC = $(srcdir)/globus_gridftp_server_gfarm.c
+ETCFILE = $(srcdir)/Makefile.in $(srcdir)/README.en $(srcdir)/README.ja \
+	$(srcdir)/config.h.in $(srcdir)/configure $(srcdir)/configure.ac \
+	$(srcdir)/LICENSE
 
 DISTDIR = $(PACKAGE)-$(VERSION)
 
-GFARM_INCLUDES = -I$(GFARM)/include
-GFARM_LDFLAGS = -Wl,-R$(GFARM)/lib -L$(GFARM)/lib
-GFARM_LIB = -lgfarm
-
 DSI_OPTIONS =
 
-DSI_CFLAGS = -g $(GLOBUS_CFLAGS) $(DSI_OPTIONS)
-DSI_INCLUDES = $(GLOBUS_INCLUDES) $(GFARM_INCLUDES)
-DSI_LDFLAGS = $(GLOBUS_LDFLAGS) $(GFARM_LDFLAGS)
-DSI_LIBS = $(GFARM_LIB)
+DSI_CFLAGS = -g -I. $(GLOBUS_CFLAGS) $(DSI_OPTIONS) @CPPFLAGS@ @DEFS@
+DSI_INCLUDES = $(GLOBUS_INCLUDES)
+DSI_LDFLAGS = $(GLOBUS_LDFLAGS) @LDFLAGS@
+DSI_LIBS = @LIBS@
 
 $(SO): $(SRC)
 	$(GLOBUS_CC) $(DSI_CFLAGS) $(DSI_INCLUDES) \

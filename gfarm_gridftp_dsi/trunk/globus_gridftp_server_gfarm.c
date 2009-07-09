@@ -18,9 +18,11 @@
  * limitations under the License.
  */
 
+#include "config.h"
 #include "globus_gridftp_server.h"
-#include <gfarm/gfarm.h>
+
 #include <libgen.h>
+#include <gfarm/gfarm.h>
 
 static globus_version_t local_version =
 {
