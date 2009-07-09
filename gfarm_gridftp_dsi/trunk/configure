@@ -309,7 +309,7 @@ ac_includes_default="\
 # include <unistd.h>
 #endif"
 
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS AWK CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT GLOBUS_LOCATION FLAVOR GFARM CPP EGREP HEADER LIBOBJS LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS AWK CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT GFARM GLOBUS_LOCATION FLAVOR CPP EGREP HEADER LIBOBJS LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -2290,7 +2290,7 @@ if test "${with_gfarm+set}" = set; then
 
 fi;
 case x$with_gfarm in
-  xyes|xno) GFARM=/usr ;;
+  x|xyes|xno) GFARM=/usr ;;
   *) GFARM=$with_gfarm ;;
 esac
 if test x"$GFARM" != x/usr; then
@@ -2299,6 +2299,7 @@ if test x"$GFARM" != x/usr; then
 fi
 echo "$as_me:$LINENO: result: $GFARM" >&5
 echo "${ECHO_T}$GFARM" >&6
+
 
 ### --with-globus-flavor=FLAVOR
 
@@ -2322,7 +2323,7 @@ if test "${with_globus+set}" = set; then
 
 fi;
 case x$with_globus in
-  xyes|xno) GLOBUS_LOCATION=$GLOBUS_LOCATION ;;
+  x|xyes|xno) GLOBUS_LOCATION=$GLOBUS_LOCATION ;;
   *) GLOBUS_LOCATION=$with_globus ;;
 esac
 if test x"$GLOBUS_LOCATION" = x; then
@@ -2332,39 +2333,31 @@ echo "$as_me: error: GLOBUS_LOCATION is not specified.  Use --with-globus option
 fi
 echo "$as_me:$LINENO: result: $GLOBUS_LOCATION" >&5
 echo "${ECHO_T}$GLOBUS_LOCATION" >&6
-if test ! -f $GLOBUS_LOCATION/etc/globus-user-env.sh; then
-  { { echo "$as_me:$LINENO: error: $GLOBUS_LOCATION/etc/globus-user-env.sh not found.  Use --with-globus option." >&5
-echo "$as_me: error: $GLOBUS_LOCATION/etc/globus-user-env.sh not found.  Use --with-globus option." >&2;}
-   { (exit 1); exit 1; }; }
-fi
-export GLOBUS_LOCATION
-. $GLOBUS_LOCATION/etc/globus-user-env.sh
+
 
 # guess FLAVOR
 FTPSERVER=${GLOBUS_LOCATION}/sbin/globus-gridftp-server
 if test ! -f $FTPSERVER; then
-  { { echo "$as_me:$LINENO: error: $FTPSERVER is not found." >&5
-echo "$as_me: error: $FTPSERVER is not found." >&2;}
+  { { echo "$as_me:$LINENO: error: $FTPSERVER is not found" >&5
+echo "$as_me: error: $FTPSERVER is not found" >&2;}
    { (exit 1); exit 1; }; }
 fi
 if test x"$FLAVOR" = x; then
     FLAVOR=`ldd ${FTPSERVER} | $AWK '($1 ~ /^libglobus_gridftp_server_control_/){name=gensub(/^libglobus_gridftp_server_control_(.+)\.so.*/,"\\\\1","g",$1);print name}'`
 fi
 if test x"$FLAVOR" = x; then
-    { { echo "$as_me:$LINENO: error: Specify Globus flavor with --with-globus-flavor option." >&5
-echo "$as_me: error: Specify Globus flavor with --with-globus-flavor option." >&2;}
+    { { echo "$as_me:$LINENO: error: Specify Globus flavor with --with-globus-flavor option" >&5
+echo "$as_me: error: Specify Globus flavor with --with-globus-flavor option" >&2;}
    { (exit 1); exit 1; }; }
 fi
-
-
 
 
 # make sure nonthreaded gridftp server is installed
 f_prefix=`expr "${FLAVOR}" : '\(.*\)pthr'`
 f_pthr=`expr "${FLAVOR}" : '.*\(pthr\)'`
 if test x"$f_pthr" = xpthr; then
-  { { echo "$as_me:$LINENO: error: Copy ${GLOBUS_LOCATION}/sbin/${f_prefix}/shared/globus-gridftp-server into ${GLOBUS_LOCATION}/sbin/globus-gridftp-server." >&5
-echo "$as_me: error: Copy ${GLOBUS_LOCATION}/sbin/${f_prefix}/shared/globus-gridftp-server into ${GLOBUS_LOCATION}/sbin/globus-gridftp-server." >&2;}
+  { { echo "$as_me:$LINENO: error: Copy ${GLOBUS_LOCATION}/sbin/${f_prefix}/shared/globus-gridftp-server into ${GLOBUS_LOCATION}/sbin/globus-gridftp-server" >&5
+echo "$as_me: error: Copy ${GLOBUS_LOCATION}/sbin/${f_prefix}/shared/globus-gridftp-server into ${GLOBUS_LOCATION}/sbin/globus-gridftp-server" >&2;}
    { (exit 1); exit 1; }; }
 fi
 
@@ -3577,17 +3570,10 @@ fi
 done
 
 
-# create $HEADER file
+# create HEADER file
 HEADER=globus_makefile_header
-if test ! -s $HEADER; then
-    ${GLOBUS_LOCATION}/bin/globus-makefile-header \
-	-flavor=${FLAVOR} globus_gridftp_server > $HEADER
-fi
-if test ! -s $HEADER; then
-    { { echo "$as_me:$LINENO: error: cannot create ${HEADER}." >&5
-echo "$as_me: error: cannot create ${HEADER}." >&2;}
-   { (exit 1); exit 1; }; }
-fi
+          ac_config_commands="$ac_config_commands globus_makefile_header"
+
 
 
           ac_config_files="$ac_config_files Makefile"
@@ -4009,6 +3995,9 @@ $config_files
 Configuration headers:
 $config_headers
 
+Configuration commands:
+$config_commands
+
 Report bugs to <bug-autoconf@gnu.org>."
 _ACEOF
 
@@ -4107,7 +4096,14 @@ fi
 
 _ACEOF
 
+cat >>$CONFIG_STATUS <<_ACEOF
+#
+# INIT-COMMANDS section.
+#
 
+export GLOBUS_LOCATION=$GLOBUS_LOCATION; FLAVOR=$FLAVOR; . $GLOBUS_LOCATION/etc/globus-user-env.sh
+
+_ACEOF
 
 
 
@@ -4117,6 +4113,7 @@ do
   case "$ac_config_target" in
   # Handling of arguments.
   "Makefile" ) CONFIG_FILES="$CONFIG_FILES Makefile" ;;
+  "globus_makefile_header" ) CONFIG_COMMANDS="$CONFIG_COMMANDS globus_makefile_header" ;;
   "config.h" ) CONFIG_HEADERS="$CONFIG_HEADERS config.h" ;;
   *) { { echo "$as_me:$LINENO: error: invalid argument: $ac_config_target" >&5
 echo "$as_me: error: invalid argument: $ac_config_target" >&2;}
@@ -4131,6 +4128,7 @@ done
 if $ac_need_defaults; then
   test "${CONFIG_FILES+set}" = set || CONFIG_FILES=$config_files
   test "${CONFIG_HEADERS+set}" = set || CONFIG_HEADERS=$config_headers
+  test "${CONFIG_COMMANDS+set}" = set || CONFIG_COMMANDS=$config_commands
 fi
 
 # Have a temporary directory for convenience.  Make it in the build tree
@@ -4210,9 +4208,9 @@ s,@CPPFLAGS@,$CPPFLAGS,;t t
 s,@ac_ct_CC@,$ac_ct_CC,;t t
 s,@EXEEXT@,$EXEEXT,;t t
 s,@OBJEXT@,$OBJEXT,;t t
+s,@GFARM@,$GFARM,;t t
 s,@GLOBUS_LOCATION@,$GLOBUS_LOCATION,;t t
 s,@FLAVOR@,$FLAVOR,;t t
-s,@GFARM@,$GFARM,;t t
 s,@CPP@,$CPP,;t t
 s,@EGREP@,$EGREP,;t t
 s,@HEADER@,$HEADER,;t t
@@ -4672,6 +4670,124 @@ echo "$as_me: error: cannot create directory \"$ac_dir\"" >&2;}
     cat $tmp/config.h
     rm -f $tmp/config.h
   fi
+done
+_ACEOF
+cat >>$CONFIG_STATUS <<\_ACEOF
+
+#
+# CONFIG_COMMANDS section.
+#
+for ac_file in : $CONFIG_COMMANDS; do test "x$ac_file" = x: && continue
+  ac_dest=`echo "$ac_file" | sed 's,:.*,,'`
+  ac_source=`echo "$ac_file" | sed 's,[^:]*:,,'`
+  ac_dir=`(dirname "$ac_dest") 2>/dev/null ||
+$as_expr X"$ac_dest" : 'X\(.*[^/]\)//*[^/][^/]*/*$' \| \
+	 X"$ac_dest" : 'X\(//\)[^/]' \| \
+	 X"$ac_dest" : 'X\(//\)$' \| \
+	 X"$ac_dest" : 'X\(/\)' \| \
+	 .     : '\(.\)' 2>/dev/null ||
+echo X"$ac_dest" |
+    sed '/^X\(.*[^/]\)\/\/*[^/][^/]*\/*$/{ s//\1/; q; }
+  	  /^X\(\/\/\)[^/].*/{ s//\1/; q; }
+  	  /^X\(\/\/\)$/{ s//\1/; q; }
+  	  /^X\(\/\).*/{ s//\1/; q; }
+  	  s/.*/./; q'`
+  { if $as_mkdir_p; then
+    mkdir -p "$ac_dir"
+  else
+    as_dir="$ac_dir"
+    as_dirs=
+    while test ! -d "$as_dir"; do
+      as_dirs="$as_dir $as_dirs"
+      as_dir=`(dirname "$as_dir") 2>/dev/null ||
+$as_expr X"$as_dir" : 'X\(.*[^/]\)//*[^/][^/]*/*$' \| \
+	 X"$as_dir" : 'X\(//\)[^/]' \| \
+	 X"$as_dir" : 'X\(//\)$' \| \
+	 X"$as_dir" : 'X\(/\)' \| \
+	 .     : '\(.\)' 2>/dev/null ||
+echo X"$as_dir" |
+    sed '/^X\(.*[^/]\)\/\/*[^/][^/]*\/*$/{ s//\1/; q; }
+  	  /^X\(\/\/\)[^/].*/{ s//\1/; q; }
+  	  /^X\(\/\/\)$/{ s//\1/; q; }
+  	  /^X\(\/\).*/{ s//\1/; q; }
+  	  s/.*/./; q'`
+    done
+    test ! -n "$as_dirs" || mkdir $as_dirs
+  fi || { { echo "$as_me:$LINENO: error: cannot create directory \"$ac_dir\"" >&5
+echo "$as_me: error: cannot create directory \"$ac_dir\"" >&2;}
+   { (exit 1); exit 1; }; }; }
+
+  ac_builddir=.
+
+if test "$ac_dir" != .; then
+  ac_dir_suffix=/`echo "$ac_dir" | sed 's,^\.[\\/],,'`
+  # A "../" for each directory in $ac_dir_suffix.
+  ac_top_builddir=`echo "$ac_dir_suffix" | sed 's,/[^\\/]*,../,g'`
+else
+  ac_dir_suffix= ac_top_builddir=
+fi
+
+case $srcdir in
+  .)  # No --srcdir option.  We are building in place.
+    ac_srcdir=.
+    if test -z "$ac_top_builddir"; then
+       ac_top_srcdir=.
+    else
+       ac_top_srcdir=`echo $ac_top_builddir | sed 's,/$,,'`
+    fi ;;
+  [\\/]* | ?:[\\/]* )  # Absolute path.
+    ac_srcdir=$srcdir$ac_dir_suffix;
+    ac_top_srcdir=$srcdir ;;
+  *) # Relative path.
+    ac_srcdir=$ac_top_builddir$srcdir$ac_dir_suffix
+    ac_top_srcdir=$ac_top_builddir$srcdir ;;
+esac
+
+# Do not use `cd foo && pwd` to compute absolute paths, because
+# the directories may not exist.
+case `pwd` in
+.) ac_abs_builddir="$ac_dir";;
+*)
+  case "$ac_dir" in
+  .) ac_abs_builddir=`pwd`;;
+  [\\/]* | ?:[\\/]* ) ac_abs_builddir="$ac_dir";;
+  *) ac_abs_builddir=`pwd`/"$ac_dir";;
+  esac;;
+esac
+case $ac_abs_builddir in
+.) ac_abs_top_builddir=${ac_top_builddir}.;;
+*)
+  case ${ac_top_builddir}. in
+  .) ac_abs_top_builddir=$ac_abs_builddir;;
+  [\\/]* | ?:[\\/]* ) ac_abs_top_builddir=${ac_top_builddir}.;;
+  *) ac_abs_top_builddir=$ac_abs_builddir/${ac_top_builddir}.;;
+  esac;;
+esac
+case $ac_abs_builddir in
+.) ac_abs_srcdir=$ac_srcdir;;
+*)
+  case $ac_srcdir in
+  .) ac_abs_srcdir=$ac_abs_builddir;;
+  [\\/]* | ?:[\\/]* ) ac_abs_srcdir=$ac_srcdir;;
+  *) ac_abs_srcdir=$ac_abs_builddir/$ac_srcdir;;
+  esac;;
+esac
+case $ac_abs_builddir in
+.) ac_abs_top_srcdir=$ac_top_srcdir;;
+*)
+  case $ac_top_srcdir in
+  .) ac_abs_top_srcdir=$ac_abs_builddir;;
+  [\\/]* | ?:[\\/]* ) ac_abs_top_srcdir=$ac_top_srcdir;;
+  *) ac_abs_top_srcdir=$ac_abs_builddir/$ac_top_srcdir;;
+  esac;;
+esac
+
+
+  { echo "$as_me:$LINENO: executing $ac_dest commands" >&5
+echo "$as_me: executing $ac_dest commands" >&6;}
+  case $ac_dest in
+    globus_makefile_header ) $GLOBUS_LOCATION/bin/globus-makefile-header -flavor=$FLAVOR globus_gridftp_server >globus_makefile_header ;;
+  esac
 done
 _ACEOF
 
