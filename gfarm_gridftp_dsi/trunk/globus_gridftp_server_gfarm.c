@@ -22,6 +22,11 @@
 #include "globus_gridftp_server.h"
 
 #include <libgen.h>
+
+#undef PACKAGE_NAME
+#undef PACKAGE_STRING
+#undef PACKAGE_TARNAME
+#undef PACKAGE_VERSION
 #include <gfarm/gfarm.h>
 
 static globus_version_t local_version =
