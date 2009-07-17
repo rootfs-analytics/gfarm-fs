@@ -3,12 +3,18 @@
 
 AC_PREREQ(2.59)
 AC_INIT([gfarm_gridftp_dsi], [1.0])
+AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 AC_CONFIG_SRCDIR([globus_gridftp_server_gfarm.c])
 AC_CONFIG_HEADER([config.h])
 
 # Checks for programs.
 AC_PROG_AWK
 AC_PROG_CC
+AC_PROG_CPP
+AC_PROG_INSTALL
+AC_PROG_LN_S
+AC_PROG_MAKE_SET
+AC_PROG_LIBTOOL
 
 ### --with-gfarm=GFARM
 AC_MSG_CHECKING([for Gfarm file system])
@@ -23,7 +29,6 @@ if test x"$GFARM" != x/usr; then
   LDFLAGS="$LDFLAGS -R$GFARM/lib -L$GFARM/lib"
 fi
 AC_MSG_RESULT([$GFARM])
-AC_SUBST(GFARM)
 
 ### --with-globus-flavor=FLAVOR
 AC_ARG_WITH(globus_flavor,
@@ -47,7 +52,6 @@ if test x"$GLOBUS_LOCATION" = x; then
   AC_MSG_ERROR([Specify GLOBUS_LOCATION using --with-globus option])
 fi
 AC_MSG_RESULT([$GLOBUS_LOCATION])
-AC_SUBST(GLOBUS_LOCATION)
 
 # guess FLAVOR
 AC_MSG_CHECKING([for Globus flavor])
@@ -61,6 +65,10 @@ if test x"$FLAVOR" = x; then
 fi
 AC_MSG_RESULT([$FLAVOR])
 AC_SUBST(FLAVOR)
+if test x"$GLOBUS_LOCATION" != x/usr; then
+  CPPFLAGS="$CPPFLAGS -I$GLOBUS_LOCATION/include/$FLAVOR"
+  LDFLAGS="$LDFLAGS -R$GLOBUS_LOCATION/lib -L$GLOBUS_LOCATION/lib"
+fi
 
 # make sure nonthreaded gridftp server is installed
 AC_MSG_CHECKING([whether nonthreaded GridFTP server is installed])
@@ -86,13 +94,6 @@ AC_TYPE_UID_T
 # Checks for library functions.
 AC_HEADER_STDC
 AC_CHECK_FUNCS([memset strdup])
-
-# create HEADER file
-HEADER=globus_makefile_header
-AC_CONFIG_COMMANDS([globus_makefile_header],
-  [$GLOBUS_LOCATION/bin/globus-makefile-header -flavor=$FLAVOR globus_gridftp_server >globus_makefile_header],
-  [export GLOBUS_LOCATION=$GLOBUS_LOCATION; FLAVOR=$FLAVOR; . $GLOBUS_LOCATION/etc/globus-user-env.sh])
-AC_SUBST(HEADER)
 
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT

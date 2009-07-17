@@ -23,8 +23,8 @@ Quick Start:
 
   - Configure, make and make install
 
-	% ./configure --with-globus=$GLOBUS_LOCATION \
-		--with-gfarm=<gfarm_prefix>
+	% ./configure --prefix=$GLOBUS_LOCATION \
+		--with-globus=$GLOBUS_LOCATION --with-gfarm=<gfarm_prefix>
 	% make
 	% sudo make install
 

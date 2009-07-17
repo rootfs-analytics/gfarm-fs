@@ -19,7 +19,7 @@ GridFTP $B%/%i%$%"%s%H$+$i(B GridFTP $B%5!<%P(B (globus-gridftp-server) $B$
 
   - GT4, Gfarm $B%$%s%9%H!<%k!"@_Dj(B
   - globus-gridftp-server $B$r(B non-threaded $BHG$KCV$-49$($k(B
-  - configure --with-globus=$GLOBUS_LOCATION --with-gfarm=<gfarm_prefix>
+  - configure --prefix=$GLOBUS_LOCATION --with-globus=$GLOBUS_LOCATION --with-gfarm=<gfarm_prefix>
   - make & sudo make install
   - globus-gridftp-server -dsi gfarm
 
@@ -59,6 +59,11 @@ GridFTP $B%/%i%$%"%s%H$+$i(B GridFTP $B%5!<%P(B (globus-gridftp-server) $B$
 	% sudo make install
 
     configure $B%3%^%s%I$K$O!"2<5-$N%*%W%7%g%s$,$"$j$^$9!#(B
+
+    --prefix=$B%G%#%l%/%H%j(B
+
+	Globus $B$,%$%s%9%H!<%k$5$l$F$$$k%G%#%l%/%H%j(B(GLOBUS_LOCATION)
+	$B$r;XDj$7$^$9!#(B
 
     --with-globus=$B%G%#%l%/%H%j(B
 
