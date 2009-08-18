@@ -80,7 +80,11 @@ GridFTP $B%/%i%$%"%s%H$+$i(B GridFTP $B%5!<%P(B (globus-gridftp-server) $B$
 
     make install $B$G$O0J2<$N%U%!%$%k$,%3%T!<$5$l$^$9!#(B
 
+      ${GLOBUS_LOCATION}/lib/libglobus_gridftp_server_gfarm_${FLAVOR}.a
+      ${GLOBUS_LOCATION}/lib/libglobus_gridftp_server_gfarm_${FLAVOR}.la
       ${GLOBUS_LOCATION}/lib/libglobus_gridftp_server_gfarm_${FLAVOR}.so
+      ${GLOBUS_LOCATION}/lib/libglobus_gridftp_server_gfarm_${FLAVOR}.so.0
+      ${GLOBUS_LOCATION}/lib/libglobus_gridftp_server_gfarm_${FLAVOR}.so.0.0.0
 
     $B%"%s%$%s%9%H!<%k$O>e5-$N%U%!%$%k$r:o=|$7$F$/$@$5$$!#(B
 
