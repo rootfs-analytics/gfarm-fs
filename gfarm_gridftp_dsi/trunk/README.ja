@@ -1,6 +1,5 @@
 Globus GridFTP Server DSI for Gfarm File System
 
-
 GridFTP クライアントから GridFTP サーバ (globus-gridftp-server) を経由
 して、Gfarm ファイルシステムへアクセスできます。
 
