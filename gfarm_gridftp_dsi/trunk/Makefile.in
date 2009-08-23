@@ -140,7 +140,6 @@ PACKAGE_TARNAME = @PACKAGE_TARNAME@
 PACKAGE_VERSION = @PACKAGE_VERSION@
 PATH_SEPARATOR = @PATH_SEPARATOR@
 RANLIB = @RANLIB@
-SED = @SED@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
 STRIP = @STRIP@
@@ -191,7 +190,7 @@ target_alias = @target_alias@
 lib_LTLIBRARIES = libglobus_gridftp_server_gfarm_$(FLAVOR).la
 libglobus_gridftp_server_gfarm___FLAVOR__la_SOURCES = globus_gridftp_server_gfarm.c
 AM_CFLAGS = -Wall
-EXTRA_DIST = LICENSE README.en README.ja
+EXTRA_DIST = RELNOTES LICENSE README.en README.ja
 all: config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-am
 
