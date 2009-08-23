@@ -1,24 +1,33 @@
 Globus GridFTP Server DSI for Gfarm File System
 
+This is a data storage interface (DSI) software for the Gfarm file
+system version 2 of the Globus GridFTP server.  It enables to access
+the Gfarm file system via a GridFTP server by a GridFTP client.
 
-Software Dependencies:
+** Software Dependencies
 
   - Globus Toolkit 4 (GT4)
     Binary Installer or Full Toolkit Source
-
     http://www.globus.org/toolkit/
 
-  - Gfarm version 2
-
+  - Gfarm file system version 2
     http://sourceforge.net/projects/gfarm
 
-Quick Start:
+** How to install
 
-  - Install GT4 and Gfarm File System.
+  - Install GT4 and the Gfarm file system.
 
-  - Install the non-threaded globus-gridftp-server
+  - Make sure to use the non-threaded globus-gridftp-server.  By
+    default threaded and non-threaded globus-gridftp-servers are built
+    at the following locations;
 
-	% sudo cp ${GLOBUS_LOCATION}/sbin/gcc32/shared/globus-gridftp-server \
+	${GLOBUS_LOCATION}/sbin/${FLAVOR}pthr/shared/globus-gridftp-server
+	${GLOBUS_LOCATION}/sbin/${FLAVOR}/shared/globus-gridftp-server
+
+    and the threaded globus-gridftp-server is installed.  Install the
+    non-threaded globus-gridftp-server as follows
+
+	% sudo cp ${GLOBUS_LOCATION}/sbin/${FLAVOR}/shared/globus-gridftp-server \
 	     ${GLOBUS_LOCATION}/sbin/globus-gridftp-server
 
   - Configure, make and make install
@@ -32,7 +41,17 @@ Quick Start:
 
 	% globus-gridftp-server -dsi gfarm
 
-Environment variable:
+** How to uninstall
+
+  - Remove the following files
+
+      ${GLOBUS_LOCATION}/lib/libglobus_gridftp_server_gfarm_${FLAVOR}.a
+      ${GLOBUS_LOCATION}/lib/libglobus_gridftp_server_gfarm_${FLAVOR}.la
+      ${GLOBUS_LOCATION}/lib/libglobus_gridftp_server_gfarm_${FLAVOR}.so
+      ${GLOBUS_LOCATION}/lib/libglobus_gridftp_server_gfarm_${FLAVOR}.so.0
+      ${GLOBUS_LOCATION}/lib/libglobus_gridftp_server_gfarm_${FLAVOR}.so.0.0.0
+
+** Environment variable
 
     GFARM_DSI_BLOCKSIZE
 	Specify the block size for file transfer
