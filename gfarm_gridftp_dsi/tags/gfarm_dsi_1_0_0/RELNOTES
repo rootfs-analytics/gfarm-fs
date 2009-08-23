@@ -1,0 +1,14 @@
+Release note for Gfarm GridFTP DSI 1.0.0
+========================================
+
+[2009.8.23]
+
+This is a data storage interface (DSI) software for the Gfarm file
+system version 2 of the Globus GridFTP server.  It enables to access
+the Gfarm file system via a GridFTP server by a GridFTP client.
+
+The DSI is enabled by the -dsi option of globus-gridftp-server;
+
+	% globus-gridftp-server -dsi gfarm
+
+$Id$
