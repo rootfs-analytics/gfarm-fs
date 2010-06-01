@@ -159,9 +159,6 @@ get_uid(char *user)
 	struct passwd *pwd;
 	char *luser;
 
-	if (strcmp(gfarm_get_global_username(), user) == 0)
-		return getuid(); /* my own file */
-
 	/*
 	 * XXX - this interface will be changed soon to support
 	 * multiple gfmds.
