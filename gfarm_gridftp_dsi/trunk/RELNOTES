@@ -1,3 +1,17 @@
+Release note for Gfarm GridFTP DSI 1.0.1
+========================================
+
+[2010.6.29]
+
+Updated feature
+* use local_user_map and local_group_map to identify the local users
+  and local groups
+
+Bug fix
+* do not return local uid when the global name and the local account
+  name are same since the local uid does not make sense in GSI
+  authentication
+
 Release note for Gfarm GridFTP DSI 1.0.0
 ========================================
 
