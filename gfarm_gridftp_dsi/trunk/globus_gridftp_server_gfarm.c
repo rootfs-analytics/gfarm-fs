@@ -153,46 +153,41 @@ globus_l_gfs_gfarm_destroy(void *user_arg)
  *  LIST is sent by the client, when the server needs to verify that
  *  a file exists and has the proper permissions, etc.
  ************************************************************************/
+#define NOBODY_UID	65535
+#define NOBODY_GID	65535
+
 static uid_t
-get_uid(char *user)
+get_uid(const char *path, char *user)
 {
 	struct passwd *pwd;
 	char *luser;
 
-	/*
-	 * XXX - this interface will be changed soon to support
-	 * multiple gfmds.
-	 */
-	if (gfarm_global_to_local_username(user, &luser)
+	if (gfarm_global_to_local_username_by_url(path, user, &luser)
 	    == GFARM_ERR_NO_ERROR) {
 		pwd = getpwnam(luser);
 		free(luser);
 		if (pwd != NULL)
-			return pwd->pw_uid;
+			return (pwd->pw_uid);
 	}
 	/* cannot conver to a local account */
-	return (0);
+	return (NOBODY_UID);
 }
 
 static int
-get_gid(char *group)
+get_gid(const char *path, char *group)
 {
 	struct group *grp;
 	char *lgroup;
 
-	/*
-	 * XXX - this interface will be changed soon to support
-	 * multiple gfmds.
-	 */
-	if (gfarm_global_to_local_groupname(group, &lgroup)
+	if (gfarm_global_to_local_groupname_by_url(path, group, &lgroup)
 	    == GFARM_ERR_NO_ERROR) {
 		grp = getgrnam(lgroup);
 		free(lgroup);
 		if (grp != NULL)
-			return grp->gr_gid;
+			return (grp->gr_gid);
 	}
 	/* cannot conver to a local group */
-	return (0);
+	return (NOBODY_GID);
 }
 
 static int
@@ -203,13 +198,13 @@ get_nlink(struct gfs_stat *st)
 }
 
 static void
-stat_array_copy(globus_gfs_stat_t *dst, struct gfs_stat *src)
+stat_array_copy(const char *path, globus_gfs_stat_t *dst, struct gfs_stat *src)
 {
 	dst->ino = src->st_ino;
 	dst->mode = src->st_mode;
 	dst->nlink = get_nlink(src);
-	dst->uid = get_uid(src->st_user);
-	dst->gid = get_gid(src->st_group);
+	dst->uid = get_uid(path, src->st_user);
+	dst->gid = get_gid(path, src->st_group);
 	dst->size = src->st_size;
 	dst->atime = src->st_atimespec.tv_sec;
 	dst->mtime = src->st_mtimespec.tv_sec;
@@ -249,7 +244,7 @@ stat_array_set(
 		stat_array->name = NULL;
 		return (e);
 	}
-	stat_array_copy(&stat_array[0], &st);
+	stat_array_copy(path, &stat_array[0], &st);
 	stat_array->name = strdup(name);
 	gfs_stat_free(&st);
 	return (GFARM_ERR_NO_ERROR);
