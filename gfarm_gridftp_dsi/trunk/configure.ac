@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.59)
-AC_INIT([gfarm_gridftp_dsi], [1.0.1])
+AC_INIT([gfarm_gridftp_dsi], [1.0.2])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 AC_CONFIG_SRCDIR([globus_gridftp_server_gfarm.c])
 AC_CONFIG_HEADER([config.h])
@@ -82,6 +82,7 @@ AC_MSG_RESULT([yes])
 
 # Checks for libraries.
 AC_CHECK_LIB([gfarm], [gfarm_initialize],, [AC_MSG_ERROR([libgfarm not found.  Use --with-gfarm option])])
+AC_CHECK_LIB([gfarm], [gfarm_get_global_username_by_url],, [AC_MSG_ERROR([Gfarm-2.4.2 or later is required])])
 
 # Checks for header files.
 AC_CHECK_HEADERS([gfarm/gfarm.h],, [AC_MSG_ERROR([gfarm/gfarm.h not found])])
