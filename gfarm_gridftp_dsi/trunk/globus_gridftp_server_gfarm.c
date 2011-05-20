@@ -818,11 +818,11 @@ gfarm_export_and_register_write(
 		result =  GLOBUS_SUCCESS;
 		goto finish;
 	}
-	gfarm_handle->offset += rv;
 	/* regist and send */
 	result = globus_gridftp_server_register_write(
 		op, buf, rv, gfarm_handle->offset,
 		-1, gfarm_export_cb, gfarm_handle);
+	gfarm_handle->offset += rv;
 	if (result == GLOBUS_SUCCESS)
 		goto end; /* next */
 finish:
