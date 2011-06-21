@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.59)
-AC_INIT([gfarm_gridftp_dsi], [1.0.2])
+AC_INIT([gfarm_gridftp_dsi], [1.0.3])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 AC_CONFIG_SRCDIR([globus_gridftp_server_gfarm.c])
 AC_CONFIG_HEADER([config.h])
