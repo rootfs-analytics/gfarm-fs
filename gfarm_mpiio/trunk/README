@@ -1,27 +1,38 @@
-This is a ROMIO ADIO device for Gfarm file system.
+	       ROMIO ADIO device for Gfarm file system
 
-INSTALL
----------
+Introduction
+------------
 
-This assumes that Gfarm is installed in /usr/local/gfarm_v2.
+This is a ROMIO ADIO device for Gfarm file system.  It improves N-to-1
+parallel read and write performance of MPI-IO for the Gfarm file
+system.  For details, refer to
 
-Downloading mpich2
+Hiroki Kimura and Osamu Tatebe, "MPI-IO/Gfarm: An Optimized
+Implementation of MPI-IO for the Gfarm File System", In Proceedings of
+IEEE/ACM International Symposium on Cluster, Cloud and Grid Computing,
+poster presentation, 2011
+
+How to install
+--------------
+
+This assumes that Gfarm is installed in $GFARM_PREFIX.
+
+1. Download MPICH2
 % wget http://www.mcs.anl.gov/research/projects/mpich2/downloads/tarballs/1.3.2p1/mpich2-1.3.2p1.tar.gz
 % tar zxvf mpich2-1.3.2p1.tar.gz
 
-Copying ad_gfarm directory 
+2. Copy ad_gfarm directory 
 % cp -r ad_gfarm mpich2-1.3.2p1/src/mpi/romio/adio/
 
-Applying patch
-% patch -p0< mpich2.patch
+3. Apply patch
+% patch -p0 < mpich2.patch
 % cd mpich2-1.3.2p1
 % ./maint/updatefiles
 
-Building mpich2
-% export CFLAG="-I/usr/local/gfarm_v2/include -lgfarm -L/usr/local/gfarm_v2/lib"
+4. Build MPICH2
+% export CFLAG="-I$GFARM_PREFIX/include -lgfarm -L$GFARM_PREFIX/lib"
 % ./configure --enable-romio --with-file-system=ufs+nfs+gfarm
 % make
 % make install
-
 
 2011/11/18 Hiroki Kimura
