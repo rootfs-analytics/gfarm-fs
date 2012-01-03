@@ -1,0 +1,154 @@
+--- mpich2-1.3.2p1.orig/src/mpi/romio/configure.in	2011-01-14 01:28:09.000000000 +0900
++++ mpich2-1.3.2p1/src/mpi/romio/configure.in	2011-11-15 14:47:03.000000000 +0900
+@@ -92,7 +92,7 @@
+ #
+ have_aio=no
+ #
+-known_filesystems="nfs ufs pfs pvfs pvfs2 testfs xfs panfs gridftp lustre bgl bglockless zoidfs"
++known_filesystems="nfs ufs pfs pvfs pvfs2 testfs xfs panfs gridftp lustre bgl bglockless gfarm zoidfs"
+ known_mpi_impls="mpich2_mpi mpich_mpi sgi_mpi hp_mpi cray_mpi lam_mpi"
+ #
+ # Defaults
+@@ -1270,6 +1270,10 @@
+ 	AC_DEFINE(ROMIO_GRIDFTP, 1, [Define for ROMIO with gridftp])
+ fi
+ 
++if test -n "$file_system_gfarm"; then
++	AC_DEFINE(ROMIO_GFARM, 1, [Define for ROMIO with gfarm])
++fi
++
+ if test -n "$file_system_bgl"; then
+     SYSDEP_INC=-I${prefix}/include
+ else
+@@ -2134,6 +2138,7 @@
+ 		   adio/ad_pvfs2/Makefile \
+ 		   adio/ad_gridftp/Makefile \
+   		   adio/ad_lustre/Makefile \
++		   adio/ad_gfarm/Makefile \
+ 		   adio/ad_zoidfs/Makefile \
+                    mpi-io/fortran/Makefile mpi2-other/info/fortran/Makefile \
+                    mpi2-other/array/fortran/Makefile test/fmisc.f \
+--- mpich2-1.3.2p1.orig/src/mpi/romio/Makefile.in	2011-01-14 01:28:09.000000000 +0900
++++ mpich2-1.3.2p1/src/mpi/romio/Makefile.in	2011-11-15 12:23:20.000000000 +0900
+@@ -14,7 +14,7 @@
+ MPIO_DIRS   = mpi-io
+ EXTRA_SRC_DIRS = @EXTRA_SRC_DIRS@
+ FILE_SYS_DIRS = @FILE_SYS_DIRS@
+-ALL_DIRS    = mpi-io mpi-io/fortran mpi2-other/info mpi2-other/info/fortran mpi2-other/array mpi2-other/array/fortran adio/common adio/ad_pfs adio/ad_piofs adio/ad_nfs adio/ad_ufs adio/ad_xfs adio/ad_hfs adio/ad_sfs adio/ad_testfs adio/ad_pvfs adio/ad_pvfs2 adio/ad_panfs adio/ad_gridftp adio/ad_lustre adio/ad_bgl adio/ad_bglockless test test-internal mpi-io/glue/default mpi-io/glue/mpich1 mpi-io/glue/mpich2
++ALL_DIRS    = mpi-io mpi-io/fortran mpi2-other/info mpi2-other/info/fortran mpi2-other/array mpi2-other/array/fortran adio/common adio/ad_pfs adio/ad_piofs adio/ad_nfs adio/ad_ufs adio/ad_xfs adio/ad_hfs adio/ad_sfs adio/ad_testfs adio/ad_pvfs adio/ad_pvfs2 adio/ad_panfs adio/ad_gridftp adio/ad_lustre adio/ad_bgl adio/ad_bglockless adio/ad_gfarm test test-internal mpi-io/glue/default mpi-io/glue/mpich1 mpi-io/glue/mpich2
+ SHELL       = /bin/sh
+ 
+ @VPATH@
+--- mpich2-1.3.2p1.orig/src/mpi/romio/adio/common/ad_fstype.c	2010-05-18 02:57:48.000000000 +0900
++++ mpich2-1.3.2p1/src/mpi/romio/adio/common/ad_fstype.c	2011-11-15 12:05:56.000000000 +0900
+@@ -403,6 +403,8 @@
+     *fstype = ADIO_UFS;
+     return;
+ # endif
++
++
+     /* --BEGIN ERROR HANDLING-- */
+     *error_code = MPIO_Err_create_code(MPI_SUCCESS, MPIR_ERR_RECOVERABLE,
+ 				       myname, __LINE__, MPI_ERR_NO_SUCH_FILE,
+@@ -550,6 +552,8 @@
+     else if (!strncmp(filename, "bglockless:", 11) || 
+ 	    !strncmp(filename, "BGLOCKLESS:", 11)) {
+ 	*fstype = ADIO_BGLOCKLESS;
++    }else if (!strncmp(filename, "gfarm:", 6) || !strncmp(filename, "GFARM:", 6)) {
++	*fstype = ADIO_GFARM;
+     }
+     else {
+ #ifdef ROMIO_NTFS
+@@ -831,6 +835,16 @@
+ 	*ops = &ADIO_ZOIDFS_operations;
+ #endif
+     }
++    if (file_system == ADIO_GFARM) {
++#ifndef ROMIO_GFARM
++	*error_code = MPIO_Err_create_code(MPI_SUCCESS, MPIR_ERR_RECOVERABLE,
++					    myname, __LINE__, MPI_ERR_IO,
++					    "**iofstypeunsupported", 0);
++	return;
++#else
++	*ops = &ADIO_GFARM_operations;
++#endif
++    }
+     *error_code = MPI_SUCCESS;
+     *fstype = file_system;
+     return;
+--- mpich2-1.3.2p1.orig/src/mpi/romio/adio/include/adio.h	2010-11-07 00:02:44.000000000 +0900
++++ mpich2-1.3.2p1/src/mpi/romio/adio/include/adio.h	2011-11-15 12:08:19.000000000 +0900
+@@ -290,6 +290,7 @@
+ #define ADIO_BGL                 164   /* IBM BGL */
+ #define ADIO_BGLOCKLESS          165   /* IBM BGL (lock-free) */
+ #define ADIO_ZOIDFS              167   /* ZoidFS: the I/O forwarding fs */
++#define ADIO_GFARM               168
+ 
+ #define ADIO_SEEK_SET            SEEK_SET
+ #define ADIO_SEEK_CUR            SEEK_CUR
+--- mpich2-1.3.2p1.orig/src/mpi/romio/adio/include/adioi_errmsg.h	2008-11-07 06:29:57.000000000 +0900
++++ mpich2-1.3.2p1/src/mpi/romio/adio/include/adioi_errmsg.h	2011-11-15 12:11:32.000000000 +0900
+@@ -42,7 +42,7 @@
+ 
+ MPI_ERR_IO
+     MPIR_ERR_ETYPE_FRACTIONAL "Only an integral number of etypes can be accessed"
+-    MPIR_ERR_NO_FSTYPE "Can't determine the file-system type. Check the filename/path you provided and try again. Otherwise, prefix the filename with a string to indicate the type of file sytem (piofs:, pfs:, nfs:, ufs:, hfs:, xfs:, sfs:, pvfs:, panfs: ftp: gsiftp:)"
++    MPIR_ERR_NO_FSTYPE "Can't determine the file-system type. Check the filename/path you provided and try again. Otherwise, prefix the filename with a string to indicate the type of file sytem (piofs:, pfs:, nfs:, ufs:, hfs:, xfs:, sfs:, pvfs:, panfs: ftp: gsiftp: gfarm:)"
+     MPIR_ERR_NO_PFS "ROMIO has not been configured to use the PFS file system"
+     MPIR_ERR_NO_PIOFS "ROMIO has not been configured to use the PIOFS file system"
+     MPIR_ERR_NO_UFS "ROMIO has not been configured to use the UFS file system"
+@@ -52,6 +52,7 @@
+     MPIR_ERR_NO_SFS "ROMIO has not been configured to use the SFS file system"
+     MPIR_ERR_NO_PVFS "ROMIO has not been configured to use the PVFS file system"
+     MPIR_ERR_NO_PANFS "ROMIO has not been configured to use the PANFS file system"
++	MPIR_ERR_NO_GFARM "ROMIO has not been configured to use the GFARM file system"
+     MPIR_ERR_MULTIPLE_SPLIT_COLL "Only one active split collective I/O operation allowed per file handle"
+     MPIR_ERR_NO_SPLIT_COLL "No previous split collective begin"
+     MPIR_ERR_ASYNC_OUTSTANDING "There are outstanding nonblocking I/O operations on this file"
+--- mpich2-1.3.2p1.orig/src/mpi/romio/adio/include/adioi_fs_proto.h	2008-08-15 03:46:36.000000000 +0900
++++ mpich2-1.3.2p1/src/mpi/romio/adio/include/adioi_fs_proto.h	2011-11-15 12:13:03.000000000 +0900
+@@ -94,4 +94,9 @@
+ extern struct ADIOI_Fns_struct ADIO_ZOIDFS_operations;
+ #endif
+ 
++#ifdef ROMIO_GFARM
++/* prototypes are in adio_ad_gfarm_ad_gfarm.h */
++extern struct ADIOI_Fns_struct ADIO_GFARM_operations;
++#endif
++
+ #endif
+--- mpich2-1.3.2p1.orig/src/mpi/romio/adio/include/mpio_error.h	2008-11-07 06:29:57.000000000 +0900
++++ mpich2-1.3.2p1/src/mpi/romio/adio/include/mpio_error.h	2011-11-15 12:14:29.000000000 +0900
+@@ -64,6 +64,7 @@
+ #define MPIR_ERR_NO_TESTFS 36
+ #define MPIR_ERR_NO_LUSTRE 37
+ #define MPIR_ERR_NO_BGL 38
++#define MPIR_ERR_NO_GFARM 39
+ 
+ /* MPI_ERR_COMM */
+ #ifndef MPIR_ERR_COMM_NULL
+--- mpich2-1.3.2p1.orig/src/mpi/romio/adio/include/romioconf.h.in	2011-02-15 10:08:20.000000000 +0900
++++ mpich2-1.3.2p1/src/mpi/romio/adio/include/romioconf.h.in	2011-11-15 15:06:27.000000000 +0900
+@@ -249,6 +249,9 @@
+ /* Define for lock-free ROMIO with BGL */
+ #undef ROMIO_BGLOCKLESS
+ 
++/* Define for ROMIO with gfarm */
++#undef ROMIO_GFARM
++
+ /* Define for ROMIO with gridftp */
+ #undef ROMIO_GRIDFTP
+ 
+--- mpich2-1.3.2p1.orig/src/mpi/romio/adio/common/ad_set_view.c	2007-11-03 07:50:19.000000000 +0900
++++ mpich2-1.3.2p1/src/mpi/romio/adio/common/ad_set_view.c	2011-11-15 12:29:03.000000000 +0900
+@@ -73,5 +73,10 @@
+ 		}
+ 	    }
+ 	}
++
++	if(fd->file_system == ADIO_GFARM) {
++		ad_gfarm_set_view(fd, disp, info);
++	}
++
+ 	*error_code = MPI_SUCCESS;
+ }
