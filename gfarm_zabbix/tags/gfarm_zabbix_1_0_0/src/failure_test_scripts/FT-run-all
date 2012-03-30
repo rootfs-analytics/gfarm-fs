@@ -1,0 +1,7 @@
+#! /bin/sh
+
+. ./FT-common
+
+rm -f $FT_LOG
+rm -f $FT_MBOX_BACKUP_FILE_PREFIX.*
+ft_run_all

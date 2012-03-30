@@ -1,0 +1,74 @@
+#! /bin/sh
+
+######################################################################
+TESTID="FT3-3-1-1"
+CATEGORY="accident while failover and failure of  meta data sync"
+SECTION="failover in the midst of client accessd"
+TITLE="failover while reading"
+######################################################################
+
+. ./FT-common
+
+ft_setup()
+{
+	FILE=a.dat
+	COPY=b.dat
+	DIR=mnt
+	SIZE=1000M
+
+	ssh $client1 "mkdir -p $DIR"
+	$gfservice unmount client1 $DIR
+	$gfservice mount client1 $DIR -o nonempty
+	ssh $client1 "rm -f $DIR/$FILE"
+	ssh $client1 "rm -f $FILE $COPY create-random-file"
+	scp create-random-file $client1:
+	ssh $client1 "./create-random-file $FILE $SIZE"
+	return $FT_RESULT_PASS
+}
+
+ft_main()
+{
+	RESULT=$FT_RESULT_PASS
+
+	ssh $client1 "cp $FILE $DIR/$FILE" \
+		|| RESULT=$FT_RESULT_FAIL
+	ft_checkpoint 1 "copy a large file on Gfarm2 filesytem" $RESULT
+	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
+
+	ssh $client1 "cp $DIR/$FILE $COPY" &
+	[ $? -eq 0 ] || RESULT=$FT_RESULT_FAIL
+	ft_checkpoint 2 "read a large file from Gfarm2 filesytem" $RESULT
+	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
+
+	$gfservice stop-gfmd gfmd1 \
+		|| RESULT=$FT_RESULT_FAIL
+	ft_checkpoint 3 "stop gfmd on $gfmd1" $RESULT
+	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
+
+	ssh $gfmd2 "sudo kill -USR1 \`cat /var/run/gfmd.pid\`" \
+		|| RESULT=$FT_RESULT_FAIL
+	ft_checkpoint 4 "upgrade slave gfmd on $gfmd2" $RESULT
+	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
+
+	ft_wait_remote_process $client1 "cp $DIR/$FILE $COPY" \
+		|| RESULT=$FT_RESULT_FAIL
+	ft_checkpoint 5 "wait to copy a large file" $RESULT
+	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
+
+	ssh $client1 "cmp $FILE $COPY" || RESULT=$FT_RESULT_FAIL
+	ft_checkpoint 6 "compare the copy with the original" $RESULT
+	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
+
+	return $RESULT
+}
+
+ft_teardown()
+{
+	ssh $client1 "rm -f $DIR/$FILE"
+	ssh $client1 "rm -f $FILE $COPY create-random-file"
+	$gfservice umount client1 $DIR
+	ft_reset_gfmd
+	return $FT_RESULT_PASS
+}
+
+ft_run "$TESTID" "$TITLE"

@@ -1,0 +1,84 @@
+#! /bin/sh
+
+######################################################################
+TESTID="FT2-2-2-2"
+CATEGORY="2 point accident"
+SECTION="2 internal accident"
+TITLE="master gfmd down with no synced slave"
+######################################################################
+
+. ./FT-common
+
+ft_setup()
+{
+	JOURNAL_SIZE=50000
+	N_TRANSACTIONS=`expr $JOURNAL_SIZE / 200`
+
+	ft_reset_gfmd || return $FT_RESULT_FAIL
+	./FT-set-journal-size $JOURNAL_SIZE || return $FT_RESULT_FAIL
+
+	return $FT_RESULT_PASS
+}
+
+ft_main()
+{
+	R1=$FT_RESULT_PASS
+	gfmdhost -l > /dev/null 2>&1 || R1=$FT_RESULT_FAIL
+	ft_checkpoint 1 "gfmdhost -l" $R1
+	[ $R1 -eq $FT_RESULT_PASS ] || return $R1
+
+	R2=$FT_RESULT_PASS
+	$gfservice stop-gfmd gfmd2 || R2=$FT_RESULT_FAIL
+	ft_checkpoint 2 "stop gfmd on $gfmd2" $R2
+	[ $R2 -eq $FT_RESULT_PASS ] || return $R2
+
+	I=0
+	TESTDIR="/$TESTID.$$"
+	while [ $I -lt $N_TRANSACTIONS ]; do
+		gfmkdir $TESTDIR
+		gfrmdir $TESTDIR
+		I=`expr $I + 1`
+	done
+
+	R3=$FT_RESULT_PASS
+	ft_checkpoint 3 "lap a journal file." $R3
+	[ $R3 -eq $FT_RESULT_PASS ] || return $R3
+
+	R4=$FT_RESULT_PASS
+	$gfservice -t 30 start-gfmd gfmd2 && R4=$FT_RESULT_XPASS
+	ft_checkpoint 4 "start gfmd on gfmd2" $R4
+	[ $R4 -eq $FT_RESULT_PASS -o $R4 -eq $FT_RESULT_XPASS ] || return $R4
+
+	R5=$FT_RESULT_PASS
+	CONN_STATUS=`gfmdhost -l | awk "{if (\\$6 == \"$gfmd2\") print \\$1}"`
+	[ "X$CONN_STATUS" = "Xx" ] || R5=$FT_RESULT_XPASS
+	ft_checkpoint 5 "gfmdhost -l" $R5
+	[ $R5 -eq $FT_RESULT_PASS -o $R5 -eq $FT_RESULT_XPASS ] || return $R5
+
+	R6=$FT_RESULT_PASS
+	$gfservice stop-gfmd gfmd1 || R6=$FT_RESULT_FAIL
+	ft_checkpoint 6 "stop gfmd on $gfmd1" $R6
+	[ $R6 -eq $FT_RESULT_PASS ] || return $R6
+
+	R7=$FT_RESULT_PASS
+	ft_check_mail "gfmd does not listen on $gfmd1" \
+		|| R7=$FT_RESULT_FAIL
+	ft_checkpoint 7 "receive a mail" $R7
+	[ $R7 -eq $FT_RESULT_PASS ] || return $R7
+
+	R8=$FT_RESULT_PASS
+	ft_check_mail "Re: gfmd does not listen on $gfmd1" \
+		|| R8=$FT_RESULT_FAIL
+	ft_checkpoint 8 "receive a mail" $R8
+	[ $R8 -eq $FT_RESULT_PASS ] || return $R8
+
+	return $RESULT
+}
+
+ft_teardown()
+{
+	ft_reset_gfmd
+	return $FT_RESULT_PASS
+}
+	
+ft_run "$TESTID" "$TITLE"

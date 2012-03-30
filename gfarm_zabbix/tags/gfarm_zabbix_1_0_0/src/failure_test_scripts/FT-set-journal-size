@@ -1,0 +1,87 @@
+#! /bin/sh
+#
+# Utility to set journal file size of gfmd servers.
+#
+#    ./FT-set-journal-size SIZE
+#
+# where the unit of SIZE is byte.  This script should be executed just
+# after ./FT-config.
+#
+
+. ./FT-common
+
+#
+# Check command line arguments.
+#
+USAGE="Usage: $0 SIZE"
+
+if [ $# -eq 0 ]; then
+	echo "$0: journal size not specified" 1>&2
+	echo $USAGE 1>&2
+	exit 1
+fi
+
+JOURNAL_SIZE="$1"
+expr "X$JOURNAL_SIZE" : '^X[1-9][0-9]*$' > /dev/null 2>&1 || {
+	echo "$0: invalid journal size '$JOURNAL_SIZE'" 1>&2
+	echo $USAGE 1>&2
+	exit 1
+}
+
+#
+# Stop gfmd servers.
+#
+I=1
+while [ "X`eval echo \\$gfmd$I`" != X ]; do
+	$gfservice stop-gfmd gfmd$I || {
+		echo "$0: failed to stop gfmd on gfmd$I" 1>&2
+		exit 1
+	}
+	I=`expr $I + 1`
+done
+
+#
+# Set 'metadb_journal_max_size' directive in 'gfmd.conf' to the
+# specified size.
+#
+I=1
+while [ "X`eval echo \\$gfmd$I`" != X ]; do
+	$gfservice set-gfmd-conf gfmd$I metadb_journal_max_size $JOURNAL_SIZE
+	I=`expr $I + 1`
+done
+
+#
+# Backup database of gfmd1 and restore it to other gfmd servers.
+#
+TMP_FILE=/tmp/ft-set-journal-size.$$
+trap "rm -f $TMP_FILE; exit 1" 1 2 3 15
+rm -f $TMP_FILE
+
+$gfservice backup-backend-db gfmd1 > $TMP_FILE || {
+	echo "$0: failed to backup database of gfmd1" 1>&2
+	exit 1
+}
+
+I=2
+while [ "X`eval echo \\$gfmd$I`" != X ]; do
+	$gfservice restore-backend-db gfmd$I < $TMP_FILE || {
+		echo "$0: failed to restore database of gfmd1" 1>&2
+		exit 1
+	}
+	I=`expr $I + 1`
+done
+
+rm -f $TMP_FILE
+
+#
+# Start gfmd servers.
+#
+I=1
+while [ "X`eval echo \\$gfmd$I`" != X ]; do
+	$gfservice start-gfmd gfmd$I || {
+		echo "$0: failed to start gfmd on gfmd$I" 1>&2
+	}
+	I=`expr $I + 1`
+done
+
+exit 0
