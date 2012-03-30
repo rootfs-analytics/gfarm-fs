@@ -1,0 +1,57 @@
+[This is written in Japanese, please look at README.en for English version.]
+
+ファイル一覧
+
+  gfarm-zabbix_confs/                Zabbixサーバ・エージェント設定ファイルサンプル
+    zabbix_agentd.conf_host-a          Zabbix エージェント設定ファイルサンプル (host-a 用)
+    zabbix_agentd.conf_host-b          Zabbix エージェント設定ファイルサンプル (host-b 用)
+    zabbix_agentd.conf_host-c          Zabbix エージェント設定ファイルサンプル (host-c 用)
+    zabbix_server.conf_master          Zabbix サーバ設定ファイルサンプル (マスターノード用)
+    zabbix_server.conf_slave           Zabbix サーバ設定ファイルサンプル (子ノード用)
+
+  gfarm-zabbix_redundancy/           冗長化監視対応機能設定ファイル
+    mds_list/                          クライアント設定ファイル編集機能
+      html/                              クライアント設定ファイル編集用 HTML・PHP ファイル
+        upload.html                        クライアント設定ファイルアップロード用 HTML ファイル
+        register.php                       クライアント設定ファイル設定・検証用 PHP スクリプト
+        download.php                       クライアント設定ファイルダウンロード用 PHP スクリプト
+      scripts/                           クライアント設定ファイル編集用スクリプト
+        zbx_check_gfarm2_conf.sh           クライアント設定ファイル検証スクリプト
+        zbx_generate_mdslist.sh            冗長化対応設定生成スクリプト
+
+  gfarm-zabbix_scripts/              Zabbixエージェント用設定ファイル一式
+    externalscripts/                   Gfarm監視用スクリプト
+      zbx_chk_gfarm.conf                 Gfarm監視用設定
+      zbx_chk_gfhost_cli.sh              gfhost実行スクリプト
+      zbx_chk_gfhost_gfsd.sh             gfhost実行スクリプト(ファイルシステムノード用)
+      zbx_chk_gfmdhost_cli.sh            gfmdhost実行スクリプト
+      zbx_chk_gfmdlist_cli.sh            メタデータサーバリスト取得スクリプト
+      zbx_chk_gfmdtype_gfmd.sh           メタデータサーバ種別判定スクリプト(メタデータサー用)
+      zbx_chk_gfquota_cli.sh             gfquota 実行スクリプト
+      zbx_chk_gfsched_gfmd.sh            gfsched実行スクリプト(メタデータサーバ用)
+      zbx_chk_gfsched_gfsd.sh            gfsched実行スクリプト(ファイルシステムノード用)
+      zbx_chk_iostat.sh                  iostat 実行スクリプト
+      zbx_chk_mastername_cli.sh          マスターメタデータサーバ名取得スクリプト
+      zbx_chk_ntp.sh                     ntpq 実行スクリプト
+      zbx_chk_pgsql.conf                 PostgreSQL監視用設定
+      zbx_chk_pgsql.sh                   PostgreSQL監視用スクリプト
+      zbx_chk_redundancy_cli.sh          昇格可能スレーブサーバ数取得スクリプト
+      zbx_failover.sh                    フェイルオーバ実行用スクリプト
+      zbx_gfarm2_mds_upgrade.sh          スレーブメタデータサーバ昇格用スクリプト
+
+    zabbix_agentd.d/                   Zabbixユーザパラメータ設定
+      userparameter_gfarm.conf           Gfarm監視用 (非冗長化環境用)
+      userparameter_postgresql.conf      PostgreSQL監視用
+      userparameter_redundant_gfarm.conf 冗長化環境用 Gfarm 監視用
+
+  gfarm-zabbix_templates/            Gfarm用監視項目テンプレート一式
+    Template_Gfarm_cli.xml             クライアントノード監視項目テンプレート (非冗長化環境用)
+    Template_Gfarm_common.xml          共通Gfarm監視項目テンプレート
+    Template_Gfarm_gfmd.xml            メタデータサーバ用監視項目テンプレート (非冗長化環境用)
+    Template_Gfarm_gfsd.xml            ファイルシステムノード用監視項目テンプレート (非冗長化環境用)
+    Template_Gfarm_zabbix.xml          Zabbix サーバ相互監視用監視項目テンプレート
+    Template_Gfarm_redundant_cli.xml   冗長化環境クライアントノード用監視項目テンプレート
+    Template_Gfarm_redundant_gfmd.xml  冗長化環境メタデータサーバ用監視項目テンプレート
+    Template_Gfarm_redundant_gfsd.xml  冗長化環境ファイルシステムノード用監視項目テンプレート
+
+  failure_test_scripts/              障害発生テストケーススクリプト群

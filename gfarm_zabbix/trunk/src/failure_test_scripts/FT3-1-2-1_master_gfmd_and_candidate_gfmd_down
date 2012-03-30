@@ -1,0 +1,60 @@
+#! /bin/sh
+
+########################################################################
+TESTID="FT3-1-2-1"
+CATEGORY="2 point accident"
+SECTION="2 internal accident"
+TITLE="master and master candidate gfmd are down"
+########################################################################
+
+. ./FT-common
+
+ft_setup()
+{
+	FT_MAIL_TIMEOUT=900
+
+	return $FT_RESULT_PASS
+}
+
+ft_main()
+{
+	RESULT=$FT_RESULT_PASS
+
+	MASTER_CANDIDATE=`ft_get_master_candidate`
+	[ "X$MASTER_CANDIDATE" != X ] || RESULT=$FT_RESULT_FAIL
+	ft_checkpoint 1 "find master candidate gfmd" $RESULT
+	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
+
+	$gfservice stop-gfmd gfmd1 \
+		|| RESULT=$FT_RESULT_FAIL
+	ft_checkpoint 2 "stop master candidate gfmd on $gfmd1" $RESULT
+	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
+
+	MASTER_CANDIDATE_NAME=`eval echo \\$$MASTER_CANDIDATE`
+	$gfservice stop-gfmd $MASTER_CANDIDATE \
+		|| RESULT=$FT_RESULT_FAIL
+	ft_checkpoint 3 "stop master candidate gfmd on $MASTER_CANDIDATE_NAME" $RESULT
+	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
+
+	ft_check_mails \
+		"slave gfmd is not running on $MASTER_CANDIDATE_NAME" \
+		"gfmd does not listen on $gfmd1" \
+		|| RESULT=$FT_RESULT_FAIL
+	ft_checkpoint 4 "receive mails" $RESULT
+	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
+
+	ft_check_mail "Re: gfmd does not listen on $gfmd1" \
+		|| RESULT=$FT_RESULT_FAIL
+	ft_checkpoint 5 "receive a mail" $RESULT
+	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
+
+	return $RESULT
+}
+
+ft_teardown()
+{
+	ft_reset_gfmd
+	return $FT_RESULT_PASS
+}
+
+ft_run "$TESTID" "$TITLE"
