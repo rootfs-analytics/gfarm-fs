@@ -1,0 +1,68 @@
+#! /bin/sh
+
+######################################################################
+TESTID="FT1-2-1-1"
+CATEGORY="accident causes no failover"
+SECTION="common observed properties"
+TITLE="disk exhausted"
+######################################################################
+
+. ./FT-common
+
+get_exhausted_size()
+{
+	_HOST_=$1
+	_SIZE_=`ssh $_HOST_ df -Pk  | grep ' /$' | awk '{ usize=$3; fsize=$4 }
+			END {
+				print int(((usize + fsize) / 100 * 95) - usize)
+			}'`
+	echo $_SIZE_
+}
+
+ft_setup()
+{
+	scp create-random-file $gfsd1:
+	ssh $gfsd1 rm -f tmp.dat
+	return $FT_RESULT_PASS
+}
+
+ft_main()
+{
+	RESULT=$FT_RESULT_PASS
+	
+	ADDITIONAL_TIME=600
+	FT_MAIL_TIMEOUT=`expr $FT_MAIL_TIMEOUT + $ADDITIONAL_TIME`
+
+	SIZE=`get_exhausted_size $gfsd1`
+	ssh $gfsd1 ./create-random-file tmp.dat "${SIZE}K" || RESULT=$FT_RESULT_FAIL
+	ft_checkpoint 1 "create a large file on $gfsd1" $RESULT
+	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
+
+	ft_check_mails \
+		"Low free disk space on $gfsd1 volume /" \
+		"High used disk space on $gfsd1 volume /" \
+		|| RESULT=$FT_RESULT_FAIL
+	ft_checkpoint 2 "receive two mails" $RESULT
+	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
+
+	ssh $gfsd1 rm -f tmp.dat || RESULT=$FT_RESULT_FAIL
+	ft_checkpoint 3 "delete the large file on $gfsd1" $RESULT
+	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
+
+	ft_check_mails \
+		"Re: Low free disk space on $gfsd1 volume /" \
+		"Re: High used disk space on $gfsd1 volume /" \
+		|| RESULT=$FT_RESULT_FAIL
+	ft_checkpoint 4 "receive two mails" $RESULT
+	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
+
+	return $RESULT
+}
+
+ft_teardown()
+{
+	ssh $gfsd1 rm -f create-random-file tmp.dat
+	return $FT_RESULT_PASS
+}
+	
+ft_run "$TESTID" "$TITLE"

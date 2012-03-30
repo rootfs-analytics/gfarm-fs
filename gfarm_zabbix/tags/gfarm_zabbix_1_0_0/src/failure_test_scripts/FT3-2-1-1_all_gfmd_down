@@ -1,0 +1,52 @@
+#! /bin/sh
+
+######################################################################
+TESTID="FT3-2-1-1"
+CATEGORY="N point accident"
+SECTION="MDS internal accident"
+TITLE="all gfmd down"
+######################################################################
+
+. ./FT-common
+
+ft_setup()
+{
+	return $FT_RESULT_PASS
+}
+
+ft_main()
+{
+	RESULT=$FT_RESULT_PASS
+
+	$gfservice stop-gfmd gfmd3 || RESULT=$FT_RESULT_FAIL
+	ft_checkpoint 1.3 "stop gfmd on $gfmd3" $RESULT
+	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
+
+	$gfservice stop-gfmd gfmd2 || RESULT=$FT_RESULT_FAIL
+	ft_checkpoint 1.2 "stop gfmd on $gfmd2" $RESULT
+	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
+
+	$gfservice stop-gfmd gfmd1 || RESULT=$FT_RESULT_FAIL
+	ft_checkpoint 1.1 "stop gfmd on $gfmd1" $RESULT
+	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
+
+	ft_check_mails \
+		"slave gfmd is not running on $gfmd3" \
+		"slave gfmd is not running on $gfmd2" \
+		"gfmd does not listen on $gfmd1" \
+		|| RESULT=$FT_RESULT_FAIL
+	ft_checkpoint 2.1 "receive mails" $RESULT
+	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
+
+	return $RESULT
+}
+
+ft_teardown()
+{
+	$gfservice start-gfmd gfmd1
+	$gfservice start-gfmd gfmd2
+	$gfservice start-gfmd gfmd3
+	return $FT_RESULT_PASS
+}
+	
+ft_run "$TESTID" "$TITLE"

@@ -1,0 +1,49 @@
+#! /bin/sh
+
+######################################################################
+TESTID="FT3-1-1-1"
+CATEGORY="2 point accident"
+SECTION="internal accident and network down"
+TITLE="master gfmd down with master MDS network down"
+######################################################################
+
+. ./FT-common
+
+ft_setup()
+{
+	IFUP_PATH=/sbin/ifup
+	IFDOWN_PATH=/sbin/ifdown
+
+	return $FT_RESULT_PASS
+}
+
+ft_main()
+{
+	RESULT=$FT_RESULT_PASS
+
+	$gfservice stop-gfmd gfmd1 \
+		|| RESULT=$FT_RESULT_FAIL
+	ft_checkpoint 1 "stop gfmd on $gfmd1" $RESULT
+	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
+
+	ssh $gfmd1_CTRL_ADDRESS sudo $IFDOWN_PATH $gfmd1_GFARM_IF \
+		|| RESULT=$FT_RESULT_FAIL
+	ft_checkpoint 2 "ifdown $gfmd1_GFARM_IF on $gfmd1" $RESULT
+	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
+
+	ft_check_mail "$gfmd1 is unreachable" \
+		|| RESULT=$FT_RESULT_FAIL
+	ft_checkpoint 3 "receive a mail" $RESULT
+	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
+
+	return $RESULT
+}
+
+ft_teardown()
+{
+	ssh $gfmd1_CTRL_ADDRESS sudo $IFUP_PATH $gfmd1_GFARM_IF
+	$gfservice start-gfmd gfmd1
+	return $FT_RESULT_PASS
+}
+
+ft_run "$TESTID" "$TITLE"

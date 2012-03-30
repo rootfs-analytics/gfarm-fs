@@ -1,0 +1,55 @@
+#! /bin/sh
+
+######################################################################
+TESTID="FT1-2-5-2"
+CATEGORY="accident causes no failover"
+SECTION="observer accident"
+TITLE="zabbix master down"
+######################################################################
+
+. ./FT-common
+
+ft_setup()
+{
+	[ `hostname` != $zabbix2 ] || return $FT_RESULT_FAIL
+	SERVICE_PATH=/sbin/service
+	return $FT_RESULT_PASS
+}
+
+
+ft_main()
+{
+	RESULT=$FT_RESULT_PASS
+
+	ssh $zabbix2 sudo $SERVICE_PATH zabbix-server stop \
+		|| RESULT=$FT_RESULT_FAIL
+	ft_checkpoint 1 "stop zabbix child server on $zabbix2" $RESULT
+	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
+
+	ft_check_mail "zabbix_server is not running on $zabbix2" \
+		|| RESULT=$FT_RESULT_FAIL
+	ft_checkpoint 2 "receive a mail" $RESULT
+	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
+	ft_truncate_mbox
+
+	ssh $zabbix2 sudo $SERVICE_PATH zabbix-server start \
+		|| RESULT=$FT_RESULT_FAIL
+	ft_checkpoint 3 "start zabbix child server on $zabbix2" $RESULT
+	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
+
+	ft_check_mail "Re: zabbix_server is not running on $zabbix2" \
+		|| RESULT=$FT_RESULT_FAIL
+	ft_checkpoint 4 "receive a mail" $RESULT
+	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
+	ft_truncate_mbox
+
+	return $RESULT
+}
+
+ft_teardown()
+{
+	ssh $zabbix2 sudo $SERVICE_PATH zabbix-server start
+	return $FT_RESULT_PASS
+}
+	
+ft_run "$TESTID" "$TITLE"

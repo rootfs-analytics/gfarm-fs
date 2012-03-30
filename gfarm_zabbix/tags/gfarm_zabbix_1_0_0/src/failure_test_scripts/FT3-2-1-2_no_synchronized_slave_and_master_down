@@ -1,0 +1,81 @@
+#! /bin/sh
+
+########################################################################
+TESTID="FT3-2-1-2"
+CATEGORY="N point accident"
+SECTION="MDS internal accident"
+TITLE="no synchronized slave gfmd and master gfmd down"
+########################################################################
+
+. ./FT-common
+
+ft_setup()
+{
+	JOURNAL_SIZE=50000
+	N_TRANSACTIONS=`expr $JOURNAL_SIZE / 200`
+
+	ft_reset_gfmd || return $FT_RESULT_FAIL
+	./FT-set-journal-size $JOURNAL_SIZE || return $FT_RESULT_FAIL
+
+	return $FT_RESULT_PASS
+}
+
+ft_main()
+{
+	GFMD_TIMEOUT=60
+
+	R1=$FT_RESULT_PASS
+	$gfservice -t $GFMD_TIMEOUT stop-gfmd gfmd2 \
+		&& $gfservice -t $GFMD_TIMEOUT stop-gfmd gfmd3 \
+		|| R1=$FT_RESULT_FAIL
+	ft_checkpoint 1 "stop all slave gfmd" $R1
+	[ $R1 -eq $FT_RESULT_PASS ] || return $R1
+
+	I=0
+	TESTDIR="/$TESTID.$$"
+	while [ $I -lt $N_TRANSACTIONS ]; do
+		gfmkdir $TESTDIR
+		gfrmdir $TESTDIR
+		I=`expr $I + 1`
+	done
+
+	R2=$FT_RESULT_PASS
+	ft_checkpoint 2 "lap a journal file." $R2
+	[ $R2 -eq $FT_RESULT_PASS ] || return $R2
+
+	$gfservice -t $GFMD_TIMEOUT start-gfmd gfmd2
+	$gfservice -t $GFMD_TIMEOUT start-gfmd gfmd3
+
+	R3=$FT_RESULT_PASS
+	ft_checkpoint 3 "start all slave gfmd with timeout $TIMEOUT sec." $R3
+	[ $R3 -eq $FT_RESULT_PASS ] || return $R3
+
+	SLEEP_PERIOD=600
+	R4=$FT_RESULT_PASS
+	sleep $SLEEP_PERIOD \
+		|| R4=$FT_RESULT_FAIL
+	ft_checkpoint 4 "sleep $SLEEP_PERIOD sec." $R4
+	[ $R4 -eq $FT_RESULT_PASS ] || return $R4
+
+	R5=$FT_RESULT_PASS
+	$gfservice stop-gfmd gfmd1 \
+		|| R5=$FT_RESULT_FAIL
+	ft_checkpoint 5 "stop master gfmd on $gfmd1" $R5
+	[ $R5 -eq $FT_RESULT_PASS ] || return $R5
+
+	R6=$FT_RESULT_PASS
+	ft_check_mail "gfmd does not listen on $gfmd1" \
+		|| R6=$FT_RESULT_FAIL
+	ft_checkpoint 6 "receive a mail" $R6
+	[ $R6 -eq $FT_RESULT_PASS ] || return $R6
+
+	return $FT_RESULT_PASS
+}
+
+ft_teardown()
+{
+	ft_reset_gfmd
+	return $FT_RESULT_PASS
+}
+
+ft_run "$TESTID" "$TITLE"
