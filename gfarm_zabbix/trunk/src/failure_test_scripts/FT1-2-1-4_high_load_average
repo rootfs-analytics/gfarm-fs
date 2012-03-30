@@ -1,0 +1,53 @@
+#! /bin/sh
+
+######################################################################
+TESTID="FT1-2-1-4"
+CATEGORY="accident causes no failover"
+SECTION="common observed properties"
+TITLE="common observed properties "
+######################################################################
+
+. ./FT-common
+
+ft_setup()
+{
+	STRESS_CMD=bin/cpu-stress
+	STRESS_NPROCS=6
+	STRESS_PERIOD=$FT_MAIL_TIMEOUT
+	ssh $gfmd1 mkdir -p `dirname $STRESS_CMD`
+	ssh $gfmd1 tee $STRESS_CMD < ./cpu-stress > /dev/null
+	ssh $gfmd1 chmod a+x $STRESS_CMD
+	return $FT_RESULT_PASS
+}
+
+ft_main()
+{
+	RESULT=$FT_RESULT_PASS
+
+	ssh $gfmd1 $STRESS_CMD -t $STRESS_PERIOD -n $STRESS_NPROCS &
+	[ $? -eq 0 ] || RESULT=$FT_RESULT_FAIL
+	ft_checkpoint 1 "start 'cpu-stress'" $RESULT
+	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
+
+	ft_check_mail "Processor load is too high on $gfmd1" \
+		|| RESULT=$FT_RESULT_FAIL
+	ft_checkpoint 2 "receive a mail" $RESULT
+	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
+
+	ssh $gfmd1 pkill `basename $STRESS_CMD`
+	ft_checkpoint 3 "stop 'cpu-stress'" $RESULT
+
+	ft_check_mail "Re: Processor load is too high on $gfmd1" \
+		|| RESULT=$FT_RESULT_FAIL
+	ft_checkpoint 4 "receive a mail" $RESULT
+	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
+
+	return $RESULT
+}
+
+ft_teardown()
+{
+	return $FT_RESULT_PASS
+}
+	
+ft_run "$TESTID" "$TITLE"

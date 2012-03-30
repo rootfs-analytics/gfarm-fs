@@ -1,0 +1,60 @@
+#! /bin/sh
+
+. ./FT-common
+
+$gfservice config-gfarm-master gfmd1
+
+#
+# Configure gfmd servers.
+#
+I=2
+while [ "X`eval echo \\$gfmd$I`" != X ]; do
+	$gfservice config-gfarm-slave gfmd$I gfmd1
+	I=`expr $I + 1`
+done
+
+#
+# Configure gfsd servers.
+#
+I=1
+while [ "X`eval echo \\$gfsd$I`" != X ]; do
+	$gfservice config-gfsd gfsd$I
+	I=`expr $I + 1`
+done
+
+#
+# Configure clients.
+#
+I=1
+while [ "X`eval echo \\$client$I`" != X ]; do
+	$gfservice config-client client$I
+	I=`expr $I + 1`
+done
+
+#
+# Create ~/.pgpass for Zabbix agent.
+#
+TMP_GFMD_CONF=/tmp/ftconfig.$$
+TMP_PGPASS=/tmp/pgpass.$$
+rm -f $TMP_GFMD_CONF $TMP_PGPASS
+trap "rm -f $TMP_GFMD_CONF $TMP_PGPASS; exit 1" 1 2 3 15
+
+I=1
+while [ "X`eval echo \\$gfmd$I`" != X ]; do
+	rm -f $TMP_GFMD_CONF $TMP_PGPASS
+	gfmd=`eval echo \\$gfmd$I`
+	$gfservice backup-gfmd-conf gfmd$I > $TMP_GFMD_CONF
+	awk '/^postgresql_server_host[ 	]/ {host=$2}
+	     /^postgresql_server_port[ 	]/ {port=$2}
+	     /^postgresql_dbname[ 	]/ {db=$2}
+	     /^postgresql_user[ 	]/ {user=$2}
+	     /^postgresql_password[ 	]/ {gsub(/\"/, "", $2); passwd=$2}
+	     END                           {printf("%s:%s:%s:%s:%s\n",
+	                                    host, port, db, user, passwd)}' \
+		$TMP_GFMD_CONF > $TMP_PGPASS
+	ssh $gfmd tee .pgpass < $TMP_PGPASS > /dev/null
+	I=`expr $I + 1`
+done
+
+rm -f $TMP_GFMD_CONF $TMP_PGPASS
+exit 0

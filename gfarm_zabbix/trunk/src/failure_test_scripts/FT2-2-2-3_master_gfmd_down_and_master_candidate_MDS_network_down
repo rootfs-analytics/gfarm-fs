@@ -1,0 +1,62 @@
+#! /bin/sh
+
+######################################################################
+TESTID="FT2-2-2-3"
+CATEGORY="2 point accident"
+SECTION="2 internal accident"
+TITLE="master gfmd down and master candidate MDS network down"
+######################################################################
+
+. ./FT-common
+
+ft_setup()
+{
+	IFDOWN=/sbin/ifdown
+	IFUP=/sbin/ifup
+	CANDIDATE=`ft_get_master_candidate`
+	[ $? -ne 0 ] && return $FT_RESULT_FAIL
+	[ "X$CANDIDATE" = X ] && return $FT_RESULT_FAIL
+	return $FT_RESULT_PASS
+}
+
+ft_main()
+{
+	RESULT=$FT_RESULT_PASS
+
+	gfmdhost -l > /dev/null 2>&1 \
+		|| RESULT=$FT_RESULT_FAIL
+	ft_checkpoint 1 "gfmdhost -l" $RESULT
+
+	CANDIDATE_CTRL_ADDRESS=`eval echo \\${${CANDIDATE}_CTRL_ADDRESS}`
+	CANDIDATE_GFARM_IF=`eval echo \\${${CANDIDATE}_GFARM_IF}`
+	ssh ${CANDIDATE_CTRL_ADDRESS} sudo $IFDOWN $CANDIDATE_GFARM_IF \
+		|| RESULT=$FT_RESULT_FAIL
+	ft_checkpoint 2 "ifdown $CANDIDATE_GFARM_IF on $CANDIDATE" $RESULT
+	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
+
+	$gfservice stop-gfmd gfmd1 \
+		|| RESULT=$FT_RESULT_FAIL
+	ft_checkpoint 3 "stop master gfmd on $gfmd1" $RESULT
+	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
+
+	ft_check_mail "gfmd does not listen on $gfmd1" \
+		|| RESULT=$FT_RESULT_FAIL
+	ft_checkpoint 4 "receive a mail" $RESULT
+	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
+
+	ft_check_mail "Re: gfmd does not listen on $gfmd1" \
+		|| RESULT=$FT_RESULT_FAIL
+	ft_checkpoint 5 "receive a mail" $RESULT
+	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
+
+	return $RESULT
+}
+
+ft_teardown()
+{
+	ssh ${CANDIDATE_CTRL_ADDRESS} sudo $IFUP $CANDIDATE_GFARM_IF
+	ft_reset_gfmd
+	return $FT_RESULT_PASS
+}
+	
+ft_run "$TESTID" "$TITLE"

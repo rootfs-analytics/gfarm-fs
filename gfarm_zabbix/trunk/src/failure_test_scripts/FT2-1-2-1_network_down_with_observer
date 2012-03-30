@@ -1,0 +1,51 @@
+#! /bin/sh
+
+######################################################################
+TESTID="FT2-1-2-1"
+CATEGORY="1 point accident"
+SECTION="network accident"
+TITLE="network down with observer"
+######################################################################
+
+. ./FT-common
+
+ft_setup()
+{
+	IFUP_PATH=/sbin/ifup
+	IFDOWN_PATH=/sbin/ifdown
+
+	return $FT_RESULT_PASS
+}
+
+ft_main()
+{
+	RESULT=$FT_RESULT_PASS
+
+	ssh $zabbix1_CTRL_ADDRESS sudo $IFDOWN_PATH $zabbix1_GFARM_IF \
+		|| RESULT=$FT_RESULT_FAIL
+	ft_checkpoint 1 "ifdown $zabbix1_GFARM_IF on $zabbix1" $RESULT
+	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
+
+	ft_check_mails \
+		"$gfmd1 is unreachable" \
+		"$gfmd2 is unreachable" \
+		"$gfmd3 is unreachable" \
+		"$gfsd1 is unreachable" \
+		"$gfsd2 is unreachable" \
+		"$client1 is unreachable" \
+		"$client2 is unreachable" \
+		|| RESULT=$FT_RESULT_FAIL
+	ft_checkpoint 2 "receive mails" $RESULT
+	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
+
+	return $RESULT
+}
+
+ft_teardown()
+{
+	ssh $zabbix1_CTRL_ADDRESS sudo $IFUP_PATH $zabbix1_GFARM_IF
+	ft_reset_gfmd
+	return $FT_RESULT_PASS
+}
+	
+ft_run "$TESTID" "$TITLE"

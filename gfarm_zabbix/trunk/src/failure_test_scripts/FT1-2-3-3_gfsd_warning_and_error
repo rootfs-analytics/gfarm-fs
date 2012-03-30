@@ -1,0 +1,53 @@
+#! /bin/sh
+
+######################################################################
+TESTID="FT1-2-3-3"
+CATEGORY="accident causes no failover"
+SECTION="fsn accident"
+TITLE="gfsd warning and error"
+######################################################################
+
+. ./FT-common
+
+ft_setup()
+{
+	return $FT_RESULT_PASS
+}
+
+ft_main()
+{
+	RESULT=$FT_RESULT_PASS
+
+	ADDITIONAL_TIME=600
+	FT_MAIL_TIMEOUT=`expr $FT_MAIL_TIMEOUT + $ADDITIONAL_TIME`
+	
+	ssh $gfsd1 logger -p local0.err -t "gfsd[9999]" " unknown error" &&\
+	ssh $gfsd1 logger -p local0.warning -t "gfsd[9999]" " unknown warning" ||\
+	RESULT=$FT_RESULT_FAIL
+	ft_checkpoint 1 "logging error on $gfsd1" $RESULT
+	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
+
+	ft_check_mail "gfsd error message in /var/log/messages on $gfsd1" &&\
+	ft_check_mail "gfsd warning message in /var/log/messages on $gfsd1" ||\
+	RESULT=$FT_RESULT_FAIL
+	ft_checkpoint 2 "receive mails" $RESULT
+	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
+
+	ft_checkpoint 3 "sleep $ADDITIONAL_TIME sec." $RESULT
+	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
+
+	ft_check_mail "Re: gfsd error message in /var/log/messages on $gfsd1" &&\
+	ft_check_mail "Re: gfsd warning message in /var/log/messages on $gfsd1" ||\
+	RESULT=$FT_RESULT_FAIL
+	ft_checkpoint 4 "receive mails" $RESULT
+	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
+
+	return $RESULT
+}
+
+ft_teardown()
+{
+	return $FT_RESULT_PASS
+}
+	
+ft_run "$TESTID" "$TITLE"
