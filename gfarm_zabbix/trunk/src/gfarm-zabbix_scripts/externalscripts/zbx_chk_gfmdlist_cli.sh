@@ -12,6 +12,8 @@ else
     exit 0;
 fi
 
+OLD_MDS_LIST_PATH=$MDS_LIST_PATH.old
+
 # exec check command
 MDS_LIST=`gfmdhost -l`
 
@@ -19,7 +21,6 @@ if [ $? = 0 ];
 then
     if [ -f $MDS_LIST_PATH ];
     then
-        OLD_MDS_LIST_PATH=$MDS_LIST_PATH.old
 
         mv -f  $MDS_LIST_PATH $OLD_MDS_LIST_PATH
     fi
