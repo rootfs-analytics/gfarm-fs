@@ -18,6 +18,7 @@ SYSLOG=/var/log/messages
 UPGRADE_CHK_STR="start transforming to the master gfmd"
 GFMD_STOP_COMMAND='sudo /etc/init.d/gfmd stop'
 GFJOURNAL_CHK_SCRIPT=/etc/zabbix/externalscripts/zbx_chk_gfjournal_gfmd.sh
+GFMDLIST_CHK_SCRIPT=/etc/zabbix/externalscripts/zbx_chk_gfmdlist_cli.sh
 FO_EXEC_COMMAND='sudo /etc/zabbix/externalscripts/zbx_gfarm2_mds_upgrade.sh'
 FO_CHK_COMMAND='gfls -ld /'
 
@@ -85,10 +86,13 @@ else
 	exit 0;
 fi
 
-# check the metadata server list cache exists.
+# create the metadata server list if it doesn't exist.
 if [ ! -f $MDS_LIST_PATH ]; then
-	log_debug "error: metadata server list cache doesn\'t exist."
-	exit 1
+	/bin/sh $GFMDLIST_CHK_SCRIPT > /dev/null
+	if [ $? -ne 0 ]; then
+		log_debug "error: metadata server list cache doesn\'t exist."
+		exit 1
+	fi
 fi
 
 # generate the list of candidate slave MDSs for upgrade.
