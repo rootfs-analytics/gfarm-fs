@@ -1,0 +1,125 @@
+[This is written in Japanese, please look at README.en for English version.]
+
+                 障害発生テストケース実行スクリプト
+
+● 障害発生テストケース実行スクリプトについて
+=============================================
+
+障害発生テストケース実行スクリプトはgfservice, gfservice-agent を利用し
+Gfarm 及び Gfarm 監視に関する障害を意図的に発生させるスクリプトです。
+
+● 障害発生テストケースの実行環境
+===============================
+
+本ディレクトリに置かれている障害発生テストケース実行スクリプトは、以下
+の環境で実行することを想定しています。
+
+  - 全ホスト対象の条件
+    - Gfarm クライアントノードとして設定済みであること
+    - Zabbix エージェントが導入・設定済みであること
+    - gfservice-agent がインストール済みであること
+    - zabbix ユーザが NOPASSWORD で tty なし sudo が実行可能なこと
+  - 障害発生テストケース実行ホスト対象の条件
+    - Zabbix サーバが導入・設定済みであること
+    - gfservice がインストール済みであること
+    - zabbix ユーザが全ホストにパスフレーズなし ssh ログイン可能なこと
+    - 障害発生・復旧時に zabbix ユーザにメール通知されること
+
+障害発生テストケースの実行には以下の9台のホストが必要です。
+
+  - メタデータノード 3台 (マスター 1台、スレーブ 2台)
+  - ファイルシステムノード 2台
+  - クライアントノード 2台
+  - Zabbix サーバ 2台 (マスターノード 1台、子ノード 1台)
+
+障害発生テストケース実行スクリプトを実行する際は、事前にホストのIPアド
+レスなどの詳細な情報を gfservice の設定ファイルgfservice.conf に反映し
+てください。
+
+● 障害発生テストケースの実行方法
+=================================
+
+・単体のテストケースを実行する場合
+
+  zabbix ユーザで障害発生テストケーススクリプトを実行してください。テス
+  トケース ID FT1-2-1-1 を実行する場合は以下のようになります。
+
+    $ ./FT1-2-1-1_disk_exhausted
+
+・全テストケースを実行する場合
+
+  zabbix ユーザで以下のように全テストケース実行スクリプトを実行してくだ
+  さい。
+
+    $ ./FT-run-all
+ 
+● ファイル一覧
+===============
+
+  failure_test_scripts/                 : 障害発生テストケーススクリプト群
+
+    (障害発生テストケース実行用設定ファイル)
+    gfservice.conf                      : gfservice 設定ファイル サンプル
+
+    (障害発生テストケース実行用ユーティリティ)
+    FT-run-all                          : 全テストケース実行スクリプト
+
+    (障害発生テストケース実行スクリプト)
+    FT1-2-1-1_disk_exhausted            : (FT1-2-1-1) ハードウェア空き容量低下
+    FT1-2-1-2_network_down              : (FT1-2-1-2) 監視対象と監視サーバとの通信遮断
+    FT1-2-1-3_HW_error                  : (FT1-2-1-3) ハードウェア障害報告再現
+    FT1-2-1-4_high_load_average         : (FT1-2-1-4) ロードアベレージ
+    FT1-2-2-1_db_down                   : (FT1-2-2-1) DB異常
+    FT1-2-2-2_slave_network_down        : (FT1-2-2-2) スレイブ-マスター間の通信遮断
+    FT1-2-2-3_failed_to_gfsched         : (FT1-2-2-3) メタデータサーバ機能監視異常再現
+    FT1-2-2-4_failed_to_gfmdhost        : (FT1-2-2-4) マスターMDS停止再現
+    FT1-2-2-5_gfmd_warning_and_error    : (FT1-2-2-5) gfmd警告・エラーログ再現
+    FT1-2-3-1_gfsd_down                 : (FT1-2-3-1) gfsd停止
+    FT1-2-3-2_fsn_network_down          : (FT1-2-3-2) マスターMDS-FSN間の通信遮断
+    FT1-2-3-3_gfsd_warning_and_error    : (FT1-2-3-3) gfsd警告・エラーログ
+    FT1-2-4-1_network_down_cn_to_master : (FT1-2-4-1) CN-マスターMDS間の通信遮断
+    FT1-2-4-2_network_down_cn_to_all_fsn: (FT1-2-4-2) CN-FSNs間の通信遮断
+    FT1-2-5-1_zabbix_child_down         : (FT1-2-5-1) Zabbix子ノード停止
+    FT1-2-5-2_zabbix_master_down        : (FT1-2-5-2) Zabbixマスタノード停止
+    FT2-1-1-1_master_gfmd_down          : (FT2-1-1-1) 平常動作下でマスターgfmdを停止
+    FT2-1-1-2_master_MDS_down           : (FT2-1-1-2) 平常動作下でマスターMDSを停止
+    FT2-1-2-1_network_down_with_observer: (FT2-1-2-1) 監視サーバ-マスターMDS間の通信を遮断する(監視サーバ側)
+    FT2-2-1-1_master_gfmd_down_with_observer_network_down
+                                        : (FT2-2-1-1) 監視サーバ-マスターMDS間の通信を遮断した状態でのマスターgfmd停止
+    FT2-2-1-2_master_gfmd_down_with_master_candidate_network_down
+                                        : (FT2-2-1-2) マスター候補MDS-監視サーバ間の通信を遮断した状態でのマスターgfmd停止
+    FT2-2-2-1_master_gfmd_and_master_candidate_gfmd_down
+                                        : (FT2-2-2-1) マスターgfmdとマスター候補のスレーブgfmd停止
+    FT2-2-2-2_master_gfmd_down_with_no_synced_slave     
+                                        : (FT2-2-2-2) 同期していないスレーブgfmdが存在する状況でマスターgfmd停止
+    FT2-2-2-3_master_gfmd_down_and_master_candidate_MDS_network_down
+                                        : (FT2-2-2-3) ネットワークが遮断されたスレーブMDSが存在する状況でマスターgfmd停止
+    FT2-2-2-4_master_and_non_candidate_slave_gfmd_down
+                                        : (FT2-2-2-4) 停止したスレーブgfmdが存在する状況でマスターgfmd停止
+    FT3-1-1-1_master_gfmd_down_with_master_MDS_network_down
+                                        : (FT3-1-1-1) 監視サーバ-マスターMDS間の通信を遮断した状態でのマスターgfmd停止
+    FT3-1-2-1_master_gfmd_and_candidate_gfmd_down
+                                        : (FT3-1-2-1) マスターgfmdとマスター候補のスレーブgfmd停止
+    FT3-1-2-2_master_gfmd_and_master_zabbix_agent_down
+                                        : (FT3-1-2-2) マスターgfmdとマスターMDSのZabbixエージェント停止
+    FT3-1-2-3_master_and_candidate_zabbix_agent_down
+                                        : (FT3-1-2-3) マスターgfmdとマスター候補MDSのZabbixエージェント停止
+    FT3-2-1-1_all_gfmd_down             : (FT3-2-1-1) 平常動作下ですべてのgfmdを停止
+    FT3-2-1-2_no_synchronized_slave_and_master_down
+                                        : (FT3-2-1-2) すべてのスレーブgfmdが同期していない状態でマスターgfmd停止
+    FT3-2-2-1_observer_network_down     : (FT3-2-2-1) 監視サーバの通信を遮断
+    FT3-3-1-1_failover_while_reading    : (FT3-3-1-1) 読み込み中のフェイルオーバ
+    FT3-3-1-2_failover_while_writing    : (FT3-3-1-2) 書き込み中のフェイルオーバ
+    FT3-3-1-3_failover_while_file_replication
+                                        : (FT3-3-1-3) レプリケーション中のフェイルオーバ
+    FT3-3-1-4_failover_while_syncing_metadata
+                                        : (FT3-3-1-4) メタデータ同期中のフェイルオーバ
+
+    (障害発生テストケース内部で利用するスクリプト)
+    cpu-stress                          : CPU 負荷を発生させるスクリプト
+    create-random-file                  : 任意サイズのファイルを生成するスクリプト
+    FT-common                           : テストケーススクリプト共通関数
+    FT-config                           : テスト環境の全ホストの Gfarm を自動設定するスクリプト
+    FT-set-journal-size                 : ジャーナルファイルサイズ変更スクリプト
+    FT-unconfig                         : テスト環境の全ホストの Gfarm 設定を自動削除するスクリプト
+    mbox-search                         : 通知メール検出スクリプト

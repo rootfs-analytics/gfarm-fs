@@ -1,0 +1,56 @@
+#! /bin/sh
+
+######################################################################
+TESTID="FT1-2-1-2"
+CATEGORY="accident causes no failover"
+SECTION="common observed properties "
+TITLE="network down with observer to observed"
+######################################################################
+
+. ./FT-common
+
+ft_setup()
+{
+	IFUP_PATH=/sbin/ifup
+	IFDOWN_PATH=/sbin/ifdown
+
+	return $FT_RESULT_PASS
+}
+
+ft_main()
+{
+	RESULT=$FT_RESULT_PASS
+
+	ssh $gfsd1_CTRL_ADDRESS sudo $IFDOWN_PATH $gfsd1_GFARM_IF
+	[ $? -eq 0 ] || RESULT=$FT_RESULT_FAIL
+	ft_checkpoint 1 "ifdown $gfsd1_GFARM_IF on $gfsd1" $RESULT
+	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
+
+	ft_check_mail "$gfsd1 is unreachable"
+	[ $? -eq 0 ] || RESULT=$FT_RESULT_FAIL
+	ft_checkpoint 2 "receive a mail" $RESULT
+	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
+	ft_truncate_mbox
+
+
+	ssh $gfsd1_CTRL_ADDRESS sudo $IFUP_PATH $gfsd1_GFARM_IF
+	[ $? -eq 0 ] || RESULT=$FT_RESULT_FAIL
+	ft_checkpoint 3 "ifup $gfsd1_GFARM_IF on $gfsd1" $RESULT
+	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
+
+	ft_check_mail "Re: $gfsd1 is unreachable"
+	[ $? -eq 0 ] || RESULT=$FT_RESULT_FAIL
+	ft_checkpoint 4 "receive a mail" $RESULT
+	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
+	ft_truncate_mbox
+
+	return $RESULT
+}
+
+ft_teardown()
+{
+	ssh $gfsd1_CTRL_ADDRESS sudo $IFUP_PATH $gfsd1_GFARM_IF
+	return $FT_RESULT_PASS
+}
+	
+ft_run "$TESTID" "$TITLE"
