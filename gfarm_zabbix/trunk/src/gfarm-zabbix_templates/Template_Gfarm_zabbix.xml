@@ -31,7 +31,7 @@
         <trigger>
           <description>H/W error message in /var/log/messages on {HOSTNAME}</description>
           <type>0</type>
-          <expression>(({Template_Gfarm_zabbix:log[/var/log/messages,"kernel:\s.*\sI\/O\serror",UTF-8].regexp(error)})#0) &amp; (({Template_Gfarm_zabbix:log[/var/log/messages,"kernel:\s.*\sI\/O\serror",UTF-8].nodata(3600)})=0)</expression>
+          <expression>((({Template_Gfarm_zabbix:log[/var/log/messages,"kernel:\s.*I\/O\serror",UTF-8].regexp(error)})#0))</expression>
           <url></url>
           <status>0</status>
           <priority>5</priority>
@@ -110,7 +110,7 @@
             <application>General</application>
           </applications>
         </item>
-        <item type="7" key="log[/var/log/messages,&quot;kernel:\s.*\sI\/O\serror&quot;,UTF-8]" value_type="2">
+        <item type="7" key="log[/var/log/messages,&quot;kernel:\s.*I\/O\serror&quot;,UTF-8]" value_type="2">
           <description>On log file $1</description>
           <ipmi_sensor></ipmi_sensor>
           <delay>600</delay>

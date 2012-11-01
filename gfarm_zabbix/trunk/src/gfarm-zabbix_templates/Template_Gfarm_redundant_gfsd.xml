@@ -76,7 +76,7 @@
         <trigger>
           <description>gfsd error message in /var/log/messages on {HOSTNAME}</description>
           <type>0</type>
-          <expression>(({Template_Gfarm_redundant_gfsd:log[/var/log/messages,"&lt;[0-9a-zA-Z_-]+\.err&gt;\s[0-9a-zA-Z_-]+\sgfsd\[[0-9]+\]:",UTF-8].regexp(err)})#0) &amp; {Template_Gfarm_redundant_gfsd:log[/var/log/messages,"&lt;[0-9a-zA-Z_-]+\.err&gt;\s[0-9a-zA-Z_-]+\sgfsd\[[0-9]+\]:",UTF-8].nodata(3600)}=0</expression>
+          <expression>((({Template_Gfarm_redundant_gfsd:log[/var/log/messages,"&lt;[0-9a-zA-Z_-]+\.err&gt;\s[0-9a-zA-Z_-]+\sgfsd\[[0-9]+\]:",UTF-8].regexp(err)})#0))</expression>
           <url></url>
           <status>0</status>
           <priority>4</priority>
@@ -85,7 +85,7 @@
         <trigger>
           <description>gfsd warning message in /var/log/messages on {HOSTNAME}</description>
           <type>0</type>
-          <expression>(({Template_Gfarm_redundant_gfsd:log[/var/log/messages,"&lt;[0-9a-zA-Z_-]+\.warn&gt;\s[0-9a-zA-Z_-]+\sgfsd\[[0-9]+\]:",UTF-8].regexp(warn)})#0) &amp; {Template_Gfarm_redundant_gfsd:log[/var/log/messages,"&lt;[0-9a-zA-Z_-]+\.warn&gt;\s[0-9a-zA-Z_-]+\sgfsd\[[0-9]+\]:",UTF-8].nodata(3600)}=0</expression>
+          <expression>((({Template_Gfarm_redundant_gfsd:log[/var/log/messages,"&lt;[0-9a-zA-Z_-]+\.warn&gt;\s[0-9a-zA-Z_-]+\sgfsd\[[0-9]+\]:",UTF-8].regexp(warn)})#0))</expression>
           <url></url>
           <status>0</status>
           <priority>2</priority>
@@ -94,7 +94,7 @@
         <trigger>
           <description>H/W error message in /var/log/messages on {HOSTNAME}</description>
           <type>0</type>
-          <expression>(({Template_Gfarm_redundant_gfsd:log[/var/log/messages,"kernel:\s.*\sI\/O\serror",UTF-8].regexp(error)})#0) &amp; (({Template_Gfarm_redundant_gfsd:log[/var/log/messages,"kernel:\s.*\sI\/O\serror",UTF-8].nodata(3600)})=0)</expression>
+          <expression>((({Template_Gfarm_redundant_gfsd:log[/var/log/messages,"kernel:\s.*I\/O\serror",UTF-8].regexp(error)})#0))</expression>
           <url></url>
           <status>0</status>
           <priority>5</priority>
@@ -413,7 +413,7 @@
             <application>Gfarm</application>
           </applications>
         </item>
-        <item type="7" key="log[/var/log/messages,&quot;kernel:\s.*\sI\/O\serror&quot;,UTF-8]" value_type="2">
+        <item type="7" key="log[/var/log/messages,&quot;kernel:\s.*I\/O\serror&quot;,UTF-8]" value_type="2">
           <description>On log file $1</description>
           <ipmi_sensor></ipmi_sensor>
           <delay>600</delay>
