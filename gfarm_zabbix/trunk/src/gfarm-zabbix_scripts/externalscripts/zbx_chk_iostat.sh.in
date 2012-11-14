@@ -1,0 +1,40 @@
+#!/bin/sh
+
+# defines
+CONF_FILE=@ZABBIX_EXTSCRIPTDIR@/zbx_chk_gfarm.conf
+
+# check config file
+if [ -f $CONF_FILE ];
+    then
+    . $CONF_FILE
+else
+    echo  -1;
+    exit 0;
+fi
+
+# exec check command
+RESULT=-1
+case "$1" in
+    read)
+        RESULT=`iostat -m | awk '{if ($1 == "'$DEVICE'") print $3};'`
+        ;;
+    write)
+        RESULT=`iostat -m | awk '{if ($1 == "'$DEVICE'") print $4};'`
+        ;;
+    total_read)
+        RESULT=`iostat -m | awk '{if ($1 == "'$DEVICE'") print $5};'`
+        ;;
+    total_write)
+        RESULT=`iostat -m | awk '{if ($1 == "'$DEVICE'") print $6};'`
+        ;;
+    *)
+        RESULT=-1
+esac
+
+if [ $? != 0 ];
+    then
+    RESULT=-1
+fi
+
+echo $RESULT
+exit 0
