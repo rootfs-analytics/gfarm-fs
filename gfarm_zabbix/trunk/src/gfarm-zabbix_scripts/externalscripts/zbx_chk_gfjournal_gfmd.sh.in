@@ -13,7 +13,7 @@ else
 fi
 
 # exec check command
-RESULT=`gfjournal -m /var/gfarm-metadata/journal/0000000000.gmj`
+RESULT=`gfjournal -m @GFMD_JOURNALDIR@/0000000000.gmj`
 
 if [ $? != 0 ];
 then

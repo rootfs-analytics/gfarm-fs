@@ -38,7 +38,7 @@ NodeID=@ZABBIX_NODEID@
 # Default:
 # LogFile=
 
-LogFile=/var/log/zabbix/zabbix_server.log
+LogFile=@ZABBIX_SERVER_LOGFILE@
 
 ### Option: LogFileSize
 #	Maximum size of log file in MB.
@@ -71,7 +71,7 @@ LogFileSize=0
 # Default:
 # PidFile=/tmp/zabbix_server.pid
 
-PidFile=/var/run/zabbix/zabbix_server.pid
+PidFile=@ZABBIX_SERVER_PIDFILE@
 
 ### Option: DBHost
 #	Database host name.
