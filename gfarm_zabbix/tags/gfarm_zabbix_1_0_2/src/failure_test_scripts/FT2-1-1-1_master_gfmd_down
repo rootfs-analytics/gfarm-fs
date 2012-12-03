@@ -1,0 +1,71 @@
+#! /bin/sh
+
+######################################################################
+TESTID="FT2-1-1-1"
+CATEGORY="1 point accident"
+SECTION="mds accident"
+TITLE="master gfmd down"
+######################################################################
+
+. ./FT-common
+
+ft_setup()
+{
+	ssh $client1 mkdir -p mnt
+	$gfservice unmount client1 mnt
+	$gfservice mount client1 mnt -o nonempty
+	ssh $client1 rm -f mnt/a.txt mnt/b.txt
+	return $FT_RESULT_PASS
+}
+
+ft_main()
+{
+	RESULT=$FT_RESULT_PASS
+
+	ssh $client1 sh -c 'echo aaa > mnt/a.txt' \
+		|| RESULT=$FT_RESULT_FAIL
+	ft_checkpoint 1 "create a text file on Gfarm2 filesytem" $RESULT
+	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
+
+	$gfservice stop-gfmd gfmd1 \
+		|| RESULT=$FT_RESULT_FAIL
+	ft_checkpoint 2 "stop gfmd on $gfmd1" $RESULT
+	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
+
+	ft_check_mail "gfmd does not listen on $gfmd1" \
+		|| RESULT=$FT_RESULT_FAIL
+	ft_checkpoint 3.1 "receive a mail" $RESULT
+	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
+	ft_truncate_mbox
+
+	ft_wait_failover $gfmd1 || RESULT=$FT_RESULT_FAIL
+	ft_checkpoint 3.2 "gfmd failed over" $RESULT
+	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
+
+	ssh $client1 cat mnt/a.txt > /dev/null \
+		|| RESULT=$FT_RESULT_FAIL
+	ft_checkpoint 4.1 "read data from Gfarm2 filesytem" $RESULT
+	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
+
+	ssh $client1 sh -c 'echo bbb > mnt/b.txt' \
+		|| RESULT=$FT_RESULT_FAIL
+	ft_checkpoint 4.2 "write data on Gfarm2 filesytem" $RESULT
+	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
+
+	ft_check_mail "Re: gfmd does not listen on $gfmd1" \
+		|| RESULT=$FT_RESULT_FAIL
+	ft_checkpoint 5 "receive a mail" $RESULT
+	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
+	ft_truncate_mbox
+
+	return $RESULT
+}
+
+ft_teardown()
+{
+	$gfservice umount client1 mnt
+	ft_reset_gfmd
+	return $FT_RESULT_PASS
+}
+	
+ft_run "$TESTID" "$TITLE"

@@ -1,0 +1,87 @@
+#! /bin/sh
+
+######################################################################
+TESTID="FT3-3-1-4"
+CATEGORY="accident while failover and failure of  meta data sync"
+SECTION="failover in the midst of client accessd"
+TITLE="failover while syncing metadata"
+######################################################################
+
+. ./FT-common
+
+ft_setup()
+{
+	TESTDIR="/$TESTID.$$"
+	INTERVAL=60
+	RESULT=$FT_RESULT_PASS
+
+	gfmkdir -p $TESTDIR
+	[ $? -eq 0 ] || RESULT=$FT_RESULT_FAIL
+	return $RESULT
+}
+
+ft_main()
+{
+	R1=$FT_RESULT_PASS
+	$gfservice stop-gfmd gfmd2 \
+		|| R1=$FT_RESULT_FAIL
+	ft_checkpoint 1 "stop gfmd on $gfmd2" $R1
+	[ $R1 -eq $FT_RESULT_PASS ] || return $R1
+
+	R2=$FT_RESULT_PASS
+	I=0
+	N_TIMES=4096
+	while [ $I -lt $N_TIMES ]; do
+		gfmkdir $TESTDIR/$I
+		if [ $? -ne 0 ]; then
+			R2=$FT_RESULT_FAIL
+			break
+		fi
+		I=`expr $I + 1`
+	done
+	ft_checkpoint 2 "create many directories by gfmkdir on $client1" $R2
+	[ $R2 -eq $FT_RESULT_PASS ] || return $R2
+
+	R3=$FT_RESULT_PASS
+	$gfservice start-gfmd gfmd2 \
+		|| R3=$FT_RESULT_FAIL
+	ft_checkpoint 3 "start gfmd on $gfmd2" $R3
+	[ $R3 -eq $FT_RESULT_PASS ] || return $R3
+
+	R4=$FT_RESULT_PASS
+	$gfservice stop-gfmd gfmd1 \
+		|| R4=$FT_RESULT_FAIL
+	ft_checkpoint 4 "stop gfmd on $gfmd1" $R4
+	[ $R4 -eq $FT_RESULT_PASS ] || return $R4
+
+	R5=$FT_RESULT_PASS
+	ssh $gfmd3 "sudo kill -USR1 \`cat /var/run/gfmd.pid\`" \
+		|| R5=$FT_RESULT_FAIL
+	ft_checkpoint 5 "upgrade slave gfmd on $gfmd3" $R5
+	[ $R5 -eq $FT_RESULT_PASS ] || return $R5
+
+	R6=$FT_RESULT_FAIL
+	I=0
+	N_TIMES=10
+	while [ $I -lt $N_TIMES ]; do
+		CHK_GFMDHOST=`gfmdhost -l | grep $gfmd2 | grep '^+'`
+		if [ "X$CHK_GFMDHOST" != X ]; then
+			R6=$FT_RESULT_PASS
+			break
+		fi
+		I=`expr $I + 1`
+		sleep $INTERVAL
+	done
+	ft_checkpoint 6 "check finish syncing metadata on $gfmd2" $R6
+	[ $R6 -eq $FT_RESULT_PASS ] || return $R6
+
+	return $FT_RESULT_PASS
+}
+
+ft_teardown()
+{
+	ft_reset_gfmd
+	return $FT_RESULT_PASS
+}
+
+ft_run "$TESTID" "$TITLE"

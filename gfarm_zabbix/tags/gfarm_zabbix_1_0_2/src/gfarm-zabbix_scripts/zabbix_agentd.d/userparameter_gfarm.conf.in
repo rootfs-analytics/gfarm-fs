@@ -1,0 +1,4 @@
+UserParameter=gfarm.gfmd.gfsched,HOME=@ZABBIX_CONFDIR@ @ZABBIX_EXTSCRIPTDIR@/zbx_chk_gfsched_gfmd.sh -M
+UserParameter=gfarm.gfs.gfsched,HOME=@ZABBIX_CONFDIR@ @ZABBIX_EXTSCRIPTDIR@/zbx_chk_gfsched_gfsd.sh -M
+UserParameter=gfarm.gfs.gfhost,HOME=@ZABBIX_CONFDIR@ @ZABBIX_EXTSCRIPTDIR@/zbx_chk_gfhost_gfsd.sh -l
+UserParameter=gfarm.cli.gfhost,HOME=@ZABBIX_CONFDIR@ @ZABBIX_EXTSCRIPTDIR@/zbx_chk_gfhost_cli.sh

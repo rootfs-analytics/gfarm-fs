@@ -1,0 +1,54 @@
+#! /bin/sh
+
+######################################################################
+TESTID="FT1-2-2-3"
+CATEGORY="accident causes no failover"
+SECTION="mds accident"
+TITLE="failed to gfsched"
+######################################################################
+
+. ./FT-common
+
+ft_setup()
+{
+	return $FT_RESULT_PASS
+}
+
+ft_main()
+{
+	SHARED_KEY=~/.gfarm_shared_key
+
+	RESULT=$FT_RESULT_PASS
+
+	ssh $gfmd2 mv ${SHARED_KEY} ${SHARED_KEY}.bak
+	[ $? -eq 0 ] || RESULT=$FT_RESULT_FAIL
+	ft_checkpoint 1 "replace gfsched on $gfmd2" $RESULT
+	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
+
+	ft_check_mail "Gfarm metadata server is not available on $gfmd2"
+	[ $? -eq 0 ] || RESULT=$FT_RESULT_FAIL
+	ft_checkpoint 2 "receive a mail" $RESULT
+	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
+
+	ssh $gfmd2 mv ${SHARED_KEY}.bak ${SHARED_KEY}
+	[ $? -eq 0 ] || RESULT=$FT_RESULT_FAIL
+	ft_checkpoint 3 "restore gfsched on $gfmd2" $RESULT
+	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
+
+	ft_check_mail "Re: Gfarm metadata server is not available on $gfmd2"
+	[ $? -eq 0 ] || RESULT=$FT_RESULT_FAIL
+	ft_checkpoint 4 "receive a mail" $RESULT
+	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
+
+	return $RESULT
+}
+
+ft_teardown()
+{
+	# if a shared key backup exists, then restore shared key.
+	ssh $gfmd2 test -f ${SHARED_KEY}.bak && \
+	ssh $gfmd2 mv ${SHARED_KEY}.bak ${SHARED_KEY}
+	return $FT_RESULT_PASS
+}
+	
+ft_run "$TESTID" "$TITLE"
