@@ -1,0 +1,26 @@
+[This is written in Japanese, please look at README.en for English version.]
+
+● Zabbix による Gfarm 監視、及び Gfarm 障害発生スクリプトについて
+==================================================================
+
+本ディレクトリには、冗長化された Gfarm v2 ファイルシステム(以降、Gfarm
+とする)における統合監視ソフトウェア Zabbix で構成された障害監視システム
+(以降、Gfarm監視構成)を導入・運用するためのマニュアルと設定ファイルなど
+を配置しています。Zabbix の導入・運用には、doc ディレクトリ以下のマニュ
+アルを参照し、src ディレクトリ以下の設定ファイルを適宜利用してください。
+
+また、Gfarm監視構成の試験用に Gfarm の障害を意図的に発生させる Gfarm の
+ユーティリティ gfservice, gfservice-agent を利用した Gfarm 障害発生スク
+リプト群を配置しています。Gfarm 障害発生スクリプトの詳細に関しては、
+src/failure_test_scripts ディレクトリ以下の README.ja をご参照ください。
+
+●ファイル一覧
+==============
+
+    doc/                        : Gfarm 監視機能マニュアル
+    doc/ja/                     : MS-Word 形式 及び PDF 形式のマニュアル (日本語)
+
+    src/failure_test_scripts    : Gfarm 障害発生テストケース実行スクリプト
+    src/gfarm-zabbix_redundancy : 冗長化 Gfarm 監視対応機能 設定ファイル
+    src/gfarm-zabbix_scripts    : Zabbixエージェント用設定ファイル
+    src/gfarm-zabbix_templates  : Zabbixサーバ向け Gfarm 用監視項目テンプレート
