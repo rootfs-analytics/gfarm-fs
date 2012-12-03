@@ -1,0 +1,75 @@
+#!/bin/sh
+#
+# $Id$
+
+USAGE() {
+cat <<EOF
+mount.gfarm2fs [ configuration_file mount_point options ]
+
+Environment variable:
+    GFS_USERNAME     global user name in Gfarm
+    GFS_MOUNTDIR     mount point
+    GFARMFS_ROOT     directory to be mounted in Gfarm
+    GFARMFS_OPTIONS  gfarmfs mount options
+    FUSE_OPTIONS     fuse mount options
+
+When mount.gfarm2fs is installed to /sbin/mount.gfarm2fs, you can
+mount the Gfarm file system by the mount(8) command.
+
+Example of /etc/fstab entries:
+/etc/gfarm2.conf	/gfarm/tatebe	gfarm2fs noauto,user 0 0
+EOF
+	exit 1
+}
+
+ABORT() {
+	[ $# -gt 0 ] && echo 1>&2 $*
+	exit 1
+}
+
+[ x"$1" = x"-h" -o x"$1" = x"--help" ] && USAGE
+
+if [ $# -gt 0 ]; then
+	export GFARM_CONFIG_FILE=$1
+	shift
+fi
+if [ $# -gt 0 ]; then
+	GFS_MOUNTDIR=$1
+	shift
+fi
+if [ $# -gt 0 ]; then
+	# abandon
+	OPTIONS=$*
+fi
+
+: ${GFS_USERNAME:=`gfwhoami 2> /dev/null`}
+: ${GFS_USERNAME:=$USER}
+: ${GFS_USERNAME:=$LOGNAME}
+: ${GFS_USERNAME:=`logname 2> /dev/null`}
+: ${GFS_MOUNTDIR:=/tmp/$GFS_USERNAME}
+: ${GFARMFS_ROOT:=`gfuser -l $GFS_USERNAME 2> /dev/null | awk -F: '{ print $3 }'`}
+: ${GFARMFS_ROOT:=/}
+: ${GFARMFS_OPTIONS:=}
+: ${FUSE_OPTIONS:=}
+
+# if already mounted, exit
+grep $GFS_MOUNTDIR /etc/mtab > /dev/null &&
+ABORT "$GFS_MOUNTDIR: already mounted"
+
+DELETE_MOUNTDIR_ON_ERROR=0
+if [ ! -d $GFS_MOUNTDIR ]; then
+	mkdir -p $GFS_MOUNTDIR ||
+		ABORT "cannot create a mount point: " $GFS_MOUNTDIR
+	DELETE_MOUNTDIR_ON_ERROR=1
+fi
+[ -O $GFS_MOUNTDIR ] || ABORT "$GFS_MOUNTDIR: not owned by " $LOGNAME
+
+# mount
+gfarm2fs -o modules=subdir,subdir=$GFARMFS_ROOT $GFARMFS_OPTIONS $GFS_MOUNTDIR $FUSE_OPTIONS
+STATUS=$?
+if [ $STATUS = 0 ]; then
+	echo Mount GfarmFS on $GFS_MOUNTDIR
+else
+	[ $DELETE_MOUNTDIR_ON_ERROR = 1 ] && rmdir $GFS_MOUNTDIR
+fi
+exit $STATUS
