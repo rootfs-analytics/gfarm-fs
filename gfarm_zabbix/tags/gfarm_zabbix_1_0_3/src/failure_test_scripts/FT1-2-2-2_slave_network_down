@@ -1,0 +1,62 @@
+#! /bin/sh
+
+######################################################################
+TESTID="FT1-2-2-2"
+CATEGORY="accident causes no failover"
+SECTION="mds accident"
+TITLE="network down with slave to master"
+######################################################################
+
+. ./FT-common
+
+ft_setup()
+{
+	IFUP_PATH=/sbin/ifup
+	IFDOWN_PATH=/sbin/ifdown
+
+	return $FT_RESULT_PASS
+}
+
+ft_main()
+{
+	RESULT=$FT_RESULT_PASS
+
+	ssh $gfmd2_CTRL_ADDRESS sudo $IFDOWN_PATH $gfmd2_GFARM_IF
+	[ $? -eq 0 ] || RESULT=$FT_RESULT_FAIL
+	ft_checkpoint 1 "ifdown $gfmd2_GFARM_IF on $gfmd2" $RESULT
+	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
+
+	ft_check_mail \
+		"Can't get master metadata server name on $gfmd2" && \
+	ft_check_mail \
+		"Gfarm metadata server is not available on $gfmd2"
+	[ $? -eq 0 ] || RESULT=$FT_RESULT_FAIL
+	ft_checkpoint 2 "receive a mail" $RESULT
+	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
+	ft_truncate_mbox
+
+
+	ssh $gfmd2_CTRL_ADDRESS sudo $IFUP_PATH $gfmd2_GFARM_IF
+	[ $? -eq 0 ] || RESULT=$FT_RESULT_FAIL
+	ft_checkpoint 3 "ifup $gfmd2_GFARM_IF on $gfmd2" $RESULT
+	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
+
+	ft_check_mail \
+		"Re: Can't get master metadata server name on $gfmd2" && \
+	ft_check_mail \
+		"Re: Gfarm metadata server is not available on $gfmd2"
+	[ $? -eq 0 ] || RESULT=$FT_RESULT_FAIL
+	ft_checkpoint 4 "receive a mail" $RESULT
+	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
+	ft_truncate_mbox
+
+	return $RESULT
+}
+
+ft_teardown()
+{
+	ssh $gfmd2_CTRL_ADDRESS sudo $IFUP_PATH $gfmd2_GFARM_IF
+	return $FT_RESULT_PASS
+}
+	
+ft_run "$TESTID" "$TITLE"

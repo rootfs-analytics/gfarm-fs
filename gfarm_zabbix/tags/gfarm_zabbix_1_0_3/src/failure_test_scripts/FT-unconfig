@@ -1,0 +1,21 @@
+#! /bin/sh
+
+. ./FT-common
+
+I=1
+while [ "X`eval echo \\$client$I`" != X ]; do
+	$gfservice unconfig-client client$I
+	I=`expr $I + 1`
+done
+
+I=1
+while [ "X`eval echo \\$gfsd$I`" != X ]; do
+	$gfservice unconfig-gfsd gfsd$I
+	I=`expr $I + 1`
+done
+
+I=1
+while [ "X`eval echo \\$gfmd$I`" != X ]; do
+	$gfservice unconfig-gfarm gfmd$I
+	I=`expr $I + 1`
+done

@@ -1,0 +1,52 @@
+#! /bin/sh
+
+######################################################################
+TESTID="FT1-2-3-1"
+CATEGORY="accident causes no failover"
+SECTION="fsn accident"
+TITLE="gfsd down"
+######################################################################
+
+. ./FT-common
+
+ft_setup()
+{
+	return $FT_RESULT_PASS
+}
+
+ft_main()
+{
+	RESULT=$FT_RESULT_PASS
+
+	$gfservice stop-gfsd gfsd1 \
+		|| RESULT=$FT_RESULT_FAIL
+	ft_checkpoint 1 "stop gfsd on $gfsd1" $RESULT
+	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
+
+	ft_check_mail "gfsd is not running on $gfsd1" \
+		|| RESULT=$FT_RESULT_FAIL
+	ft_checkpoint 2 "receive a mail" $RESULT
+	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
+	ft_truncate_mbox
+
+	$gfservice start-gfsd gfsd1 \
+		|| RESULT=$FT_RESULT_FAIL
+	ft_checkpoint 3 "start gfsd on $gfsd1" $RESULT
+	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
+
+	ft_check_mail "Re: gfsd is not running on $gfsd1" \
+		|| RESULT=$FT_RESULT_FAIL
+	ft_checkpoint 4 "receive a mail" $RESULT
+	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
+	ft_truncate_mbox
+
+	return $RESULT
+}
+
+ft_teardown()
+{
+	$gfservice start-gfsd gfsd1
+	return $FT_RESULT_PASS
+}
+	
+ft_run "$TESTID" "$TITLE"
