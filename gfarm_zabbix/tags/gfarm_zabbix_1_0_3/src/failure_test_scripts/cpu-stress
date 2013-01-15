@@ -1,0 +1,71 @@
+#! /usr/bin/perl
+#
+# Usage:
+#     cpu-stress [-d] [-n NPROCS] [-t PERIOD]
+#
+# 'cpu-stress' is a tiny tool to stress CPU.  Currently it recognizes
+# the following options.
+#
+# -d
+#     Also output debug messages.
+#
+# -n NPROCS
+#     Fork the number of processes which stress CPU.  The default is 1.
+#
+# -t PERIOD
+#     Timeout after PERIOD seconds.  The default is 600 (10 minutes).
+#
+use Getopt::Std;
+
+my $debug = 0;
+my $nprocs = 1;
+my $period = 600;
+
+$SIG{CHLD} = \&sigchld_handler;
+
+sub sigchld_handler {
+    while (waitpid(-1, WNOHANG) > 0) {
+	warn("$0: receive a SIGCHLD, PID=$$\n") if ($debug);
+    }
+}
+
+sub stress {
+    my ($period) = @_;
+
+    my $start_time = time();
+    my $value = 0.0;
+
+    for (my $i = 0.0; 1; $i += 0.001) {
+	$value += sin($i);
+	last if (time() - $start_time >= $period);
+    }
+
+    warn("$0: a child PID=$$ exits\n") if ($debug);
+}
+
+sub fork_stress {
+    my ($nprocs) = @_;
+
+    for (my $i = 0; $i < $nprocs; $i++) {
+	my $pid = fork();
+	if ($pid < 0) {
+	    die("$0: failed to fork, $!\n");
+	} elsif ($pid == 0) {
+	    stress($period);
+	} else {
+	    warn("$0: create a child PID=$$\n") if ($debug);
+	}
+    }
+
+    sleep($period);
+    warn("$0: finished\n") if ($debug);
+}
+
+my %options = ();
+getopts('dn:t:', \%options)
+    or die("Usage: $0 [-d] [-n NPROCS] [-t PERIOD]\n");
+$debug  = $options{'d'} if (defined $options{'d'});
+$nprocs = $options{'n'} if (defined $options{'n'});
+$period = $options{'t'} if (defined $options{'t'});
+fork_stress($nprocs);
+exit(0);
