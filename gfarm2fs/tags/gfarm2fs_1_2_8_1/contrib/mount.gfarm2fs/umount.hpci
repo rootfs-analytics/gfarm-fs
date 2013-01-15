@@ -1,0 +1,20 @@
+#!/bin/sh
+
+ABORT() {
+	[ $# -gt 0 ] && echo 1>&2 $*
+	exit 1
+}
+
+GFUSER=`gfwhoami`
+[ X"$GFUSER" = X ] && ABORT 'Who?'
+: ${USER:=`whoami`}
+
+groups=`gfgroup -l | grep $GFUSER | awk -F: '{print $1}'`
+for g in $groups
+do
+    for u in $GFUSER $USER
+    do
+	[ -d /gfarm/$g/$u ] &&
+	umount.gfarm2fs /gfarm/$g/$u
+    done
+done
