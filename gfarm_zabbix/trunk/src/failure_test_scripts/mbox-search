@@ -225,7 +225,8 @@ sub search_mbox_file {
 	    } else {
 		if ($subject eq $substr) {
 		    if ($show_found_lines) {
-			print("X-Zabbix-Subject: $subject\n");
+			#print("X-Zabbix-Subject: $subject\n");
+			print("Subject: $subject\n");
 		    }
 		    $result = 1;
 		}
@@ -240,7 +241,8 @@ sub search_mbox_file {
 	    next;
 	} elsif ($line =~ /^$/) {
 	    $in_header = 0;
-	} elsif ($line =~ s/^X-Zabbix-Subject:\s*//i) {
+	#} elsif ($line =~ s/^X-Zabbix-Subject:\s*//i) {
+	} elsif ($line =~ s/^Subject:\s*//i) {
 	    $in_subject = 1;
 	    $subject = $line;
 	}

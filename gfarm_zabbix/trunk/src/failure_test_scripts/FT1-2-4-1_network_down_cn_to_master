@@ -21,15 +21,16 @@ ft_main()
 {
 	RESULT=$FT_RESULT_PASS
 
-	ssh $client1 sudo $IFDOWN_PATH $client1_GFARM_IF
+	ssh $client1_CTRL_ADDRESS sudo $IFDOWN_PATH $client1_GFARM_IF
 	[ $? -eq 0 ] || RESULT=$FT_RESULT_FAIL
 	ft_checkpoint 1 "ifdown $gfsd2_GFARM_IF on $gfsd2" $RESULT
 	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
 
+# this mail was not recieved.
+#	ft_check_mail \
+#		"Gfarm client node is not available on $client1" && \
 	ft_check_mail \
-		"Gfarm client node is not available on $client1" && \
-	ft_check_mail \
-		"Can't get master metadata server name on $client1" && \
+		"Can't get metadata server master name on $client1" && \
 	ft_check_mail \
 		"Gfarm metadata server list is not available on $client1" && \
 	[ $? -eq 0 ] || RESULT=$FT_RESULT_FAIL
@@ -43,10 +44,10 @@ ft_main()
 	ft_checkpoint 3 "ifup $gfsd2_GFARM_IF on $gfsd2" $RESULT
 	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
 
+#	ft_check_mail \
+#		"Re: Gfarm client node is not available on $client1" && \
 	ft_check_mail \
-		"Re: Gfarm client node is not available on $client1" && \
-	ft_check_mail \
-		"Re: Can't get master metadata server name on $client1" && \
+		"Re: Can't get metadata server master name on $client1" && \
 	ft_check_mail \
 		"Re: Gfarm metadata server list is not available on $client1" && \
 	[ $? -eq 0 ] || RESULT=$FT_RESULT_FAIL

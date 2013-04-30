@@ -35,11 +35,6 @@ ft_main()
 	ft_checkpoint 3 "receive a mail" $RESULT
 	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
 
-	ft_check_mail "gfmd does not listen on $gfmd1" \
-		|| RESULT=$FT_RESULT_FAIL
-	ft_checkpoint 4 "receive a mail" $RESULT
-	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
-
 	return $RESULT
 }
 

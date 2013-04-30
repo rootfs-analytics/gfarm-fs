@@ -11,6 +11,7 @@ TITLE="HW error"
 
 ft_setup()
 {
+	zabbix_sender -v -z $zabbix1 -s $gfsd1 -k 'log[{$GFARM_LOGFILE},"kernel:\s.*I\/O\serror",UTF-8]' -o RECOVERED || RESULT=$FT_RESULT_FAIL
 	return $FT_RESULT_PASS
 }
 
@@ -21,7 +22,8 @@ ft_main()
 	ADDITIONAL_TIME=600
 	FT_MAIL_TIMEOUT=`expr $FT_MAIL_TIMEOUT + $ADDITIONAL_TIME`
 
-	ssh $gfsd1 logger -p local7.error -t "kernel" "/dev/sda I/O error" ||\
+	ssh $gfsd1 logger -p $FT_SYSLOG_FACILITY.error \
+		-t "kernel" "/dev/sda I/O error" ||\
 	RESULT=$FT_RESULT_FAIL
 	ft_checkpoint 1 "logging error on $gfsd1" $RESULT
 	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
@@ -30,7 +32,8 @@ ft_main()
 	ft_checkpoint 2 "receive a mail" $RESULT
 	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
 
-	ft_checkpoint 3 "sleep $ADDITIONAL_TIME sec." $RESULT
+	zabbix_sender -v -z $zabbix1 -s $gfsd1 -k 'log[{$GFARM_LOGFILE},"kernel:\s.*I\/O\serror",UTF-8]' -o RECOVERED || RESULT=$FT_RESULT_FAIL
+	ft_checkpoint 3 "clear log" $RESULT
 	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
 
 	ft_check_mail "Re: H/W error message in /var/log/messages on $gfsd1" || RESULT=$FT_RESULT_FAIL
@@ -42,6 +45,7 @@ ft_main()
 
 ft_teardown()
 {
+	zabbix_sender -v -z $zabbix1 -s $gfsd1 -k 'log[{$GFARM_LOGFILE},"kernel:\s.*I\/O\serror",UTF-8]' -o RECOVERED || RESULT=$FT_RESULT_FAIL
 	return $FT_RESULT_PASS
 }
 	

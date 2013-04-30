@@ -42,14 +42,23 @@ ft_main()
 	ft_checkpoint 3.2 "gfmd failed over" $RESULT
 	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
 
+	# Immediately after MDS failover,
+	# it's unable to read/write files on gfarm2fs.
+	SLEEP_PERIOD=$FT_SLEEP_PERIOD_AFTER_FAILOVER
+	RESULT=$FT_RESULT_PASS
+	sleep $SLEEP_PERIOD \
+		|| RESULT=$FT_RESULT_FAIL
+	ft_checkpoint 4.1 "sleep $SLEEP_PERIOD sec." $RESULT
+	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
+
 	ssh $client1 cat mnt/a.txt > /dev/null \
 		|| RESULT=$FT_RESULT_FAIL
-	ft_checkpoint 4.1 "read data from Gfarm2 filesytem" $RESULT
+	ft_checkpoint 4.2 "read data from Gfarm2 filesytem" $RESULT
 	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
 
 	ssh $client1 sh -c 'echo bbb > mnt/b.txt' \
 		|| RESULT=$FT_RESULT_FAIL
-	ft_checkpoint 4.2 "write data on Gfarm2 filesytem" $RESULT
+	ft_checkpoint 4.3 "write data on Gfarm2 filesytem" $RESULT
 	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
 
 	ft_check_mail "Re: gfmd does not listen on $gfmd1" \

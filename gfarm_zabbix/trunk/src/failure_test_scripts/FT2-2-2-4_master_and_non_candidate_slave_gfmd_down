@@ -11,11 +11,6 @@ TITLE="master gfmd and a slave gfmd which is not master candidate down"
 
 ft_setup()
 {
-	CANDIDATE=`ft_get_master_candidate`
-	[ $? -ne 0 ] && return $FT_RESULT_FAIL
-
-	SLAVE="gfmd2"
-	[ "X$CANDIDATE" = "X$SLAVE" ] && SLAVE="gfmd3"
 	return $FT_RESULT_PASS
 }
 
@@ -23,28 +18,24 @@ ft_main()
 {
 	RESULT=$FT_RESULT_PASS
 
-	gfmdhost -l > /dev/null 2>&1 \
+	$gfservice stop-gfmd gfmd2 \
 		|| RESULT=$FT_RESULT_FAIL
-	ft_checkpoint 1 "gfmdhost -l" $RESULT
-
-	$gfservice stop-gfmd $SLAVE \
-		|| RESULT=$FT_RESULT_FAIL
-	ft_checkpoint 2 "stop gfmd on $SLAVE" $RESULT
+	ft_checkpoint 1 "stop gfmd on $gfmd2" $RESULT
 	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
 
 	$gfservice stop-gfmd gfmd1 \
 		|| RESULT=$FT_RESULT_FAIL
-	ft_checkpoint 3 "stop gfmd on $gfmd1" $RESULT
+	ft_checkpoint 2 "stop gfmd on $gfmd1" $RESULT
 	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
 
 	ft_check_mail "gfmd does not listen on $gfmd1" \
 		|| RESULT=$FT_RESULT_FAIL
-	ft_checkpoint 4 "receive a mail" $RESULT
+	ft_checkpoint 3 "receive a mail" $RESULT
 	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
 
 	ft_check_mail "Re: gfmd does not listen on $gfmd1" \
 		|| RESULT=$FT_RESULT_FAIL
-	ft_checkpoint 5 "receive a mail" $RESULT
+	ft_checkpoint 4 "receive a mail" $RESULT
 	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
 
 	return $RESULT

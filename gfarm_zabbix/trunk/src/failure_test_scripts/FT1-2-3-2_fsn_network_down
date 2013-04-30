@@ -27,7 +27,7 @@ ft_main()
 	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
 
 	ft_check_mail \
-		"Can't get master metadata server name on $gfsd2" && \
+		"Can't get metadata server master name on $gfsd2" && \
 	ft_check_mail \
 		"Gfarm metadata server list is not available on $gfsd2" && \
 	ft_check_mail \
@@ -46,7 +46,7 @@ ft_main()
 	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
 
 	ft_check_mail \
-		"Re: Can't get master metadata server name on $gfsd2" && \
+		"Re: Can't get metadata server master name on $gfsd2" && \
 	ft_check_mail \
 		"Re: Gfarm metadata server list is not available on $gfsd2" && \
 	ft_check_mail \

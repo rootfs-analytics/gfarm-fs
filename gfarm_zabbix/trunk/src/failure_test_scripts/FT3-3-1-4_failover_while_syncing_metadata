@@ -64,7 +64,7 @@ ft_main()
 	I=0
 	N_TIMES=10
 	while [ $I -lt $N_TIMES ]; do
-		CHK_GFMDHOST=`gfmdhost -l | grep $gfmd2 | grep '^+'`
+		CHK_GFMDHOST=`gfmdhost -l | grep $gfmd3 | grep '^+'`
 		if [ "X$CHK_GFMDHOST" != X ]; then
 			R6=$FT_RESULT_PASS
 			break
@@ -72,7 +72,7 @@ ft_main()
 		I=`expr $I + 1`
 		sleep $INTERVAL
 	done
-	ft_checkpoint 6 "check finish syncing metadata on $gfmd2" $R6
+	ft_checkpoint 6 "check finish syncing metadata on $gfmd3" $R6
 	[ $R6 -eq $FT_RESULT_PASS ] || return $R6
 
 	return $FT_RESULT_PASS

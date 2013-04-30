@@ -22,13 +22,19 @@ FT_MAIL_TIMEOUT=600
 FT_MAIL_CHECK_INTERVAL=10
 
 # Timeout interval for waiting fail over of gfmd.
-FT_FAILOVER_TIMEOUT=600
+FT_FAILOVER_TIMEOUT=900
 
 # Check completion of failover every $FT_FAILOVER_CHECK_INTERVAL seconds.
 FT_FAILOVER_CHECK_INTERVAL=30
 
 # Check completion of a remote command every $FT_PROCESS_CHECK_INTERVAL seconds.
 FT_PROCESS_CHECK_INTERVAL=30
+
+# Sleep Period Between a failover and file operations on Gfarm2fs
+FT_SLEEP_PERIOD_AFTER_FAILOVER=300
+
+# Syslog facility
+FT_SYSLOG_FACILITY=local7
 
 # Mbox file.
 FT_MBOX_FILE=/var/spool/mail/$USER
@@ -177,41 +183,6 @@ ft_wait_remote_process()
 }
 
 #
-# It prints a master candidate metadata server name.
-#
-ft_get_master_candidate()
-{
-	_MAX_SEQNUM_FILE_="/var/tmp/seqnum.txt"
-	_SLAVE_LIST_=`ssh $zabbix1 gfmdhost -l 2> /dev/null \
-		| grep "^+ \+slave \+sync \+c \+" | awk '{ print $6 }'`
-
-	echo -n > $_MAX_SEQNUM_FILE_
-	[ -f $_MAX_SEQNUM_FILE_ ] || return 1;
-
-	for _SLAVE_ in $_SLAVE_LIST_ ; do
-		_MAX_SEQNUM_=`ssh $_SLAVE_ \
-			sudo /etc/zabbix/externalscripts/zbx_chk_gfjournal_gfmd.sh`
-		if [ $? -ne 0 ] || [ X"$_MAX_SEQNUM_" = X ]; then
-			continue
-		fi
-		echo $_MAX_SEQNUM_ $_SLAVE_ >> $_MAX_SEQNUM_FILE_
-	done
-
-	_CANDIDATE_HOST_=`sort -nr $_MAX_SEQNUM_FILE_ | awk '{ print $2 };' | head -1`
-	_I_=1
-	while [ "X`eval echo \\$gfmd${_I_}`" != X ]; do
-		if [ "X$_CANDIDATE_HOST_" = "X`eval echo \\$gfmd${_I_}`" ]
-		then
-			echo gfmd${_I_}
-			return 0
-		fi
-		_I_=`expr $_I_ + 1`
-	done
-
-	return 1
-}
-
-#
 # Reset gfmd servers.
 # At teardown, we have to make gfmd1 to be a master and other gfmd servers
 # to be slaves for the next test case.
@@ -264,6 +235,11 @@ ft_run()
 	_RESULT_=$FT_RESULT_PASS
 	ft_setup >> $FT_LOG 2>&1
 	_RESULT_=$?
+	if [ $_RESULT_ -eq  $FT_RESULT_UNTESTED ]; then
+		echo "UNTESTED"
+		echo "    skip $1" >> $FT_LOG
+		exit $_RESULT_
+	fi
 	if [ $_RESULT_ -ne 0 ]; then
 		echo "failed to setup $1"
 		echo "    failed to setup $1" >> $FT_LOG
@@ -348,6 +324,11 @@ ft_run_all()
 			_N_UNKNOWN_=`expr $_N_UNKNOWN_ + 1`
 			;;
 		esac
+
+		#
+		# Sleep a while to create an interval alter the last alert.
+		#
+		sleep $FT_MAIL_TIMEOUT
 	done
 
 	echo "Total test: `expr $_N_PASS_ + $_N_FAIL_`"

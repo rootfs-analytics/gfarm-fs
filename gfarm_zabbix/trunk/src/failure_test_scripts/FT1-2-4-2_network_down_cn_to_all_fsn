@@ -21,8 +21,8 @@ ft_main()
 {
 	RESULT=$FT_RESULT_PASS
 
-	ssh $client1 sudo $IFDOWN_PATH $client1_GFARM_IF && \
-	ssh $client2 sudo $IFDOWN_PATH $client2_GFARM_IF
+	ssh $gfsd1_CTRL_ADDRESS sudo $IFDOWN_PATH $gfsd1_GFARM_IF && \
+	ssh $gfsd2_CTRL_ADDRESS sudo $IFDOWN_PATH $gfsd2_GFARM_IF
 	[ $? -eq 0 ] || RESULT=$FT_RESULT_FAIL
 	ft_checkpoint 1 "ifdown $gfsd2_GFARM_IF on $gfsd2" $RESULT
 	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
@@ -35,8 +35,8 @@ ft_main()
 	ft_checkpoint 2 "receive a mail" $RESULT
 	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
 
-	ssh $client1_CTRL_ADDRESS sudo $IFUP_PATH $client1_GFARM_IF && \
-	ssh $client2_CTRL_ADDRESS sudo $IFUP_PATH $client2_GFARM_IF
+	ssh $gfsd1_CTRL_ADDRESS sudo $IFUP_PATH $gfsd1_GFARM_IF && \
+	ssh $gfsd2_CTRL_ADDRESS sudo $IFUP_PATH $gfsd2_GFARM_IF
 	[ $? -eq 0 ] || RESULT=$FT_RESULT_FAIL
 	ft_checkpoint 3 "ifup $gfsd2_GFARM_IF on $gfsd2" $RESULT
 	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
@@ -54,8 +54,8 @@ ft_main()
 
 ft_teardown()
 {
-	ssh $client1_CTRL_ADDRESS sudo $IFUP_PATH $client1_GFARM_IF
-	ssh $client2_CTRL_ADDRESS sudo $IFUP_PATH $client2_GFARM_IF
+	ssh $gfsd1_CTRL_ADDRESS sudo $IFUP_PATH $gfsd1_GFARM_IF
+	ssh $gfsd2_CTRL_ADDRESS sudo $IFUP_PATH $gfsd2_GFARM_IF
 	return $FT_RESULT_PASS
 }
 	
