@@ -1,7 +1,7 @@
 #! /bin/sh
 
 ######################################################################
-TESTID="FT1-2-2-3"
+TESTID="FT1-2-2-4"
 CATEGORY="accident causes no failover"
 SECTION="mds accident"
 TITLE="failed to gfmdhost"
@@ -11,19 +11,18 @@ TITLE="failed to gfmdhost"
 
 ft_setup()
 {
-	GFMDHOST_PATH=$GFARM_PREFIX/bin/gfmdhost
 	return $FT_RESULT_PASS
 }
 
 ft_main()
 {
-	SHARED_KEY=~/.gfarm_shared_key
+	SHARED_KEY='~/.gfarm_shared_key'
 
 	RESULT=$FT_RESULT_PASS
 
 	ssh $gfmd2 mv ${SHARED_KEY} ${SHARED_KEY}.bak
 	[ $? -eq 0 ] || RESULT=$FT_RESULT_FAIL
-	ft_checkpoint 1 "replace gfmdhost on $gfmd2" $RESULT
+	ft_checkpoint 1 "remove a shared key file on $gfmd2" $RESULT
 	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
 
 	ft_check_mail "Gfarm metadata server is not available on $gfmd2"
@@ -33,7 +32,7 @@ ft_main()
 
 	ssh $gfmd2 mv ${SHARED_KEY}.bak ${SHARED_KEY}
 	[ $? -eq 0 ] || RESULT=$FT_RESULT_FAIL
-	ft_checkpoint 3 "restore gfmdhost on $gfmd2" $RESULT
+	ft_checkpoint 3 "restore a shared key file on $gfmd2" $RESULT
 	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
 
 	ft_check_mail "Re: Gfarm metadata server is not available on $gfmd2"

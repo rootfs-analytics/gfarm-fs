@@ -11,6 +11,8 @@ TITLE="gfmd warning and error"
 
 ft_setup()
 {
+	zabbix_sender -z $zabbix1 -s $gfmd1 -k 'log[{$GFARM_LOGFILE},"\sgfmd\[[0-9]+\]:\s+<err>",UTF-8]' -o RECOVERED
+	zabbix_sender -z $zabbix1 -s $gfmd1 -k 'log[{$GFARM_LOGFILE},"\sgfmd\[[0-9]+\]:\s+<warning>",UTF-8]' -o RECOVERED
 	return $FT_RESULT_PASS
 }
 
@@ -21,8 +23,10 @@ ft_main()
 	ADDITIONAL_TIME=600
 	FT_MAIL_TIMEOUT=`expr $FT_MAIL_TIMEOUT + $ADDITIONAL_TIME`
 
-	ssh $gfmd1 logger -p local0.err -t "gfmd[9999]" " unknown error" &&\
-	ssh $gfmd1 logger -p local0.warning -t "gfmd[9999]" " unknown warning" ||\
+	ssh $gfmd1 logger -p $FT_SYSLOG_FACILITY.err -t \
+		"gfmd[9999]" "\<err\> unknown error" && \
+	ssh $gfmd1 logger -p $FT_SYSLOG_FACILITY.warning \
+		-t "gfmd[9999]" "\<warning\> unknown warning" || \
 	RESULT=$FT_RESULT_FAIL
 	ft_checkpoint 1 "logging error on $gfmd1" $RESULT
 	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
@@ -33,7 +37,9 @@ ft_main()
 	ft_checkpoint 2 "receive mails" $RESULT
 	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
 
-	ft_checkpoint 3 "sleep $ADDITIONAL_TIME sec." $RESULT
+	zabbix_sender -v -z $zabbix1 -s $gfmd1 -k 'log[{$GFARM_LOGFILE},"\sgfmd\[[0-9]+\]:\s+<err>",UTF-8]' -o RECOVERED
+	zabbix_sender -v -z $zabbix1 -s $gfmd1 -k 'log[{$GFARM_LOGFILE},"\sgfmd\[[0-9]+\]:\s+<warning>",UTF-8]' -o RECOVERED || RESULT=$FT_RESULT_FAIL
+	ft_checkpoint 3 "clear log" $RESULT
 	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
 
 	ft_check_mail "Re: gfmd error message in /var/log/messages on $gfmd1" &&\
@@ -47,6 +53,8 @@ ft_main()
 
 ft_teardown()
 {
+	zabbix_sender -z $zabbix1 -s $gfmd1 -k 'log[{$GFARM_LOGFILE},"\sgfmd\[[0-9]+\]:\s+<err>",UTF-8]' -o RECOVERED
+	zabbix_sender -z $zabbix1 -s $gfmd1 -k 'log[{$GFARM_LOGFILE},"\sgfmd\[[0-9]+\]:\s+<warning>",UTF-8]' -o RECOVERED
 	return $FT_RESULT_PASS
 }
 	

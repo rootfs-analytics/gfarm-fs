@@ -20,8 +20,6 @@ ft_main()
 {
 	RESULT=$FT_RESULT_PASS
 
-	MASTER_CANDIDATE=`ft_get_master_candidate`
-	[ "X$MASTER_CANDIDATE" != X ] || RESULT=$FT_RESULT_FAIL
 	ft_checkpoint 1 "find master candidate gfmd" $RESULT
 	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
 
@@ -30,10 +28,9 @@ ft_main()
 	ft_checkpoint 2 "stop zabbix-agent on $gfmd1" $RESULT
 	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
 
-	MASTER_CANDIDATE_NAME=`eval echo \\$$MASTER_CANDIDATE`
-	ssh $MASTER_CANDIDATE_NAME sudo /etc/init.d/zabbix-agent stop \
+	ssh $gfmd2 sudo /etc/init.d/zabbix-agent stop \
 		|| RESULT=$FT_RESULT_FAIL
-	ft_checkpoint 3 "stop zabbix-agent on $MASTER_CANDIDATE_NAME" $RESULT
+	ft_checkpoint 3 "stop zabbix-agent on $gfmd2" $RESULT
 	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
 
 	ft_check_mail "zabbix agent is not running on $gfmd1" \
@@ -41,7 +38,7 @@ ft_main()
 	ft_checkpoint 4 "receive a mail" $RESULT
 	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
 
-	ft_check_mail "zabbix agent is not running on $MASTER_CANDIDATE_NAME" \
+	ft_check_mail "zabbix agent is not running on $gfmd2" \
 		|| RESULT=$FT_RESULT_FAIL
 	ft_checkpoint 5 "receive a mail" $RESULT
 	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
@@ -52,7 +49,7 @@ ft_main()
 ft_teardown()
 {
 	ssh $gfmd1 sudo /etc/init.d/zabbix-agent start
-	ssh $MASTER_CANDIDATE_NAME sudo /etc/init.d/zabbix-agent start
+	ssh $gfmd2 sudo /etc/init.d/zabbix-agent start
 	ft_reset_gfmd
 	return $FT_RESULT_PASS
 }
