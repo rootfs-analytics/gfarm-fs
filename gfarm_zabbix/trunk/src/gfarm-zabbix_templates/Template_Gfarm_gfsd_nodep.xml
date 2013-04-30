@@ -1,0 +1,533 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<zabbix_export version="1.0" date="11.03.28" time="14.12">
+  <hosts>
+    <host name="Template_Gfarm_gfsd_nodep">
+      <proxy_hostid>0</proxy_hostid>
+      <useip>1</useip>
+      <dns></dns>
+      <ip>127.0.0.1</ip>
+      <port>10050</port>
+      <status>3</status>
+      <useipmi>0</useipmi>
+      <ipmi_ip>127.0.0.1</ipmi_ip>
+      <ipmi_port>623</ipmi_port>
+      <ipmi_authtype>0</ipmi_authtype>
+      <ipmi_privilege>2</ipmi_privilege>
+      <ipmi_username></ipmi_username>
+      <ipmi_password></ipmi_password>
+      <groups>
+        <group>Templates</group>
+      </groups>
+      <triggers>
+        <trigger>
+          <description>Reachability failed on {HOSTNAME}</description>
+          <type>0</type>
+          <expression>((({Template_Gfarm_gfsd_nodep:gfarm.gfs.gfhost[{$GFSD_CONFS}].regexp(x\.xx\/x\.xx\/x\.xx)})#0) | (({Template_Gfarm_gfsd_nodep:gfarm.gfs.gfhost[{$GFSD_CONFS}].regexp(-\.--\/-\.--\/-\.--)})#0)) | (({Template_Gfarm_gfsd_nodep:gfarm.gfs.gfhost[{$GFSD_CONFS}].nodata(360)})=1)</expression>
+          <url></url>
+          <status>0</status>
+          <priority>4</priority>
+          <comments></comments>
+        </trigger>
+        <trigger>
+          <description>Backchannel failed on {HOSTNAME}</description>
+          <type>0</type>
+          <expression>(({Template_Gfarm_gfsd_nodep:gfarm.gfs.gfsched[{$GFSD_CONFS}].regexp(error:)})#0) | (({Template_Gfarm_gfsd_nodep:gfarm.gfs.gfsched[{$GFSD_CONFS}].nodata(360)})=1)</expression>
+          <url></url>
+          <status>0</status>
+          <priority>4</priority>
+          <comments></comments>
+        </trigger>
+        <trigger>
+          <description>gfsd error message in {$GFARM_LOGFILE} on {HOSTNAME}</description>
+          <type>0</type>
+          <expression>(({Template_Gfarm_gfsd_nodep:log[{$GFARM_LOGFILE},"\sgfsd\[[0-9]+\]:\s+&lt;err&gt;",UTF-8].regexp(err)})#0) &amp; (({Template_Gfarm_gfsd_nodep:log[{$GFARM_LOGFILE},"\sgfsd\[[0-9]+\]:\s+&lt;err&gt;",UTF-8].nodata({$NODATA_TIMEOUT})})=0)</expression>
+          <url></url>
+          <status>0</status>
+          <priority>4</priority>
+          <comments></comments>
+        </trigger>
+        <trigger>
+          <description>gfsd warning message in {$GFARM_LOGFILE} on {HOSTNAME}</description>
+          <type>0</type>
+          <expression>(({Template_Gfarm_gfsd_nodep:log[{$GFARM_LOGFILE},"\sgfsd\[[0-9]+\]:\s+&lt;warning&gt;",UTF-8].regexp(warning)})#0) &amp; (({Template_Gfarm_gfsd_nodep:log[{$GFARM_LOGFILE},"\sgfsd\[[0-9]+\]:\s+&lt;warning&gt;",UTF-8].nodata({$NODATA_TIMEOUT})})=0)</expression>
+          <url></url>
+          <status>0</status>
+          <priority>2</priority>
+          <comments></comments>
+        </trigger>
+        <trigger>
+          <description>gfsd is not running on {HOSTNAME}</description>
+          <type>0</type>
+          <expression>{Template_Gfarm_gfsd_nodep:gfarm.gfs.dead[{$GFSD_CONFS}].regexp(error:)}#0</expression>
+          <url></url>
+          <status>0</status>
+          <priority>5</priority>
+          <comments></comments>
+        </trigger>
+        <trigger>
+          <description>gfsd does not listen on {HOSTNAME}</description>
+          <type>0</type>
+          <expression>{Template_Gfarm_gfsd_nodep:gfarm.gfs.tcp.listen[{$GFSD_CONFS}].regexp(error:)}#0</expression>
+          <url></url>
+          <status>0</status>
+          <priority>5</priority>
+          <comments></comments>
+        </trigger>
+         <trigger>
+          <description>Low free disk space on {HOSTNAME} volume {$MONITOR_GFSD_DIRECTORY}</description>
+          <type>0</type>
+          <expression>{Template_Gfarm_gfsd_nodep:vfs.fs.size[{$MONITOR_GFSD_DIRECTORY},pfree].last(0)}&lt;10</expression>
+          <url></url>
+          <status>0</status>
+          <priority>2</priority>
+          <comments></comments>
+        </trigger>
+        <trigger>
+          <description>High used disk space on {HOSTNAME} volume {$MONITOR_GFSD_DIRECTORY}</description>
+          <type>0</type>
+          <expression>{Template_Gfarm_gfsd_nodep:vfs.fs.size[{$MONITOR_GFSD_DIRECTORY},pused].last(0)}&gt;90</expression>
+          <url></url>
+          <status>0</status>
+          <priority>2</priority>
+          <comments></comments>
+        </trigger>
+      </triggers>
+      <items>
+        <item type="0" key="gfarm.gfs.gfhost[{$GFSD_CONFS}]" value_type="4">
+          <description>Monitoring reachability</description>
+          <ipmi_sensor></ipmi_sensor>
+          <delay>300</delay>
+          <history>90</history>
+          <trends>365</trends>
+          <status>0</status>
+          <data_type>0</data_type>
+          <units></units>
+          <multiplier>0</multiplier>
+          <delta>0</delta>
+          <formula>0</formula>
+          <lastlogsize>0</lastlogsize>
+          <logtimefmt></logtimefmt>
+          <delay_flex></delay_flex>
+          <authtype>0</authtype>
+          <username></username>
+          <password></password>
+          <publickey></publickey>
+          <privatekey></privatekey>
+          <params></params>
+          <trapper_hosts>localhost</trapper_hosts>
+          <snmp_community></snmp_community>
+          <snmp_oid></snmp_oid>
+          <snmp_port>161</snmp_port>
+          <snmpv3_securityname></snmpv3_securityname>
+          <snmpv3_securitylevel>0</snmpv3_securitylevel>
+          <snmpv3_authpassphrase></snmpv3_authpassphrase>
+          <snmpv3_privpassphrase></snmpv3_privpassphrase>
+          <applications>
+            <application>Gfarm File System Node</application>
+          </applications>
+        </item>
+        <item type="0" key="gfarm.gfs.gfsched[{$GFSD_CONFS}]" value_type="4">
+          <description>Monitoring back channel</description>
+          <ipmi_sensor></ipmi_sensor>
+          <delay>300</delay>
+          <history>90</history>
+          <trends>365</trends>
+          <status>0</status>
+          <data_type>0</data_type>
+          <units></units>
+          <multiplier>0</multiplier>
+          <delta>0</delta>
+          <formula>0</formula>
+          <lastlogsize>0</lastlogsize>
+          <logtimefmt></logtimefmt>
+          <delay_flex></delay_flex>
+          <authtype>0</authtype>
+          <username></username>
+          <password></password>
+          <publickey></publickey>
+          <privatekey></privatekey>
+          <params></params>
+          <trapper_hosts>localhost</trapper_hosts>
+          <snmp_community></snmp_community>
+          <snmp_oid></snmp_oid>
+          <snmp_port>161</snmp_port>
+          <snmpv3_securityname></snmpv3_securityname>
+          <snmpv3_securitylevel>0</snmpv3_securitylevel>
+          <snmpv3_authpassphrase></snmpv3_authpassphrase>
+          <snmpv3_privpassphrase></snmpv3_privpassphrase>
+          <applications>
+            <application>Gfarm File System Node</application>
+          </applications>
+        </item>
+        <item type="7" key="log[{$GFARM_LOGFILE},&quot;\sgfsd\[[0-9]+\]:\s+&lt;err&gt;&quot;,UTF-8]" value_type="2">
+          <description>Log of gfsd on log file $1</description>
+          <ipmi_sensor></ipmi_sensor>
+          <delay>600</delay>
+          <history>30</history>
+          <trends>365</trends>
+          <status>0</status>
+          <data_type>0</data_type>
+          <units></units>
+          <multiplier>0</multiplier>
+          <delta>0</delta>
+          <formula>0</formula>
+          <lastlogsize>0</lastlogsize>
+          <logtimefmt></logtimefmt>
+          <delay_flex></delay_flex>
+          <authtype>0</authtype>
+          <username></username>
+          <password></password>
+          <publickey></publickey>
+          <privatekey></privatekey>
+          <params></params>
+          <trapper_hosts>localhost</trapper_hosts>
+          <snmp_community></snmp_community>
+          <snmp_oid></snmp_oid>
+          <snmp_port>161</snmp_port>
+          <snmpv3_securityname></snmpv3_securityname>
+          <snmpv3_securitylevel>0</snmpv3_securitylevel>
+          <snmpv3_authpassphrase></snmpv3_authpassphrase>
+          <snmpv3_privpassphrase></snmpv3_privpassphrase>
+          <applications>
+            <application>Gfarm File System Node Log file</application>
+            <application>Gfarm File System Node</application>
+          </applications>
+        </item>
+        <item type="7" key="log[{$GFARM_LOGFILE},&quot;\sgfsd\[[0-9]+\]:\s+&lt;warning&gt;&quot;,UTF-8]" value_type="2">
+          <description>Log of gfsd on log file $1</description>
+          <ipmi_sensor></ipmi_sensor>
+          <delay>600</delay>
+          <history>30</history>
+          <trends>365</trends>
+          <status>0</status>
+          <data_type>0</data_type>
+          <units></units>
+          <multiplier>0</multiplier>
+          <delta>0</delta>
+          <formula>0</formula>
+          <lastlogsize>0</lastlogsize>
+          <logtimefmt></logtimefmt>
+          <delay_flex></delay_flex>
+          <authtype>0</authtype>
+          <username></username>
+          <password></password>
+          <publickey></publickey>
+          <privatekey></privatekey>
+          <params></params>
+          <trapper_hosts>localhost</trapper_hosts>
+          <snmp_community></snmp_community>
+          <snmp_oid></snmp_oid>
+          <snmp_port>161</snmp_port>
+          <snmpv3_securityname></snmpv3_securityname>
+          <snmpv3_securitylevel>0</snmpv3_securitylevel>
+          <snmpv3_authpassphrase></snmpv3_authpassphrase>
+          <snmpv3_privpassphrase></snmpv3_privpassphrase>
+          <applications>
+            <application>Gfarm File System Node Log file</application>
+            <application>Gfarm File System Node</application>
+          </applications>
+        </item>
+        <item type="0" key="gfarm.gfs.dead[{$GFSD_CONFS}]" value_type="1">
+          <description>Number of process running gfsd</description>
+          <ipmi_sensor></ipmi_sensor>
+          <delay>300</delay>
+          <history>90</history>
+          <trends>365</trends>
+          <status>0</status>
+          <data_type>0</data_type>
+          <units></units>
+          <multiplier>0</multiplier>
+          <delta>0</delta>
+          <formula>0</formula>
+          <lastlogsize>0</lastlogsize>
+          <logtimefmt></logtimefmt>
+          <delay_flex></delay_flex>
+          <authtype>0</authtype>
+          <username></username>
+          <password></password>
+          <publickey></publickey>
+          <privatekey></privatekey>
+          <params></params>
+          <trapper_hosts>localhost</trapper_hosts>
+          <snmp_community></snmp_community>
+          <snmp_oid></snmp_oid>
+          <snmp_port>161</snmp_port>
+          <snmpv3_securityname></snmpv3_securityname>
+          <snmpv3_securitylevel>0</snmpv3_securitylevel>
+          <snmpv3_authpassphrase></snmpv3_authpassphrase>
+          <snmpv3_privpassphrase></snmpv3_privpassphrase>
+          <applications>
+            <application>Gfarm File System Node</application>
+            <application>Process</application>
+          </applications>
+        </item>
+        <item type="0" key="gfarm.gfs.tcp.listen[{$GFSD_CONFS}]" value_type="1">
+          <description>Status of gfsd listen port</description>
+          <ipmi_sensor></ipmi_sensor>
+          <delay>300</delay>
+          <history>90</history>
+          <trends>365</trends>
+          <status>0</status>
+          <data_type>0</data_type>
+          <units></units>
+          <multiplier>0</multiplier>
+          <delta>0</delta>
+          <formula>0</formula>
+          <lastlogsize>0</lastlogsize>
+          <logtimefmt></logtimefmt>
+          <delay_flex></delay_flex>
+          <authtype>0</authtype>
+          <username></username>
+          <password></password>
+          <publickey></publickey>
+          <privatekey></privatekey>
+          <params></params>
+          <trapper_hosts>localhost</trapper_hosts>
+          <snmp_community></snmp_community>
+          <snmp_oid></snmp_oid>
+          <snmp_port>161</snmp_port>
+          <snmpv3_securityname></snmpv3_securityname>
+          <snmpv3_securitylevel>0</snmpv3_securitylevel>
+          <snmpv3_authpassphrase></snmpv3_authpassphrase>
+          <snmpv3_privpassphrase></snmpv3_privpassphrase>
+          <applications>
+            <application>Gfarm File System Node Network</application>
+            <application>Gfarm File System Node</application>
+          </applications>
+        </item>
+        <item type="0" key="vfs.fs.size[{$MONITOR_GFSD_DIRECTORY},free]" value_type="3">
+          <description>Free disk space on $1</description>
+          <ipmi_sensor></ipmi_sensor>
+          <delay>3600</delay>
+          <history>90</history>
+          <trends>365</trends>
+          <status>0</status>
+          <data_type>0</data_type>
+          <units>B</units>
+          <multiplier>0</multiplier>
+          <delta>0</delta>
+          <formula>0</formula>
+          <lastlogsize>0</lastlogsize>
+          <logtimefmt></logtimefmt>
+          <delay_flex></delay_flex>
+          <authtype>0</authtype>
+          <username></username>
+          <password></password>
+          <publickey></publickey>
+          <privatekey></privatekey>
+          <params></params>
+          <trapper_hosts>localhost</trapper_hosts>
+          <snmp_community></snmp_community>
+          <snmp_oid></snmp_oid>
+          <snmp_port>161</snmp_port>
+          <snmpv3_securityname></snmpv3_securityname>
+          <snmpv3_securitylevel>0</snmpv3_securitylevel>
+          <snmpv3_authpassphrase></snmpv3_authpassphrase>
+          <snmpv3_privpassphrase></snmpv3_privpassphrase>
+          <valuemapid>0</valuemapid>
+          <applications>
+            <application>Gfarm File System Node Availavility</application>
+            <application>Gfarm File System Node FileSystem</application>
+          </applications>
+        </item>
+        <item type="0" key="vfs.fs.size[{$MONITOR_GFSD_DIRECTORY},pfree]" value_type="0">
+          <description>Free disk space on $1 in %</description>
+          <ipmi_sensor></ipmi_sensor>
+          <delay>3600</delay>
+          <history>90</history>
+          <trends>365</trends>
+          <status>0</status>
+          <data_type>0</data_type>
+          <units></units>
+          <multiplier>0</multiplier>
+          <delta>0</delta>
+          <formula>0</formula>
+          <lastlogsize>0</lastlogsize>
+          <logtimefmt></logtimefmt>
+          <delay_flex></delay_flex>
+          <authtype>0</authtype>
+          <username></username>
+          <password></password>
+          <publickey></publickey>
+          <privatekey></privatekey>
+          <params></params>
+          <trapper_hosts>localhost</trapper_hosts>
+          <snmp_community></snmp_community>
+          <snmp_oid></snmp_oid>
+          <snmp_port>161</snmp_port>
+          <snmpv3_securityname></snmpv3_securityname>
+          <snmpv3_securitylevel>0</snmpv3_securitylevel>
+          <snmpv3_authpassphrase></snmpv3_authpassphrase>
+          <snmpv3_privpassphrase></snmpv3_privpassphrase>
+          <valuemapid>0</valuemapid>
+          <applications>
+            <application>Gfarm File System Node Availavility</application>
+            <application>Gfarm File System Node FileSystem</application>
+          </applications>
+        </item>
+        <item type="0" key="vfs.fs.size[{$MONITOR_GFSD_DIRECTORY},pused]" value_type="0">
+          <description>Used disk space on $1 in %</description>
+          <ipmi_sensor></ipmi_sensor>
+          <delay>3600</delay>
+          <history>90</history>
+          <trends>365</trends>
+          <status>0</status>
+          <data_type>0</data_type>
+          <units></units>
+          <multiplier>0</multiplier>
+          <delta>0</delta>
+          <formula>0</formula>
+          <lastlogsize>0</lastlogsize>
+          <logtimefmt></logtimefmt>
+          <delay_flex></delay_flex>
+          <authtype>0</authtype>
+          <username></username>
+          <password></password>
+          <publickey></publickey>
+          <privatekey></privatekey>
+          <params></params>
+          <trapper_hosts>localhost</trapper_hosts>
+          <snmp_community></snmp_community>
+          <snmp_oid></snmp_oid>
+          <snmp_port>161</snmp_port>
+          <snmpv3_securityname></snmpv3_securityname>
+          <snmpv3_securitylevel>0</snmpv3_securitylevel>
+          <snmpv3_authpassphrase></snmpv3_authpassphrase>
+          <snmpv3_privpassphrase></snmpv3_privpassphrase>
+          <valuemapid>0</valuemapid>
+          <applications>
+            <application>Gfarm File System Node Availavility</application>
+            <application>Gfarm File System Node FileSystem</application>
+          </applications>
+        </item>
+        <item type="0" key="vfs.fs.size[{$MONITOR_GFSD_DIRECTORY},total]" value_type="3">
+          <description>Total disk space on $1</description>
+          <ipmi_sensor></ipmi_sensor>
+          <delay>3600</delay>
+          <history>90</history>
+          <trends>365</trends>
+          <status>0</status>
+          <data_type>0</data_type>
+          <units>B</units>
+          <multiplier>0</multiplier>
+          <delta>0</delta>
+          <formula>0</formula>
+          <lastlogsize>0</lastlogsize>
+          <logtimefmt></logtimefmt>
+          <delay_flex></delay_flex>
+          <authtype>0</authtype>
+          <username></username>
+          <password></password>
+          <publickey></publickey>
+          <privatekey></privatekey>
+          <params></params>
+          <trapper_hosts>localhost</trapper_hosts>
+          <snmp_community></snmp_community>
+          <snmp_oid></snmp_oid>
+          <snmp_port>161</snmp_port>
+          <snmpv3_securityname></snmpv3_securityname>
+          <snmpv3_securitylevel>0</snmpv3_securitylevel>
+          <snmpv3_authpassphrase></snmpv3_authpassphrase>
+          <snmpv3_privpassphrase></snmpv3_privpassphrase>
+          <valuemapid>0</valuemapid>
+          <applications>
+            <application>Gfarm File System Node Availavility</application>
+            <application>Gfarm File System Node FileSystem</application>
+          </applications>
+        </item>
+        <item type="0" key="vfs.fs.size[{$MONITOR_GFSD_DIRECTORY},used]" value_type="3">
+          <description>Used disk space on $1</description>
+          <ipmi_sensor></ipmi_sensor>
+          <delay>3600</delay>
+          <history>90</history>
+          <trends>365</trends>
+          <status>0</status>
+          <data_type>0</data_type>
+          <units>B</units>
+          <multiplier>0</multiplier>
+          <delta>0</delta>
+          <formula>0</formula>
+          <lastlogsize>0</lastlogsize>
+          <logtimefmt></logtimefmt>
+          <delay_flex></delay_flex>
+          <authtype>0</authtype>
+          <username></username>
+          <password></password>
+          <publickey></publickey>
+          <privatekey></privatekey>
+          <params></params>
+          <trapper_hosts>localhost</trapper_hosts>
+          <snmp_community></snmp_community>
+          <snmp_oid></snmp_oid>
+          <snmp_port>161</snmp_port>
+          <snmpv3_securityname></snmpv3_securityname>
+          <snmpv3_securitylevel>0</snmpv3_securitylevel>
+          <snmpv3_authpassphrase></snmpv3_authpassphrase>
+          <snmpv3_privpassphrase></snmpv3_privpassphrase>
+          <valuemapid>0</valuemapid>
+          <applications>
+            <application>Gfarm File System Node Availavility</application>
+            <application>Gfarm File System Node FileSystem</application>
+          </applications>
+        </item>
+      </items>
+      <templates/>
+      <graphs>
+        <graph name="Disk usage on {$MONITOR_GFSD_DIRECTORY}" width="900" height="200">
+          <ymin_type>0</ymin_type>
+          <ymax_type>0</ymax_type>
+          <ymin_item_key></ymin_item_key>
+          <ymax_item_key></ymax_item_key>
+          <show_work_period>1</show_work_period>
+          <show_triggers>1</show_triggers>
+          <graphtype>0</graphtype>
+          <yaxismin>0.0000</yaxismin>
+          <yaxismax>100.0000</yaxismax>
+          <show_legend>0</show_legend>
+          <show_3d>0</show_3d>
+          <percent_left>0.0000</percent_left>
+          <percent_right>0.0000</percent_right>
+          <graph_elements>
+            <graph_element item="Template_Gfarm_gfsd_nodep:vfs.fs.size[{$MONITOR_GFSD_DIRECTORY},pused]">
+              <drawtype>0</drawtype>
+              <sortorder>1</sortorder>
+              <color>FF3333</color>
+              <yaxisside>0</yaxisside>
+              <calc_fnc>2</calc_fnc>
+              <type>0</type>
+              <periods_cnt>5</periods_cnt>
+            </graph_element>
+            <graph_element item="Template_Gfarm_gfsd_nodep:vfs.fs.size[{$MONITOR_GFSD_DIRECTORY},pfree]">
+              <drawtype>0</drawtype>
+              <sortorder>0</sortorder>
+              <color>009900</color>
+              <yaxisside>1</yaxisside>
+              <calc_fnc>2</calc_fnc>
+              <type>0</type>
+              <periods_cnt>5</periods_cnt>
+            </graph_element>
+          </graph_elements>
+        </graph>
+      </graphs>
+      <macros>
+        <macro>
+          <value>:::</value>
+          <name>{$GFSD_CONFS}</name>
+        </macro>
+        <macro>
+          <value>/var/log/messages</value>
+          <name>{$GFARM_LOGFILE}</name>
+        </macro>
+        <macro>
+          <value>86400</value>
+          <name>{$NODATA_TIMEOUT}</name>
+        </macro>
+        <macro>
+          <value>/var/gfarm-spool</value>
+          <name>{$MONITOR_GFSD_DIRECTORY}</name>
+        </macro>
+      </macros>
+    </host>
+  </hosts>
+  <dependencies/>
+</zabbix_export>

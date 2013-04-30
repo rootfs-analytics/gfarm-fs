@@ -4,20 +4,22 @@
 CONF_FILE=@ZABBIX_EXTSCRIPTDIR@/zbx_chk_gfarm.conf
 
 # check config file
-if [ -f $CONF_FILE ];
-    then
+if [ -f $CONF_FILE ]; then
     . $CONF_FILE
 else
-    echo  -1;
-    exit 0;
+    echo -1
+    exit 0
 fi
 
 # exec check command
 RESULT=`gfsched $*`
 
-if [ $? != 0 ];
-then
-    RESULT="gfsched $* error."
+if [ $? != 0 ]; then
+    RESULT="error: gfsched $* error."
+else
+    if [ -z "${RESULT}" ]; then
+        RESULT="gfsched show no fsn."
+    fi
 fi
 
 echo $RESULT

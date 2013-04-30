@@ -4,12 +4,11 @@
 CONF_FILE=@ZABBIX_EXTSCRIPTDIR@/zbx_chk_gfarm.conf
 
 # check config file
-if [ -f $CONF_FILE ];
-    then
+if [ -f $CONF_FILE ]; then
     . $CONF_FILE
 else
-    echo  -1;
-    exit 0;
+    echo -1
+    exit 0
 fi
 
 # exec check command

@@ -1,40 +1,34 @@
 #!/bin/sh
 
+. @ZABBIX_EXTSCRIPTDIR@/zbx_gfarm_utils.inc
+
 # database
-DB_HOST=127.0.0.1
-DB_NAME=gfarm
-DB_PORT=@GFARM_DB_PORT@
-DB_USER=@GFARM_DB_USER@
-PGPASSWORD=@GFARM_DB_PASSWORD@
-export PGPASSWORD
+
+prefixes=$2
 
 # exec check command
 RESULT=-1
 case "$1" in
     version)
-	RESULT=`psql --version|head -n1`
-	;;
+        RESULT=`psql --version|head -n1`
+        ;;
     process)
-	RESULT=`psql -U $DB_USER -h $DB_HOST -p $DB_PORT -t -w -c \
-                "select sum(numbackends) from pg_stat_database" \
-                $DB_NAME 2> /dev/null`
-	;;
+        SQL="SELECT SUM(numbackends) FROM pg_stat_database"
+        RESULT=`gfarm_pgsql_exec "${prefixes}" "${SQL}" | average_or_error`
+        ;;
     commit)
-	RESULT=`psql -U $DB_USER -h $DB_HOST -p $DB_PORT -t -w -c \
-                "select sum(xact_commit) from pg_stat_database" \
-                $DB_NAME 2> /dev/null`   
-	;;
+        SQL="SELECT SUM(xact_commit) FROM pg_stat_database"
+        RESULT=`gfarm_pgsql_exec "${prefixes}" "${SQL}" | average_or_error`
+        ;;
     rollback)
-	RESULT=`psql -U $DB_USER -h $DB_HOST -p $DB_PORT -t -w -c \
-                "select sum(xact_rollback) from pg_stat_database" \
-                $DB_NAME 2> /dev/null`
-	;;			
+        SQL="SELECT SUM(xact_rollback) FROM pg_stat_database"
+        RESULT=`gfarm_pgsql_exec "${prefixes}" "${SQL}" | average_or_error`
+        ;;
     *)
-	RESULT=-1
+        RESULT=-1
 esac
 
-if [ $? != 0 ];
-    then
+if [ $? != 0 ]; then
     RESULT=-1
 fi
 
