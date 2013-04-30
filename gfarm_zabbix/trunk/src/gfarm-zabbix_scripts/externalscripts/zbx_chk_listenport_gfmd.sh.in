@@ -1,0 +1,46 @@
+#!/bin/sh
+
+. @ZABBIX_EXTSCRIPTDIR@/zbx_gfarm_utils.inc
+
+# defines
+CONF_FILE=@ZABBIX_EXTSCRIPTDIR@/zbx_chk_gfarm.conf
+
+# check config file
+if [ -f $CONF_FILE ]; then
+    . $CONF_FILE
+else
+    echo "error: ${CONF_FILE} does not exist."
+    exit 0
+fi
+
+# create the temporary file
+tmpfile=`mktemp`
+trap "rm -f $tmpfile >/dev/null 2>&1" EXIT
+
+netstat_options="-alnNt"
+
+netstat ${netstat_options} > $tmpfile
+if [ $? != 0 ]; then
+    echo "error: netstat ${netstat_options} error." 1>&2
+    exit 1
+fi
+
+c=0
+while read prefix host port; do
+    if [ "`grep LISTEN ${tmpfile} | awk '{print $4}' | grep -c :${port}$`" -eq 0 ]; then
+        echo "error: gfmd does not listen ${prefix} port."
+        c=`expr 1 + $c`
+    fi
+done<<EOF
+`read_gfmd_confs "$1"`
+EOF
+if [ $? -ne 0 ]; then
+    echo "error: something wrong."
+    exit 1
+fi
+
+if [ $c = 0 ]; then
+    echo "ok"
+fi
+
+exit 0

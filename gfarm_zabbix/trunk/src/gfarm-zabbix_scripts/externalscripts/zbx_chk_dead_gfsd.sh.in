@@ -1,0 +1,33 @@
+#!/bin/sh
+
+. @ZABBIX_EXTSCRIPTDIR@/zbx_gfarm_utils.inc
+
+# defines
+CONF_FILE=@ZABBIX_EXTSCRIPTDIR@/zbx_chk_gfarm.conf
+
+# check config file
+if [ -f $CONF_FILE ]; then
+    . $CONF_FILE
+else
+    echo "error: ${CONF_FILE} does not exist."
+    exit 0
+fi
+
+c=0
+while read prefix gfsdhost port listen_aadress; do
+    initscript="${prefix}/etc/init.d/gfsd"
+    if [ ! -z "${listen_aadress}" ]; then
+        initscript="${prefix}/etc/init.d/gfsd-${listen_aadress}"
+    fi
+    if [ "`$initscript status | grep -c running`" -ne 1 ]; then
+        echo "error: ${gfsdhost} is dead."
+        c=`expr $c + 1`
+    fi
+done<<EOF
+`parse_gfsd_confs "$1"`
+EOF
+
+if [ $c = 0 ]; then
+    echo "ok"
+fi
+exit 0

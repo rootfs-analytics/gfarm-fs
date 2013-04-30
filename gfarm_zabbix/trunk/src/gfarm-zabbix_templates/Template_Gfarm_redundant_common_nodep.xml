@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<zabbix_export version="1.0" date="12.02.28" time="15.51">
+  <hosts>
+    <host name="Template_Gfarm_redundant_common_nodep">
+      <proxy_hostid>0</proxy_hostid>
+      <useip>1</useip>
+      <dns></dns>
+      <ip>127.0.0.1</ip>
+      <port>10050</port>
+      <status>3</status>
+      <useipmi>0</useipmi>
+      <ipmi_ip>127.0.0.1</ipmi_ip>
+      <ipmi_port>623</ipmi_port>
+      <ipmi_authtype>0</ipmi_authtype>
+      <ipmi_privilege>2</ipmi_privilege>
+      <ipmi_username></ipmi_username>
+      <ipmi_password></ipmi_password>
+      <groups>
+        <group>Templates</group>
+      </groups>
+      <triggers>
+        <trigger>
+          <description>Gfarm metadata server list is not available on {HOSTNAME}</description>
+          <type>0</type>
+          <expression>(({Template_Gfarm_redundant_common_nodep:gfarm.cli.gfmdhost.regexp(error:)})=1) | (({Template_Gfarm_redundant_common_nodep:gfarm.cli.gfmdhost.nodata(360)})=1)</expression>
+          <url></url>
+          <status>0</status>
+          <priority>4</priority>
+          <comments></comments>
+        </trigger>
+        <trigger>
+          <description>Gfarm metadata server list is changed on {HOSTNAME}</description>
+          <type>0</type>
+          <expression>(({Template_Gfarm_redundant_common_nodep:gfarm.cli.gfmdlist.regexp(same)})=0) | (({Template_Gfarm_redundant_common_nodep:gfarm.cli.gfmdlist.nodata(360)})=1)</expression>
+          <url></url>
+          <status>0</status>
+          <priority>2</priority>
+          <comments></comments>
+        </trigger>
+        <trigger>
+          <description>Can't get metadata server master name on {HOSTNAME}</description>
+          <type>0</type>
+          <expression>{Template_Gfarm_redundant_common_nodep:gfarm.cli.mastername.nodata(360)}=1</expression>
+          <url></url>
+          <status>0</status>
+          <priority>1</priority>
+          <comments></comments>
+        </trigger>
+      </triggers>
+      <items>
+        <item type="0" key="gfarm.cli.gfmdhost" value_type="1">
+          <description>Monitoring metadata server hosts</description>
+          <ipmi_sensor></ipmi_sensor>
+          <delay>300</delay>
+          <history>90</history>
+          <trends>365</trends>
+          <status>0</status>
+          <data_type>0</data_type>
+          <units></units>
+          <multiplier>0</multiplier>
+          <delta>0</delta>
+          <formula>0</formula>
+          <lastlogsize>0</lastlogsize>
+          <logtimefmt></logtimefmt>
+          <delay_flex></delay_flex>
+          <authtype>0</authtype>
+          <username></username>
+          <password></password>
+          <publickey></publickey>
+          <privatekey></privatekey>
+          <params></params>
+          <trapper_hosts>localhost</trapper_hosts>
+          <snmp_community></snmp_community>
+          <snmp_oid></snmp_oid>
+          <snmp_port>161</snmp_port>
+          <snmpv3_securityname></snmpv3_securityname>
+          <snmpv3_securitylevel>0</snmpv3_securitylevel>
+          <snmpv3_authpassphrase></snmpv3_authpassphrase>
+          <snmpv3_privpassphrase></snmpv3_privpassphrase>
+          <valuemapid>0</valuemapid>
+          <applications>
+            <application>Gfarm Redundant</application>
+          </applications>
+        </item>
+        <item type="0" key="gfarm.cli.gfmdlist" value_type="1">
+          <description>Monitoring metadata server list</description>
+          <ipmi_sensor></ipmi_sensor>
+          <delay>300</delay>
+          <history>90</history>
+          <trends>365</trends>
+          <status>0</status>
+          <data_type>0</data_type>
+          <units></units>
+          <multiplier>0</multiplier>
+          <delta>0</delta>
+          <formula>0</formula>
+          <lastlogsize>0</lastlogsize>
+          <logtimefmt></logtimefmt>
+          <delay_flex></delay_flex>
+          <authtype>0</authtype>
+          <username></username>
+          <password></password>
+          <publickey></publickey>
+          <privatekey></privatekey>
+          <params></params>
+          <trapper_hosts>localhost</trapper_hosts>
+          <snmp_community></snmp_community>
+          <snmp_oid></snmp_oid>
+          <snmp_port>161</snmp_port>
+          <snmpv3_securityname></snmpv3_securityname>
+          <snmpv3_securitylevel>0</snmpv3_securitylevel>
+          <snmpv3_authpassphrase></snmpv3_authpassphrase>
+          <snmpv3_privpassphrase></snmpv3_privpassphrase>
+          <valuemapid>0</valuemapid>
+          <applications>
+            <application>Gfarm Redundant</application>
+          </applications>
+        </item>
+        <item type="0" key="gfarm.cli.mastername" value_type="1">
+          <description>Monitoring master metadata server name</description>
+          <ipmi_sensor></ipmi_sensor>
+          <delay>300</delay>
+          <history>90</history>
+          <trends>365</trends>
+          <status>0</status>
+          <data_type>0</data_type>
+          <units></units>
+          <multiplier>0</multiplier>
+          <delta>0</delta>
+          <formula>0</formula>
+          <lastlogsize>0</lastlogsize>
+          <logtimefmt></logtimefmt>
+          <delay_flex></delay_flex>
+          <authtype>0</authtype>
+          <username></username>
+          <password></password>
+          <publickey></publickey>
+          <privatekey></privatekey>
+          <params></params>
+          <trapper_hosts>localhost</trapper_hosts>
+          <snmp_community></snmp_community>
+          <snmp_oid></snmp_oid>
+          <snmp_port>161</snmp_port>
+          <snmpv3_securityname></snmpv3_securityname>
+          <snmpv3_securitylevel>0</snmpv3_securitylevel>
+          <snmpv3_authpassphrase></snmpv3_authpassphrase>
+          <snmpv3_privpassphrase></snmpv3_privpassphrase>
+          <valuemapid>0</valuemapid>
+          <applications>
+            <application>Gfarm Redundant</application>
+          </applications>
+        </item>
+      </items>
+      <templates/>
+      <graphs/>
+      <macros/>
+    </host>
+  </hosts>
+  <dependencies/>
+</zabbix_export>
