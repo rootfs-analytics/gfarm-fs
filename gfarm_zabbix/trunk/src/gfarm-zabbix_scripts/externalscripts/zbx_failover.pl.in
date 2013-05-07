@@ -585,8 +585,6 @@ sub wait_gfmd_promotion {
     my $spent_time = 0;
     my $is_listening = 0;
     while ($timeout == 0 || $spent_time < $timeout) {
-	log_debug('wait for gfmd to complete promotion (spent=%d)',
-		  $spent_time);
 	$is_listening = gfmd_is_listening($conf, $id);
 	if ($is_listening) {
 	    log_debug('promotion completed');
@@ -594,6 +592,8 @@ sub wait_gfmd_promotion {
 	}
 	sleep(PROMPTION_CHECK_INTERVAL);
 	$spent_time += PROMPTION_CHECK_INTERVAL;
+	log_notice('wait for gfmd to complete promotion (spent %d secs)',
+		   $spent_time);
     }
 
     log_debug('end');
@@ -709,8 +709,9 @@ my $new_master_id = determine_new_master_gfmd($gfmds);
 log_error('no master gfmd candidate') if (!defined($new_master_id));
 if ($dry_run) {
     printf("suitable candidate for master gfmd is %s (%s:%s)\n",
-	   $new_master_id, $conf->{$new_master_id}->{'host'},
-	   $conf->{$new_master_id}->{'port'});
+	   $new_master_id,
+	   get_configuration($conf, $new_master_id, 'host'),
+	   get_configuration($conf, $new_master_id, 'gfmd_listen_port'));
 } else {
     failover_gfmd($conf, $gfmds, $new_master_id);
 }
