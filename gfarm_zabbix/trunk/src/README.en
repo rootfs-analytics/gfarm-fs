@@ -1,0 +1,12 @@
+* File and directory structures
+
+    gfarm-zabbix_editor/	: scripts to edit Gfarm configuration file
+    gfarm-zabbix_scripts/	: Gfarm Zabbix plugin
+       externalscripts/		: scripts to monitor Gfarm
+       zabbix_agentd.d/		: configuration file for user parameters
+    gfarm-zabbix_templates/	: templates for the plugin
+    failure_test_scripts/	: test programs to cause failure
+    install-agentd.sh		: install script for Gfarm Zabbix plugin
+    install-editor.sh		: install script for gfarm-zabbix_editor
+    install.conf		: configuration file for install scripts
+    README.en			: this file

@@ -1,3 +1,16 @@
+Release note for Gfarm Zabbix plugin 1.1.0
+==========================================
+
+[2013.5.5]
+
+Updated feature
+* support multiple Gfarm servers running on the same node [sf.net trac
+  #684]
+
+Bug fix
+* failover script should be more robust [sf.net trac #585]
+* gfarm2.conf is not updated dynamically [sf.net trac #686]
+
 Release note for Gfarm Zabbix plugin 1.0.3
 ==========================================
 
