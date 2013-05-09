@@ -1,0 +1,24 @@
+[This is written in Japanese, please look at README.en for English version.]
+
+本フォルダには以下のドキュメントが置かれています。
+
+    gfarm_monitoring_item_list.xls : Gfarm 監視項目一覧 (Excel 形式)
+    gfarm_monitoring_item_list.pdf : 同上 (PDF 形式)
+
+    trac_install_manual.doc        : Trac 導入・設定マニュアル (Word 形式)
+    trac_install_manual.pdf        : 同上 (PDF 形式)
+
+    trac_management_manual.doc     : Trac 管理・利用マニュアル (Word 形式)
+    trac_management_manual.pdf     : 同上 (PDF 形式)
+
+    zabbix_install_manual.doc      : 冗長化構成 Gfarm 監視機能
+                                     導入・設定マニュアル (Word 形式)
+    zabbix_install_manual.pdf      : 同上 (PDF 形式)
+
+    zabbix_management_manual.doc   : 冗長化構成 Gfarm 監視機能
+                                     管理・利用マニュアル (Word 形式)
+    zabbix_management_manual.pdf   : 同上 (PDF 形式)
+
+    zabbix_troubleshoot_manual.doc : 冗長化構成 Gfarm 監視機能
+                                     障害対応マニュアル (Word 形式)
+    zabbix_troubleshoot_manual.pdf : 同上 (PDF 形式)

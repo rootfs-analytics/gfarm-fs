@@ -1,0 +1,36 @@
+#!/bin/sh
+
+. @ZABBIX_EXTSCRIPTDIR@/zbx_gfarm_utils.inc
+
+# database
+
+prefixes=$2
+
+# exec check command
+RESULT=-1
+case "$1" in
+    version)
+        RESULT=`psql --version|head -n1`
+        ;;
+    process)
+        SQL="SELECT SUM(numbackends) FROM pg_stat_database"
+        RESULT=`gfarm_pgsql_exec "${prefixes}" "${SQL}" | average_or_error`
+        ;;
+    commit)
+        SQL="SELECT SUM(xact_commit) FROM pg_stat_database"
+        RESULT=`gfarm_pgsql_exec "${prefixes}" "${SQL}" | average_or_error`
+        ;;
+    rollback)
+        SQL="SELECT SUM(xact_rollback) FROM pg_stat_database"
+        RESULT=`gfarm_pgsql_exec "${prefixes}" "${SQL}" | average_or_error`
+        ;;
+    *)
+        RESULT=-1
+esac
+
+if [ $? != 0 ]; then
+    RESULT=-1
+fi
+
+echo $RESULT
+exit 0

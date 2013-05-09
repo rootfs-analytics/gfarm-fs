@@ -1,0 +1,769 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<zabbix_export version="1.0" date="12.02.28" time="15.52">
+  <hosts>
+    <host name="Template_Gfarm_redundant_gfmd_nodep">
+      <proxy_hostid>0</proxy_hostid>
+      <useip>1</useip>
+      <dns></dns>
+      <ip>127.0.0.1</ip>
+      <port>10050</port>
+      <status>3</status>
+      <useipmi>0</useipmi>
+      <ipmi_ip>127.0.0.1</ipmi_ip>
+      <ipmi_port>623</ipmi_port>
+      <ipmi_authtype>0</ipmi_authtype>
+      <ipmi_privilege>2</ipmi_privilege>
+      <ipmi_username></ipmi_username>
+      <ipmi_password></ipmi_password>
+      <groups>
+        <group>Templates</group>
+      </groups>
+      <triggers>
+        <trigger>
+          <description>gfmd is downgraded to the slave gfmd on {HOSTNAME}</description>
+          <type>0</type>
+          <expression>(({Template_Gfarm_redundant_gfmd_nodep:gfarm.gfmd.gfmdtype[{$GFMD_PREFIXES}].str(slave)})=1) &amp; (({Template_Gfarm_redundant_gfmd_nodep:gfarm.gfmd.gfmdtype[{$GFMD_PREFIXES}].change(0)})=1)</expression>
+          <url></url>
+          <status>0</status>
+          <priority>1</priority>
+          <comments></comments>
+        </trigger>
+        <trigger>
+          <description>gfmd is upgraded to the master gfmd on {HOSTNAME}</description>
+          <type>0</type>
+          <expression>(({Template_Gfarm_redundant_gfmd_nodep:gfarm.gfmd.gfmdtype[{$GFMD_PREFIXES}].str(master)})=1) &amp; (({Template_Gfarm_redundant_gfmd_nodep:gfarm.gfmd.gfmdtype[{$GFMD_PREFIXES}].change(0)})=1)</expression>
+          <url></url>
+          <status>0</status>
+          <priority>1</priority>
+          <comments></comments>
+        </trigger>
+        <trigger>
+          <description>slave gfmd is not running on {HOSTNAME}</description>
+          <type>0</type>
+          <expression>({Template_Gfarm_redundant_gfmd_nodep:gfarm.gfmd.dead[{$GFMD_PREFIXES}].str(error:)}=1) &amp; (({Template_Gfarm_redundant_gfmd_nodep:gfarm.gfmd.gfmdtype[{$GFMD_PREFIXES}].regexp(master)})#1)</expression>
+          <url></url>
+          <status>0</status>
+          <priority>4</priority>
+          <comments></comments>
+        </trigger>
+        <trigger>
+          <description>master gfmd is not running on {HOSTNAME}</description>
+          <type>0</type>
+          <expression>({Template_Gfarm_redundant_gfmd_nodep:gfarm.gfmd.dead[{$GFMD_PREFIXES}].str(error:)}=1) &amp; (({Template_Gfarm_redundant_gfmd_nodep:gfarm.gfmd.gfmdtype[{$GFMD_PREFIXES}].regexp(master)})=1)</expression>
+          <url></url>
+          <status>0</status>
+          <priority>5</priority>
+          <comments></comments>
+        </trigger>
+        <trigger>
+          <description>Gfarm metadata server is not available on {HOSTNAME}</description>
+          <type>0</type>
+          <expression>(({Template_Gfarm_redundant_gfmd_nodep:gfarm.gfmd.gfsched.regexp(error:)})#0)</expression>
+          <url></url>
+          <status>0</status>
+          <priority>4</priority>
+          <comments></comments>
+        </trigger>
+        <trigger>
+          <description>gfmd error message in {$GFARM_LOGFILE} on {HOSTNAME}</description>
+          <type>0</type>
+          <expression>(({Template_Gfarm_redundant_gfmd_nodep:log[{$GFARM_LOGFILE},"\sgfmd\[[0-9]+\]:\s+&lt;err&gt;",UTF-8].regexp(err)})#0) &amp; (({Template_Gfarm_redundant_gfmd_nodep:log[{$GFARM_LOGFILE},"\sgfmd\[[0-9]+\]:\s+&lt;err&gt;",UTF-8].nodata({$NODATA_TIMEOUT})}=0))</expression>
+          <url></url>
+          <status>0</status>
+          <priority>4</priority>
+          <comments></comments>
+        </trigger>
+        <trigger>
+          <description>gfmd warning message in {$GFARM_LOGFILE} on {HOSTNAME}</description>
+          <type>0</type>
+          <expression>(({Template_Gfarm_redundant_gfmd_nodep:log[{$GFARM_LOGFILE},"\sgfmd\[[0-9]+\]:\s+&lt;warning&gt;",UTF-8].regexp(warning)})#0) &amp; (({Template_Gfarm_redundant_gfmd_nodep:log[{$GFARM_LOGFILE},"\sgfmd\[[0-9]+\]:\s+&lt;warning&gt;",UTF-8].nodata({$NODATA_TIMEOUT})})=0)</expression>
+          <url></url>
+          <status>0</status>
+          <priority>2</priority>
+          <comments></comments>
+        </trigger>
+        <trigger>
+          <description>gfmd does not listen on {HOSTNAME}</description>
+          <type>0</type>
+          <expression>(({Template_Gfarm_redundant_gfmd_nodep:gfarm.gfmd.tcp.listen[{$GFMD_PREFIXES}].change(0)}=0 &amp; {Template_Gfarm_redundant_gfmd_nodep:gfarm.gfmd.tcp.listen[{$GFMD_PREFIXES}].str(error:)}=1) | {Template_Gfarm_redundant_gfmd_nodep:gfarm.gfmd.tcp.listen[{$GFMD_PREFIXES}].nodata(360)}=1) &amp; {Template_Gfarm_redundant_gfmd_nodep:gfarm.gfmd.gfmdtype[{$GFMD_PREFIXES}].str(master)}=1</expression>
+          <url></url>
+          <status>0</status>
+          <priority>5</priority>
+          <comments></comments>
+        </trigger>
+        <trigger>
+          <description>Database access is failed on {HOSTNAME} numbackends</description>
+          <type>0</type>
+          <expression>{Template_Gfarm_redundant_gfmd_nodep:pgsql.server_processes[{$GFMD_PREFIXES}].last(0)}=-1</expression>
+          <url></url>
+          <status>0</status>
+          <priority>5</priority>
+          <comments></comments>
+        </trigger>
+        <trigger>
+          <description>Database access is failed on {HOSTNAME} tx_commited</description>
+          <type>0</type>
+          <expression>{Template_Gfarm_redundant_gfmd_nodep:pgsql.tx_commited[{$GFMD_PREFIXES}].last(0)}=-1</expression>
+          <url></url>
+          <status>0</status>
+          <priority>5</priority>
+          <comments></comments>
+        </trigger>
+        <trigger>
+          <description>Database access is failed on {HOSTNAME} tx_rolledback</description>
+          <type>0</type>
+          <expression>{Template_Gfarm_redundant_gfmd_nodep:pgsql.tx_rolledback[{$GFMD_PREFIXES}].last(0)}=-1</expression>
+          <url></url>
+          <status>0</status>
+          <priority>5</priority>
+          <comments></comments>
+        </trigger>
+        <trigger>
+          <description>PostgreSQL is not running on {HOSTNAME}</description>
+          <type>0</type>
+          <expression>{Template_Gfarm_redundant_gfmd_nodep:gfarm.pgsql.dead[{$GFMD_PREFIXES}].regexp(error:)}#0</expression>
+          <url></url>
+          <status>0</status>
+          <priority>5</priority>
+          <comments></comments>
+        </trigger>
+	<trigger>
+          <description>Can't get master metadata server type on {HOSTNAME}</description>
+          <type>0</type>
+          <expression>(({Template_Gfarm_redundant_gfmd_nodep:gfarm.gfmd.gfmdtype[{$GFMD_PREFIXES}].regexp(error:)})=1) | (({Template_Gfarm_redundant_gfmd_nodep:gfarm.gfmd.mastername.nodata(360)})=1)</expression>
+          <url></url>
+          <status>0</status>
+          <priority>2</priority>
+          <comments></comments>
+        </trigger>
+         <trigger>
+          <description>Low free disk space on {HOSTNAME} volume {$MONITOR_GFMD_DIRECTORY}</description>
+          <type>0</type>
+          <expression>{Template_Gfarm_redundant_gfmd_nodep:vfs.fs.size[{$MONITOR_GFMD_DIRECTORY},pfree].last(0)}&lt;10</expression>
+          <url></url>
+          <status>0</status>
+          <priority>2</priority>
+          <comments></comments>
+        </trigger>
+        <trigger>
+          <description>High used disk space on {HOSTNAME} volume {$MONITOR_GFMD_DIRECTORY}</description>
+          <type>0</type>
+          <expression>{Template_Gfarm_redundant_gfmd_nodep:vfs.fs.size[{$MONITOR_GFMD_DIRECTORY},pused].last(0)}&gt;90</expression>
+          <url></url>
+          <status>0</status>
+          <priority>2</priority>
+          <comments></comments>
+        </trigger>
+      </triggers>
+      <items>
+        <item type="0" key="gfarm.gfmd.gfsched" value_type="4">
+          <description>Monitoring metadata server</description>
+          <ipmi_sensor></ipmi_sensor>
+          <delay>300</delay>
+          <history>90</history>
+          <trends>365</trends>
+          <status>0</status>
+          <data_type>0</data_type>
+          <units></units>
+          <multiplier>0</multiplier>
+          <delta>0</delta>
+          <formula>0</formula>
+          <lastlogsize>0</lastlogsize>
+          <logtimefmt></logtimefmt>
+          <delay_flex></delay_flex>
+          <authtype>0</authtype>
+          <username></username>
+          <password></password>
+          <publickey></publickey>
+          <privatekey></privatekey>
+          <params></params>
+          <trapper_hosts>localhost</trapper_hosts>
+          <snmp_community></snmp_community>
+          <snmp_oid></snmp_oid>
+          <snmp_port>161</snmp_port>
+          <snmpv3_securityname></snmpv3_securityname>
+          <snmpv3_securitylevel>0</snmpv3_securitylevel>
+          <snmpv3_authpassphrase></snmpv3_authpassphrase>
+          <snmpv3_privpassphrase></snmpv3_privpassphrase>
+          <applications>
+            <application>Gfarm Meta Data Server Availavility</application>
+            <application>Gfarm Meta Data Server</application>
+          </applications>
+        </item>
+        <item type="7" key="log[{$GFARM_LOGFILE},&quot;\sgfmd\[[0-9]+\]:\s+&lt;err&gt;&quot;,UTF-8]" value_type="2">
+          <description>Log of gfmd on log file $1</description>
+          <ipmi_sensor></ipmi_sensor>
+          <delay>600</delay>
+          <history>30</history>
+          <trends>365</trends>
+          <status>0</status>
+          <data_type>0</data_type>
+          <units></units>
+          <multiplier>0</multiplier>
+          <delta>0</delta>
+          <formula>0</formula>
+          <lastlogsize>0</lastlogsize>
+          <logtimefmt></logtimefmt>
+          <delay_flex></delay_flex>
+          <authtype>0</authtype>
+          <username></username>
+          <password></password>
+          <publickey></publickey>
+          <privatekey></privatekey>
+          <params></params>
+          <trapper_hosts>localhost</trapper_hosts>
+          <snmp_community></snmp_community>
+          <snmp_oid></snmp_oid>
+          <snmp_port>161</snmp_port>
+          <snmpv3_securityname></snmpv3_securityname>
+          <snmpv3_securitylevel>0</snmpv3_securitylevel>
+          <snmpv3_authpassphrase></snmpv3_authpassphrase>
+          <snmpv3_privpassphrase></snmpv3_privpassphrase>
+          <applications>
+            <application>Gfarm Meta Data Server Log file</application>
+            <application>Gfarm Meta Data Server</application>
+          </applications>
+        </item>
+        <item type="7" key="log[{$GFARM_LOGFILE},&quot;\sgfmd\[[0-9]+\]:\s+&lt;warning&gt;&quot;,UTF-8]" value_type="2">
+          <description>Log of gfmd on log file $1</description>
+          <ipmi_sensor></ipmi_sensor>
+          <delay>600</delay>
+          <history>30</history>
+          <trends>365</trends>
+          <status>0</status>
+          <data_type>0</data_type>
+          <units></units>
+          <multiplier>0</multiplier>
+          <delta>0</delta>
+          <formula>0</formula>
+          <lastlogsize>0</lastlogsize>
+          <logtimefmt></logtimefmt>
+          <delay_flex></delay_flex>
+          <authtype>0</authtype>
+          <username></username>
+          <password></password>
+          <publickey></publickey>
+          <privatekey></privatekey>
+          <params></params>
+          <trapper_hosts>localhost</trapper_hosts>
+          <snmp_community></snmp_community>
+          <snmp_oid></snmp_oid>
+          <snmp_port>161</snmp_port>
+          <snmpv3_securityname></snmpv3_securityname>
+          <snmpv3_securitylevel>0</snmpv3_securitylevel>
+          <snmpv3_authpassphrase></snmpv3_authpassphrase>
+          <snmpv3_privpassphrase></snmpv3_privpassphrase>
+          <applications>
+            <application>Gfarm Meta Data Server Log file</application>
+            <application>Gfarm Meta Data Server</application>
+          </applications>
+        </item>
+        <item type="0" key="gfarm.gfmd.tcp.listen[{$GFMD_PREFIXES}]" value_type="1">
+          <description>Status of gfmd listen port</description>
+          <ipmi_sensor></ipmi_sensor>
+          <delay>300</delay>
+          <history>90</history>
+          <trends>365</trends>
+          <status>0</status>
+          <data_type>0</data_type>
+          <units></units>
+          <multiplier>0</multiplier>
+          <delta>0</delta>
+          <formula>0</formula>
+          <lastlogsize>0</lastlogsize>
+          <logtimefmt></logtimefmt>
+          <delay_flex></delay_flex>
+          <authtype>0</authtype>
+          <username></username>
+          <password></password>
+          <publickey></publickey>
+          <privatekey></privatekey>
+          <params></params>
+          <trapper_hosts>localhost</trapper_hosts>
+          <snmp_community></snmp_community>
+          <snmp_oid></snmp_oid>
+          <snmp_port>161</snmp_port>
+          <snmpv3_securityname></snmpv3_securityname>
+          <snmpv3_securitylevel>0</snmpv3_securitylevel>
+          <snmpv3_authpassphrase></snmpv3_authpassphrase>
+          <snmpv3_privpassphrase></snmpv3_privpassphrase>
+          <applications>
+            <application>Gfarm Meta Data Server Network</application>
+            <application>Gfarm Meta Data Server</application>
+          </applications>
+        </item>
+        <item type="0" key="pgsql.server_processes[{$GFMD_PREFIXES}]" value_type="0">
+          <description>Total number of Server Process running</description>
+          <ipmi_sensor></ipmi_sensor>
+          <delay>300</delay>
+          <history>90</history>
+          <trends>365</trends>
+          <status>0</status>
+          <data_type>0</data_type>
+          <units></units>
+          <multiplier>0</multiplier>
+          <delta>0</delta>
+          <formula>0</formula>
+          <lastlogsize>0</lastlogsize>
+          <logtimefmt></logtimefmt>
+          <delay_flex></delay_flex>
+          <authtype>0</authtype>
+          <username></username>
+          <password></password>
+          <publickey></publickey>
+          <privatekey></privatekey>
+          <params></params>
+          <trapper_hosts>localhost</trapper_hosts>
+          <snmp_community></snmp_community>
+          <snmp_oid></snmp_oid>
+          <snmp_port>161</snmp_port>
+          <snmpv3_securityname></snmpv3_securityname>
+          <snmpv3_securitylevel>0</snmpv3_securitylevel>
+          <snmpv3_authpassphrase></snmpv3_authpassphrase>
+          <snmpv3_privpassphrase></snmpv3_privpassphrase>
+          <applications>
+            <application>Database</application>
+            <application>PostgreSQL</application>
+          </applications>
+        </item>
+        <item type="0" key="pgsql.tx_commited[{$GFMD_PREFIXES}]" value_type="0">
+          <description>Total number of commited transactions</description>
+          <ipmi_sensor></ipmi_sensor>
+          <delay>300</delay>
+          <history>90</history>
+          <trends>365</trends>
+          <status>0</status>
+          <data_type>0</data_type>
+          <units></units>
+          <multiplier>0</multiplier>
+          <delta>0</delta>
+          <formula>0</formula>
+          <lastlogsize>0</lastlogsize>
+          <logtimefmt></logtimefmt>
+          <delay_flex></delay_flex>
+          <authtype>0</authtype>
+          <username></username>
+          <password></password>
+          <publickey></publickey>
+          <privatekey></privatekey>
+          <params></params>
+          <trapper_hosts>localhost</trapper_hosts>
+          <snmp_community></snmp_community>
+          <snmp_oid></snmp_oid>
+          <snmp_port>161</snmp_port>
+          <snmpv3_securityname></snmpv3_securityname>
+          <snmpv3_securitylevel>0</snmpv3_securitylevel>
+          <snmpv3_authpassphrase></snmpv3_authpassphrase>
+          <snmpv3_privpassphrase></snmpv3_privpassphrase>
+          <applications>
+            <application>Database</application>
+            <application>PostgreSQL</application>
+          </applications>
+        </item>
+        <item type="0" key="pgsql.tx_rolledback[{$GFMD_PREFIXES}]" value_type="0">
+          <description>Total number of rolledback transactions</description>
+          <ipmi_sensor></ipmi_sensor>
+          <delay>300</delay>
+          <history>90</history>
+          <trends>365</trends>
+          <status>0</status>
+          <data_type>0</data_type>
+          <units></units>
+          <multiplier>0</multiplier>
+          <delta>0</delta>
+          <formula>0</formula>
+          <lastlogsize>0</lastlogsize>
+          <logtimefmt></logtimefmt>
+          <delay_flex></delay_flex>
+          <authtype>0</authtype>
+          <username></username>
+          <password></password>
+          <publickey></publickey>
+          <privatekey></privatekey>
+          <params></params>
+          <trapper_hosts>localhost</trapper_hosts>
+          <snmp_community></snmp_community>
+          <snmp_oid></snmp_oid>
+          <snmp_port>161</snmp_port>
+          <snmpv3_securityname></snmpv3_securityname>
+          <snmpv3_securitylevel>0</snmpv3_securitylevel>
+          <snmpv3_authpassphrase></snmpv3_authpassphrase>
+          <snmpv3_privpassphrase></snmpv3_privpassphrase>
+          <applications>
+            <application>Database</application>
+            <application>PostgreSQL</application>
+          </applications>
+        </item>
+        <item type="0" key="gfarm.gfmd.dead[{$GFMD_PREFIXES}]" value_type="1">
+          <description>Number of process running gfmd</description>
+          <ipmi_sensor></ipmi_sensor>
+          <delay>300</delay>
+          <history>90</history>
+          <trends>365</trends>
+          <status>0</status>
+          <data_type>0</data_type>
+          <units></units>
+          <multiplier>0</multiplier>
+          <delta>0</delta>
+          <formula>0</formula>
+          <lastlogsize>0</lastlogsize>
+          <logtimefmt></logtimefmt>
+          <delay_flex></delay_flex>
+          <authtype>0</authtype>
+          <username></username>
+          <password></password>
+          <publickey></publickey>
+          <privatekey></privatekey>
+          <params></params>
+          <trapper_hosts>localhost</trapper_hosts>
+          <snmp_community></snmp_community>
+          <snmp_oid></snmp_oid>
+          <snmp_port>161</snmp_port>
+          <snmpv3_securityname></snmpv3_securityname>
+          <snmpv3_securitylevel>0</snmpv3_securitylevel>
+          <snmpv3_authpassphrase></snmpv3_authpassphrase>
+          <snmpv3_privpassphrase></snmpv3_privpassphrase>
+          <applications>
+            <application>Gfarm Meta Data Server</application>
+            <application>Gfarm Meta Data Server Process</application>
+          </applications>
+        </item>
+        <item type="0" key="gfarm.pgsql.dead[{$GFMD_PREFIXES}]" value_type="1">
+          <description>Number of process running postgres</description>
+          <ipmi_sensor></ipmi_sensor>
+          <delay>300</delay>
+          <history>90</history>
+          <trends>365</trends>
+          <status>0</status>
+          <data_type>0</data_type>
+          <units></units>
+          <multiplier>0</multiplier>
+          <delta>0</delta>
+          <formula>0</formula>
+          <lastlogsize>0</lastlogsize>
+          <logtimefmt></logtimefmt>
+          <delay_flex></delay_flex>
+          <authtype>0</authtype>
+          <username></username>
+          <password></password>
+          <publickey></publickey>
+          <privatekey></privatekey>
+          <params></params>
+          <trapper_hosts>localhost</trapper_hosts>
+          <snmp_community></snmp_community>
+          <snmp_oid></snmp_oid>
+          <snmp_port>161</snmp_port>
+          <snmpv3_securityname></snmpv3_securityname>
+          <snmpv3_securitylevel>0</snmpv3_securitylevel>
+          <snmpv3_authpassphrase></snmpv3_authpassphrase>
+          <snmpv3_privpassphrase></snmpv3_privpassphrase>
+          <applications>
+            <application>Database</application>
+            <application>PostgreSQL</application>
+            <application>PostgreSQL Process</application>
+          </applications>
+        </item>
+        <item type="0" key="gfarm.gfmd.mastername" value_type="1">
+          <description>Monitoring master metadata server name</description>
+          <ipmi_sensor></ipmi_sensor>
+          <delay>300</delay>
+          <history>90</history>
+          <trends>365</trends>
+          <status>0</status>
+          <data_type>0</data_type>
+          <units></units>
+          <multiplier>0</multiplier>
+          <delta>0</delta>
+          <formula>0</formula>
+          <lastlogsize>0</lastlogsize>
+          <logtimefmt></logtimefmt>
+          <delay_flex></delay_flex>
+          <authtype>0</authtype>
+          <username></username>
+          <password></password>
+          <publickey></publickey>
+          <privatekey></privatekey>
+          <params></params>
+          <trapper_hosts>localhost</trapper_hosts>
+          <snmp_community></snmp_community>
+          <snmp_oid></snmp_oid>
+          <snmp_port>161</snmp_port>
+          <snmpv3_securityname></snmpv3_securityname>
+          <snmpv3_securitylevel>0</snmpv3_securitylevel>
+          <snmpv3_authpassphrase></snmpv3_authpassphrase>
+          <snmpv3_privpassphrase></snmpv3_privpassphrase>
+          <valuemapid>0</valuemapid>
+          <applications>
+            <application>Gfarm Meta Data Server</application>
+          </applications>
+        </item>
+        <item type="0" key="gfarm.gfmd.gfmdtype[{$GFMD_PREFIXES}]" value_type="1">
+          <description>Monitoring metadata server type</description>
+          <ipmi_sensor></ipmi_sensor>
+          <delay>300</delay>
+          <history>90</history>
+          <trends>365</trends>
+          <status>0</status>
+          <data_type>0</data_type>
+          <units></units>
+          <multiplier>0</multiplier>
+          <delta>0</delta>
+          <formula>0</formula>
+          <lastlogsize>0</lastlogsize>
+          <logtimefmt></logtimefmt>
+          <delay_flex></delay_flex>
+          <authtype>0</authtype>
+          <username></username>
+          <password></password>
+          <publickey></publickey>
+          <privatekey></privatekey>
+          <params></params>
+          <trapper_hosts>localhost</trapper_hosts>
+          <snmp_community></snmp_community>
+          <snmp_oid></snmp_oid>
+          <snmp_port>161</snmp_port>
+          <snmpv3_securityname></snmpv3_securityname>
+          <snmpv3_securitylevel>0</snmpv3_securitylevel>
+          <snmpv3_authpassphrase></snmpv3_authpassphrase>
+          <snmpv3_privpassphrase></snmpv3_privpassphrase>
+          <valuemapid>0</valuemapid>
+          <applications>
+            <application>Gfarm Meta Data Server</application>
+          </applications>
+        </item>
+        <item type="0" key="vfs.fs.size[{$MONITOR_GFMD_DIRECTORY},free]" value_type="3">
+          <description>Free disk space on $1</description>
+          <ipmi_sensor></ipmi_sensor>
+          <delay>3600</delay>
+          <history>90</history>
+          <trends>365</trends>
+          <status>0</status>
+          <data_type>0</data_type>
+          <units>B</units>
+          <multiplier>0</multiplier>
+          <delta>0</delta>
+          <formula>0</formula>
+          <lastlogsize>0</lastlogsize>
+          <logtimefmt></logtimefmt>
+          <delay_flex></delay_flex>
+          <authtype>0</authtype>
+          <username></username>
+          <password></password>
+          <publickey></publickey>
+          <privatekey></privatekey>
+          <params></params>
+          <trapper_hosts>localhost</trapper_hosts>
+          <snmp_community></snmp_community>
+          <snmp_oid></snmp_oid>
+          <snmp_port>161</snmp_port>
+          <snmpv3_securityname></snmpv3_securityname>
+          <snmpv3_securitylevel>0</snmpv3_securitylevel>
+          <snmpv3_authpassphrase></snmpv3_authpassphrase>
+          <snmpv3_privpassphrase></snmpv3_privpassphrase>
+          <valuemapid>0</valuemapid>
+          <applications>
+            <application>Gfarm Meta Data Server Availavility</application>
+            <application>Gfarm Meta Data Server FileSystem</application>
+          </applications>
+        </item>
+        <item type="0" key="vfs.fs.size[{$MONITOR_GFMD_DIRECTORY},pfree]" value_type="0">
+          <description>Free disk space on $1 in %</description>
+          <ipmi_sensor></ipmi_sensor>
+          <delay>3600</delay>
+          <history>90</history>
+          <trends>365</trends>
+          <status>0</status>
+          <data_type>0</data_type>
+          <units></units>
+          <multiplier>0</multiplier>
+          <delta>0</delta>
+          <formula>0</formula>
+          <lastlogsize>0</lastlogsize>
+          <logtimefmt></logtimefmt>
+          <delay_flex></delay_flex>
+          <authtype>0</authtype>
+          <username></username>
+          <password></password>
+          <publickey></publickey>
+          <privatekey></privatekey>
+          <params></params>
+          <trapper_hosts>localhost</trapper_hosts>
+          <snmp_community></snmp_community>
+          <snmp_oid></snmp_oid>
+          <snmp_port>161</snmp_port>
+          <snmpv3_securityname></snmpv3_securityname>
+          <snmpv3_securitylevel>0</snmpv3_securitylevel>
+          <snmpv3_authpassphrase></snmpv3_authpassphrase>
+          <snmpv3_privpassphrase></snmpv3_privpassphrase>
+          <valuemapid>0</valuemapid>
+          <applications>
+            <application>Gfarm Meta Data Server Availavility</application>
+            <application>Gfarm Meta Data Server FileSystem</application>
+          </applications>
+        </item>
+        <item type="0" key="vfs.fs.size[{$MONITOR_GFMD_DIRECTORY},pused]" value_type="0">
+          <description>Used disk space on $1 in %</description>
+          <ipmi_sensor></ipmi_sensor>
+          <delay>3600</delay>
+          <history>90</history>
+          <trends>365</trends>
+          <status>0</status>
+          <data_type>0</data_type>
+          <units></units>
+          <multiplier>0</multiplier>
+          <delta>0</delta>
+          <formula>0</formula>
+          <lastlogsize>0</lastlogsize>
+          <logtimefmt></logtimefmt>
+          <delay_flex></delay_flex>
+          <authtype>0</authtype>
+          <username></username>
+          <password></password>
+          <publickey></publickey>
+          <privatekey></privatekey>
+          <params></params>
+          <trapper_hosts>localhost</trapper_hosts>
+          <snmp_community></snmp_community>
+          <snmp_oid></snmp_oid>
+          <snmp_port>161</snmp_port>
+          <snmpv3_securityname></snmpv3_securityname>
+          <snmpv3_securitylevel>0</snmpv3_securitylevel>
+          <snmpv3_authpassphrase></snmpv3_authpassphrase>
+          <snmpv3_privpassphrase></snmpv3_privpassphrase>
+          <valuemapid>0</valuemapid>
+          <applications>
+            <application>Gfarm Meta Data Server Availavility</application>
+            <application>Gfarm Meta Data Server FileSystem</application>
+          </applications>
+        </item>
+        <item type="0" key="vfs.fs.size[{$MONITOR_GFMD_DIRECTORY},total]" value_type="3">
+          <description>Total disk space on $1</description>
+          <ipmi_sensor></ipmi_sensor>
+          <delay>3600</delay>
+          <history>90</history>
+          <trends>365</trends>
+          <status>0</status>
+          <data_type>0</data_type>
+          <units>B</units>
+          <multiplier>0</multiplier>
+          <delta>0</delta>
+          <formula>0</formula>
+          <lastlogsize>0</lastlogsize>
+          <logtimefmt></logtimefmt>
+          <delay_flex></delay_flex>
+          <authtype>0</authtype>
+          <username></username>
+          <password></password>
+          <publickey></publickey>
+          <privatekey></privatekey>
+          <params></params>
+          <trapper_hosts>localhost</trapper_hosts>
+          <snmp_community></snmp_community>
+          <snmp_oid></snmp_oid>
+          <snmp_port>161</snmp_port>
+          <snmpv3_securityname></snmpv3_securityname>
+          <snmpv3_securitylevel>0</snmpv3_securitylevel>
+          <snmpv3_authpassphrase></snmpv3_authpassphrase>
+          <snmpv3_privpassphrase></snmpv3_privpassphrase>
+          <valuemapid>0</valuemapid>
+          <applications>
+            <application>Gfarm Meta Data Server Availavility</application>
+            <application>Gfarm Meta Data Server FileSystem</application>
+          </applications>
+        </item>
+        <item type="0" key="vfs.fs.size[{$MONITOR_GFMD_DIRECTORY},used]" value_type="3">
+          <description>Used disk space on $1</description>
+          <ipmi_sensor></ipmi_sensor>
+          <delay>3600</delay>
+          <history>90</history>
+          <trends>365</trends>
+          <status>0</status>
+          <data_type>0</data_type>
+          <units>B</units>
+          <multiplier>0</multiplier>
+          <delta>0</delta>
+          <formula>0</formula>
+          <lastlogsize>0</lastlogsize>
+          <logtimefmt></logtimefmt>
+          <delay_flex></delay_flex>
+          <authtype>0</authtype>
+          <username></username>
+          <password></password>
+          <publickey></publickey>
+          <privatekey></privatekey>
+          <params></params>
+          <trapper_hosts>localhost</trapper_hosts>
+          <snmp_community></snmp_community>
+          <snmp_oid></snmp_oid>
+          <snmp_port>161</snmp_port>
+          <snmpv3_securityname></snmpv3_securityname>
+          <snmpv3_securitylevel>0</snmpv3_securitylevel>
+          <snmpv3_authpassphrase></snmpv3_authpassphrase>
+          <snmpv3_privpassphrase></snmpv3_privpassphrase>
+          <valuemapid>0</valuemapid>
+          <applications>
+            <application>Gfarm Meta Data Server Availavility</application>
+            <application>Gfarm Meta Data Server FileSystem</application>
+          </applications>
+        </item>
+      </items>
+      <templates/>
+      <graphs>
+        <graph name="Disk usage on {$MONITOR_GFMD_DIRECTORY}" width="900" height="200">
+          <ymin_type>0</ymin_type>
+          <ymax_type>0</ymax_type>
+          <ymin_item_key></ymin_item_key>
+          <ymax_item_key></ymax_item_key>
+          <show_work_period>1</show_work_period>
+          <show_triggers>1</show_triggers>
+          <graphtype>0</graphtype>
+          <yaxismin>0.0000</yaxismin>
+          <yaxismax>100.0000</yaxismax>
+          <show_legend>0</show_legend>
+          <show_3d>0</show_3d>
+          <percent_left>0.0000</percent_left>
+          <percent_right>0.0000</percent_right>
+          <graph_elements>
+            <graph_element item="Template_Gfarm_redundant_gfmd_nodep:vfs.fs.size[{$MONITOR_GFMD_DIRECTORY},pused]">
+              <drawtype>0</drawtype>
+              <sortorder>1</sortorder>
+              <color>FF3333</color>
+              <yaxisside>0</yaxisside>
+              <calc_fnc>2</calc_fnc>
+              <type>0</type>
+              <periods_cnt>5</periods_cnt>
+            </graph_element>
+            <graph_element item="Template_Gfarm_redundant_gfmd_nodep:vfs.fs.size[{$MONITOR_GFMD_DIRECTORY},pfree]">
+              <drawtype>0</drawtype>
+              <sortorder>0</sortorder>
+              <color>009900</color>
+              <yaxisside>1</yaxisside>
+              <calc_fnc>2</calc_fnc>
+              <type>0</type>
+              <periods_cnt>5</periods_cnt>
+            </graph_element>
+          </graph_elements>
+        </graph>
+      </graphs>
+      <macros>
+        <macro>
+          <value>/var/log/messages</value>
+          <name>{$GFARM_LOGFILE}</name>
+        </macro>
+        <macro>
+          <value>/</value>
+          <name>{$GFMD_PREFIXES}</name>
+        </macro>
+        <macro>
+          <value>86400</value>
+          <name>{$NODATA_TIMEOUT}</name>
+        </macro>
+        <macro>
+          <value>/var/gfarm-pgsql</value>
+          <name>{$MONITOR_GFMD_DIRECTORY}</name>
+        </macro>
+      </macros>
+    </host>
+  </hosts>
+  <dependencies/>
+</zabbix_export>

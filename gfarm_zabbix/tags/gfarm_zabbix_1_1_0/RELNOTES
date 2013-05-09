@@ -1,0 +1,44 @@
+Release note for Gfarm Zabbix plugin 1.1.0
+==========================================
+
+[2013.5.5]
+
+Updated feature
+* support multiple Gfarm servers running on the same node [sf.net trac
+  #684]
+
+Bug fix
+* failover script should be more robust [sf.net trac #585]
+* gfarm2.conf is not updated dynamically [sf.net trac #686]
+
+Release note for Gfarm Zabbix plugin 1.0.3
+==========================================
+
+[2013.1.15]
+
+Bug fix
+* update the installation manual
+
+Release note for Gfarm Zabbix plugin 1.0.2
+==========================================
+
+[2012.12.3]
+
+New feature
+* install script
+
+Updated feature
+* CentOS 6 (rsyslog) support
+
+Bug fix
+* alart is dismissed after one hour
+* update the installation manual
+
+Release note for Gfarm Zabbix plugin 1.0.1
+==========================================
+
+[2012.8.24]
+
+Bug fix
+* failover script fails just after the fresh installation
+* journal file check script is missing

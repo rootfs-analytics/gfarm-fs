@@ -1,0 +1,105 @@
+#! /bin/sh
+
+. ./FT-common
+
+$gfservice -k config-gfarm-master gfmd1
+
+#
+# Configure gfmd servers.
+#
+I=2
+while [ "X`eval echo \\$gfmd$I`" != X ]; do
+	$gfservice config-gfarm-slave gfmd$I gfmd1
+	I=`expr $I + 1`
+done
+
+#
+# Configure gfsd servers.
+#
+I=1
+while [ "X`eval echo \\$gfsd$I`" != X ]; do
+	$gfservice config-gfsd gfsd$I
+	I=`expr $I + 1`
+done
+
+#
+# Configure clients.
+#
+I=1
+while [ "X`eval echo \\$client$I`" != X ]; do
+	$gfservice config-client client$I
+	I=`expr $I + 1`
+done
+
+#
+# Create ~/.pgpass for Zabbix agent.
+#
+TMP_GFMD_CONF=/tmp/ftconfig.$$
+TMP_PGPASS=/tmp/pgpass.$$
+rm -f $TMP_GFMD_CONF $TMP_PGPASS
+trap "rm -f $TMP_GFMD_CONF $TMP_PGPASS; exit 1" 1 2 3 15
+
+I=1
+while [ "X`eval echo \\$gfmd$I`" != X ]; do
+	rm -f $TMP_GFMD_CONF $TMP_PGPASS
+	gfmd=`eval echo \\$gfmd$I`
+	$gfservice backup-gfmd-conf gfmd$I > $TMP_GFMD_CONF
+	awk '/^postgresql_server_host[ 	]/ {host=$2}
+	     /^postgresql_server_port[ 	]/ {port=$2}
+	     /^postgresql_dbname[ 	]/ {db=$2}
+	     /^postgresql_user[ 	]/ {user=$2}
+	     /^postgresql_password[ 	]/ {gsub(/\"/, "", $2); passwd=$2}
+	     END                           {printf("%s:%s:%s:%s:%s\n",
+	                                    host, port, db, user, passwd)}' \
+		$TMP_GFMD_CONF > $TMP_PGPASS
+	ssh $gfmd tee .pgpass < $TMP_PGPASS > /dev/null
+	I=`expr $I + 1`
+done
+
+rm -f $TMP_GFMD_CONF $TMP_PGPASS
+
+#
+# Create zbx_failover.conf.
+#
+FAILOVER_CONF_DIR=/etc/zabbix/externalscripts
+FAILOVER_CONF_FILE=zbx_failover.conf
+rm -f $FAILOVER_CONF_FILE
+
+(
+	echo "#"
+	echo "# This file is created by FT-config."
+	echo "#"
+
+	I=1
+	while [ "X`eval echo \\$gfmd$I`" != X ]; do
+		echo "[gfmd$I]"
+		echo "host=`$gfservice get-config-gfarm-param \
+			gfmd$I BACKEND_HOSTNAME`"
+		echo "gfmd_listen_port=`$gfservice get-config-gfarm-param \
+			gfmd$I GFMD_PORT`"
+		echo "gfmd_pid_file=`$gfservice get-config-gfarm-param \
+			gfmd$I GFMD_PID_FILE`"
+		echo "gfmd_journal_file=`$gfservice get-config-gfarm-param \
+			gfmd$I METADATA_JOURNAL_DIR`/0000000000.gmj"
+		[ "X`eval echo \\$gfmd${I}_GFBINDIR`" != X ] && \
+			echo "gfarm_bindir=`eval echo \\$gfmd${I}_GFBINDIR`"
+		[ "X`eval echo \\$gfmd${I}_SSH`" != X ] && \
+			echo "ssh=`eval echo \\$gfmd${I}_SSH`"
+		[ "X`eval echo \\$gfmd${I}_SUDO`" != X ] && \
+			echo "sudo=`eval echo \\$gfmd${I}_SUDO`"
+		echo
+		I=`expr $I + 1`
+	done
+) > $FAILOVER_CONF_FILE
+
+if cmp -s $FAILOVER_CONF_DIR/$FAILOVER_CONF_FILE $FAILOVER_CONF_FILE; then
+	true
+else
+	(
+		echo "The file '$FAILOVER_CONF_FILE' might have to be updated"
+		echo "To update it, type the following command:"
+		echo "   cp $FAILOVER_CONF_FILE $FAILOVER_CONF_DIR/$FAILOVER_CONF_FILE"
+	) 1>&2
+fi
+
+exit 0

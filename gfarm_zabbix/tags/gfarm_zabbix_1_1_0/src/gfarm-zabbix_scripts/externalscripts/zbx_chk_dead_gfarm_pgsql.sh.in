@@ -1,0 +1,31 @@
+#!/bin/sh
+
+. @ZABBIX_EXTSCRIPTDIR@/zbx_gfarm_utils.inc
+
+# defines
+CONF_FILE=@ZABBIX_EXTSCRIPTDIR@/zbx_chk_gfarm.conf
+
+# check config file
+if [ -f $CONF_FILE ]; then
+    . $CONF_FILE
+else
+    echo "error: gfmd does not listen ${prefix} port."
+    exit 0
+fi
+
+c=0
+while read prefix host port; do
+    initscript="${prefix}/etc/init.d/gfarm-pgsql"
+    sudo $initscript status > /dev/null 2> /dev/null
+    if [ $? -ne 0 ]; then
+        echo "error: ${prefix} pgsql is dead."
+        c=`expr $c + 1`
+    fi
+done<<EOF
+`read_gfmd_confs "$1"`
+EOF
+
+if [ $c = 0 ]; then
+    echo "ok"
+fi
+exit 0

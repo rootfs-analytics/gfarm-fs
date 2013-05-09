@@ -1,0 +1,55 @@
+#!/bin/sh
+
+# defines
+CONF_FILE=@ZABBIX_EXTSCRIPTDIR@/zbx_chk_gfarm.conf
+
+# check config file
+if [ -f $CONF_FILE ]; then
+    . $CONF_FILE
+else
+    echo -1
+    exit 0
+fi
+
+OLD_MDS_LIST_PATH=$MDS_LIST_PATH.old
+TMP_MDS_LIST_PATH=$MDS_LIST_PATH.tmp
+
+rm -f $TMP_MDS_LIST_PATH
+trap "rm -f $TMP_MDS_LIST_PATH; exit 1" 1 2 3 15
+
+# get a list of gmfd servers.
+gfmdhost -l > $TMP_MDS_LIST_PATH
+if [ $? -ne 0 ]; then
+    echo "error: gfmdhost -l error."
+    exit 0
+fi
+
+# check whether the list is changed.
+if [ -f $MDS_LIST_PATH ]; then
+    cp -f $MDS_LIST_PATH $OLD_MDS_LIST_PATH 
+    if cmp $MDS_LIST_PATH $TMP_MDS_LIST_PATH > /dev/null 2>&1; then
+        CHECK_STATUS=same
+    else
+        CHECK_STATUS=changed
+    fi
+else
+    CHECK_STATUS=nonexist
+fi
+
+# output a result message and update $MDS_LIST_PATH file if needed.
+case "$CHECK_STATUS" in
+same)
+    rm -f $TMP_MDS_LIST_PATH
+    echo "gfmdhost -l same."
+    ;;
+changed)
+    mv -f $TMP_MDS_LIST_PATH $MDS_LIST_PATH
+    echo "gfmdhost -l changed."
+    ;;
+nonexist)
+    mv -f $TMP_MDS_LIST_PATH $MDS_LIST_PATH
+    echo "gfmdhost -l same."
+    ;;
+esac
+
+exit 0

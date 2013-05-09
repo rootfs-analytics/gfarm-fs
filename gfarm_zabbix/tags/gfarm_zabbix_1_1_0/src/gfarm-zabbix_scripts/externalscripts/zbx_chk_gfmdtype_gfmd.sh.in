@@ -1,0 +1,40 @@
+#!/bin/sh
+
+. @ZABBIX_EXTSCRIPTDIR@/zbx_gfarm_utils.inc
+
+# defines
+CONF_FILE=@ZABBIX_EXTSCRIPTDIR@/zbx_chk_gfarm.conf
+
+# Chekc Config File
+if [ -f $CONF_FILE ]; then
+    . $CONF_FILE
+else
+    echo -1
+    exit 0
+fi
+
+prefix=$1
+if [ -z "$prefix" ]; then
+    prefix="/"
+fi
+read prefix myhost port<<EOF
+`read_gfmd_confs "$1"`
+EOF
+
+if [ $? -ne 0 ]; then
+    myhost=`hostname`
+fi
+
+if [ -f $MDS_LIST_PATH ]; then
+    CHK=`grep '^+ master' $MDS_LIST_PATH | awk '{ print $6 }' | grep $myhost`
+    if [ X$CHK != X ]; then
+       RESULT="master"
+    else
+       RESULT="slave"
+    fi
+else
+    RESULT="error: $MDS_LIST_PATH not found."
+fi
+
+echo $RESULT
+exit 0
