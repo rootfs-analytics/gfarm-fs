@@ -1,0 +1,62 @@
+#! /bin/sh
+
+######################################################################
+TESTID="FT1-2-4-2"
+CATEGORY="accident causes no failover"
+SECTION="cn accident"
+TITLE="network down with cn to all fsn"
+######################################################################
+
+. ./FT-common
+
+ft_setup()
+{
+	IFUP_PATH=/sbin/ifup
+	IFDOWN_PATH=/sbin/ifdown
+
+	return $FT_RESULT_PASS
+}
+
+ft_main()
+{
+	RESULT=$FT_RESULT_PASS
+
+	ssh $gfsd1_CTRL_ADDRESS sudo $IFDOWN_PATH $gfsd1_GFARM_IF && \
+	ssh $gfsd2_CTRL_ADDRESS sudo $IFDOWN_PATH $gfsd2_GFARM_IF
+	[ $? -eq 0 ] || RESULT=$FT_RESULT_FAIL
+	ft_checkpoint 1 "ifdown $gfsd2_GFARM_IF on $gfsd2" $RESULT
+	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
+
+	ft_check_mail \
+		"Gfarm client node is not available on $client1" && \
+	ft_check_mail \
+		"Gfarm client node is not available on $client2"
+	[ $? -eq 0 ] || RESULT=$FT_RESULT_FAIL
+	ft_checkpoint 2 "receive a mail" $RESULT
+	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
+
+	ssh $gfsd1_CTRL_ADDRESS sudo $IFUP_PATH $gfsd1_GFARM_IF && \
+	ssh $gfsd2_CTRL_ADDRESS sudo $IFUP_PATH $gfsd2_GFARM_IF
+	[ $? -eq 0 ] || RESULT=$FT_RESULT_FAIL
+	ft_checkpoint 3 "ifup $gfsd2_GFARM_IF on $gfsd2" $RESULT
+	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
+
+	ft_check_mail \
+		"Re: Gfarm client node is not available on $client1" && \
+	ft_check_mail \
+		"Re: Gfarm client node is not available on $client2"
+	[ $? -eq 0 ] || RESULT=$FT_RESULT_FAIL
+	ft_checkpoint 4 "receive a mail" $RESULT
+	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
+
+	return $RESULT
+}
+
+ft_teardown()
+{
+	ssh $gfsd1_CTRL_ADDRESS sudo $IFUP_PATH $gfsd1_GFARM_IF
+	ssh $gfsd2_CTRL_ADDRESS sudo $IFUP_PATH $gfsd2_GFARM_IF
+	return $FT_RESULT_PASS
+}
+	
+ft_run "$TESTID" "$TITLE"

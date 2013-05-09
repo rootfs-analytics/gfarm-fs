@@ -1,0 +1,14 @@
+UserParameter=gfarm.gfmd.gfsched,HOME=@ZABBIX_CONFDIR@ @ZABBIX_EXTSCRIPTDIR@/zbx_chk_gfsched_gfmd.sh -M
+UserParameter=gfarm.gfs.dead[*],HOME=@ZABBIX_CONFDIR@ @ZABBIX_EXTSCRIPTDIR@/zbx_chk_dead_gfsd.sh "$1"
+UserParameter=gfarm.gfs.gfsched[*],HOME=@ZABBIX_CONFDIR@ @ZABBIX_EXTSCRIPTDIR@/zbx_chk_gfsched_gfsd.sh "$1"
+UserParameter=gfarm.gfs.gfhost[*],HOME=@ZABBIX_CONFDIR@ @ZABBIX_EXTSCRIPTDIR@/zbx_chk_gfhost_gfsd.sh "$1"
+UserParameter=gfarm.cli.gfhost,HOME=@ZABBIX_CONFDIR@ @ZABBIX_EXTSCRIPTDIR@/zbx_chk_gfhost_cli.sh
+UserParameter=gfarm.cli.gfmdhost,HOME=@ZABBIX_CONFDIR@ @ZABBIX_EXTSCRIPTDIR@/zbx_chk_gfmdhost_cli.sh
+UserParameter=gfarm.cli.gfmdlist,HOME=@ZABBIX_CONFDIR@ @ZABBIX_EXTSCRIPTDIR@/zbx_chk_gfmdlist_cli.sh
+UserParameter=gfarm.cli.mastername,HOME=@ZABBIX_CONFDIR@ @ZABBIX_EXTSCRIPTDIR@/zbx_chk_mastername_cli.sh
+UserParameter=gfarm.gfmd.mastername,HOME=@ZABBIX_CONFDIR@ @ZABBIX_EXTSCRIPTDIR@/zbx_chk_mastername_cli.sh
+UserParameter=gfarm.gfmd.gfmdtype[*],HOME=@ZABBIX_CONFDIR@ @ZABBIX_EXTSCRIPTDIR@/zbx_chk_gfmdtype_gfmd.sh $1
+UserParameter=gfarm.gfmd.dead[*],HOME=@ZABBIX_CONFDIR@ @ZABBIX_EXTSCRIPTDIR@/zbx_chk_dead_gfmd.sh "$1"
+UserParameter=gfarm.pgsql.dead[*],HOME=@ZABBIX_CONFDIR@ @ZABBIX_EXTSCRIPTDIR@/zbx_chk_dead_gfarm_pgsql.sh "$1"
+UserParameter=gfarm.gfmd.tcp.listen[*],HOME=@ZABBIX_CONFDIR@ @ZABBIX_EXTSCRIPTDIR@/zbx_chk_listenport_gfmd.sh "$1"
+UserParameter=gfarm.gfs.tcp.listen[*],HOME=@ZABBIX_CONFDIR@ @ZABBIX_EXTSCRIPTDIR@/zbx_chk_listenport_gfsd.sh "$1"

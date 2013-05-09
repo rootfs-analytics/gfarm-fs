@@ -1,0 +1,57 @@
+#! /bin/sh
+
+######################################################################
+TESTID="FT1-2-1-5"
+CATEGORY="accident causes no failover"
+SECTION="common observed properties"
+TITLE="memory usage"
+######################################################################
+
+. ./FT-common
+
+ft_setup()
+{
+	RESULT=$FT_RESULT_PASS
+	STRESS_CMD=./malloc
+	STRESS_PERIOD=`expr $FT_MAIL_TIMEOUT + $FT_MAIL_TIMEOUT`
+	STRESS_PARAM=`ssh $gfmd1 free -b | grep Mem | awk '{print $2, $3, $6, $7}'`
+	if [ ! -f $STRESS_CMD ]; then
+		cc -o $STRESS_CMD malloc.c
+	fi
+	scp $STRESS_CMD $gfmd1: || RESULT=$FT_RESULT_FAIL
+	return $RESULT
+}
+
+ft_main()
+{
+	RESULT=$FT_RESULT_PASS
+
+	ssh $gfmd1 $STRESS_CMD $STRESS_PARAM $STRESS_PERIOD &
+	[ $? -eq 0 ] || RESULT=$FT_RESULT_FAIL
+	ft_checkpoint 1 "start 'malloc'" $RESULT
+	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
+
+	ft_check_mail "High memory use on $gfmd1" \
+		|| RESULT=$FT_RESULT_FAIL
+	ft_checkpoint 2 "receive a mail" $RESULT
+	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
+
+	ssh $gfmd1 pkill `basename $STRESS_CMD`
+	ft_checkpoint 3 "stop 'malloc'" $RESULT
+
+	ft_check_mail "Re: High memory use on $gfmd1" \
+		|| RESULT=$FT_RESULT_FAIL
+	ft_checkpoint 4 "receive a mail" $RESULT
+	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
+
+	return $RESULT
+}
+
+ft_teardown()
+{
+	ssh $gfmd1 "rm -f $STRESS_CMD"
+	ssh $gfmd1 pkill `basename $STRESS_CMD`
+	return $FT_RESULT_PASS
+}
+
+ft_run "$TESTID" "$TITLE"

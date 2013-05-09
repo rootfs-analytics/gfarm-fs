@@ -1,0 +1,37 @@
+#!/bin/sh
+
+. @ZABBIX_EXTSCRIPTDIR@/zbx_gfarm_utils.inc
+
+# defines
+CONF_FILE=@ZABBIX_EXTSCRIPTDIR@/zbx_chk_gfarm.conf
+
+# check config file
+if [ -f $CONF_FILE ]; then
+    . $CONF_FILE
+else
+    echo -1
+    exit 0
+fi
+
+# create the temporary file
+tmpfile=`mktemp`
+trap "rm -f $tmpfile >/dev/null 2>&1" EXIT
+
+gfhost_options="-l"
+
+gfhost ${gfhost_options} > $tmpfile
+if [ $? != 0 ]; then
+    echo "error: gfhost ${gfhost_options} error."
+    exit 0
+fi
+
+while read prefix gfsdhost port listen_aadress; do
+    grep ${gfsdhost} $tmpfile
+    if [ $? -ne 0 ]; then
+        echo "error: gfsd on ${gfsdhost} is not shown on gfhost output"
+    fi
+done<<EOF
+`parse_gfsd_confs "$1"`
+EOF
+
+exit 0

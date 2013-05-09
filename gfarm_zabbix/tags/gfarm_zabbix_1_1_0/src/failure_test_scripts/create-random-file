@@ -1,0 +1,127 @@
+#! /usr/bin/perl
+#
+# Usage:
+#     create-random-file FILE SIZE
+#
+######################################################################
+package main;
+
+use strict;
+
+#
+# Random device.
+#
+my $random_device = "/dev/urandom";
+
+#
+# Data length read from the random device.
+#
+use constant DATA_STRIDE => 4096;
+ 
+#
+# print usage.
+#
+sub usage {
+	print STDERR<<'EOF'
+create-random-file FILE SIZE
+EOF
+}
+
+#
+# parse option.
+#
+sub parse_opt {
+	my ($optref) = @_;
+
+	if (@ARGV < 2) {
+		usage();
+		return 0;
+	}
+
+	$optref->{'file'} = $ARGV[0];
+	if ($ARGV[1] !~ /^([1-9][0-9]*)(K|M|G|)B?$/i) {
+		print STDERR "invalid size representation: $ARGV[1]\n";
+		return 0;
+	}
+
+	my $num  = $1;
+	my $unit = uc($2);
+	if ($unit eq 'G') {
+		$optref->{'size'} = $num << 30;
+	} elsif ($unit eq 'M') {
+		$optref->{'size'} = $num << 20;
+	} elsif ($unit eq 'K') {
+		$optref->{'size'} = $num << 10;
+	} else {
+		$optref->{'size'} = $num;
+	}
+
+	return 1;
+}
+
+#
+# create random data
+#
+sub read_random_device {
+	my ($len) = @_;
+
+	my ($in, $data);
+	if (!open($in, '<:bytes', $random_device)) {
+		warn "failed to open the file, $!: $random_device\n";
+		return;
+	}
+	my $nread = sysread($in, $data, $len);
+	if (!defined $nread || $nread != $len) {
+		warn "failed to read the file, $!: $random_device\n";
+		return;
+	}
+	close($in);
+	return $data;
+}
+
+#
+# create file
+#
+sub create_file {
+	my ($file, $size) = @_;
+
+	my $random_data = read_random_device(DATA_STRIDE);
+	return 0 if (!defined $random_data);
+
+	# print STDOUT "create file '$file', size $size.\n";
+	my ($out, $len, $i);
+	open($out, ">:bytes", $file)
+		 or die "failed to open the file, $!: $file\n";
+	for ($i = $0; $i + DATA_STRIDE < $size; $i += DATA_STRIDE) {
+		my $nwritten = syswrite($out, $random_data, DATA_STRIDE);
+		if (!defined $nwritten || $nwritten != DATA_STRIDE) {
+			warn "failed to write the file, $!: $file\n";
+			return 0;
+		}
+	}
+	if ($i < $size) {
+		my $nwritten = syswrite($out, $random_data, $size - $i);
+		if (!defined $nwritten || $nwritten != $size - $i) {
+			warn "failed to write the file, $!: $file\n";
+			return 0;
+		}
+	}
+	close($out);
+	return 1;
+}
+
+#
+# MAIN
+#
+sub main {
+	my %opt;
+	if (!parse_opt(\%opt)) {
+		exit(1);
+	}
+	if (!create_file($opt{'file'}, $opt{'size'})) {
+		exit(1);
+	}
+	exit(0);
+}
+
+main();

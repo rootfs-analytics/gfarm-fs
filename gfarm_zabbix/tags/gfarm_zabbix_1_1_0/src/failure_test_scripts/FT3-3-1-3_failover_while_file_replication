@@ -1,0 +1,87 @@
+#! /bin/sh
+
+######################################################################
+TESTID="FT3-3-1-3"
+CATEGORY="accident while failover and failure of  meta data sync"
+SECTION="failover in the midst of client accessd"
+TITLE="failover while file replication"
+######################################################################
+
+. ./FT-common
+
+ft_setup()
+{
+	#
+	# This test case is never succeeded.
+	# This test performs failover during a client executes the command
+	# 'gfrep -N 2 large-file'.  When the failover has been completed,
+	# it expects 'gfwhere large-file' prints two filesystem nodes,
+	# but 'gfwhere' prints only one node.
+	#
+	return $FT_RESULT_UNTESTED
+
+	DIR=mnt
+	FILE=a.dat
+	SIZE=1000M
+
+	ssh $client1 "mkdir -p $DIR"
+	$gfservice unmount client1 $DIR
+	$gfservice mount client1 $DIR -o nonempty
+	ssh $client1 "rm -f $FILE create-random-file $DIR/$FILE"
+	scp create-random-file $client1:
+	ssh $client1 "./create-random-file $FILE $SIZE"
+	return $FT_RESULT_PASS
+}
+
+ft_main()
+{
+	RESULT=$FT_RESULT_PASS
+
+	ssh $client1 "cp $FILE $DIR/$FILE"
+	[ $? -eq 0 ] || RESULT=$FT_RESULT_FAIL
+	ft_checkpoint 1 "copy $FILE to the Gfarm2 filesytem on $client1" $RESULT
+	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
+
+	ssh $client1 "$client1_GFBINDIR/gfrep -N 2 $FILE" &
+	[ $? -eq 0 ] || RESULT=$FT_RESULT_FAIL
+	ft_checkpoint 2 "replicate $FILE on $client1" $RESULT
+	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
+
+	$gfservice stop-gfmd gfmd1 \
+		|| RESULT=$FT_RESULT_FAIL
+	ft_checkpoint 3 "stop gfmd on $gfmd1" $RESULT
+	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
+
+	ssh $gfmd2 "sudo kill -USR1 \`cat /var/run/gfmd.pid\`" \
+		|| RESULT=$FT_RESULT_FAIL
+	ft_checkpoint 4 "upgrade slave gfmd on $gfmd2" $RESULT
+	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
+
+	ft_wait_remote_process $client1 "$client1_GFBINDIR/gfrep -N 2 $FILE" \
+		|| RESULT=$FT_RESULT_FAIL
+	ft_checkpoint 5 "wait copying $FILE to the Gfarm2 filesytem on $client1" $RESULT
+	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
+
+	ssh $client1 "cmp $FILE $DIR/$FILE" \
+		|| RESULT=$FT_RESULT_FAIL
+	ft_checkpoint 6 "compare the copied $FILE with the original" $RESULT
+	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
+
+	GFWHERE=`ssh $client1 $client1_GFBINDIR/gfwhere $FILE`
+	[ $? -eq 0 ] && [ "X$GFWHERE" != X ] && [ `echo $GFWHERE | awk '{ print NF }'` -eq 2 ] \
+		|| RESULT=$FT_RESULT_FAIL
+	ft_checkpoint 7 "check replication status of $FILE" $RESULT
+	[ $RESULT -eq $FT_RESULT_PASS ] || return $RESULT
+
+	return $RESULT
+}
+
+ft_teardown()
+{
+	ssh $client1 "rm -f $FILE $DIR/$FILE create-random-file"
+	$gfservice umount client1 $DIR
+	ft_reset_gfmd
+	return $FT_RESULT_PASS
+}
+
+ft_run "$TESTID" "$TITLE"

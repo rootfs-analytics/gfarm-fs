@@ -1,0 +1,5 @@
+# For PostgreSQL UserParameters
+
+UserParameter=pgsql.server_processes[*],HOME=@ZABBIX_CONFDIR@ @ZABBIX_EXTSCRIPTDIR@/zbx_chk_pgsql.sh process "$1"
+UserParameter=pgsql.tx_commited[*],HOME=@ZABBIX_CONFDIR@ @ZABBIX_EXTSCRIPTDIR@/zbx_chk_pgsql.sh commit "$1"
+UserParameter=pgsql.tx_rolledback[*],HOME=@ZABBIX_CONFDIR@ @ZABBIX_EXTSCRIPTDIR@/zbx_chk_pgsql.sh rollback "$1"

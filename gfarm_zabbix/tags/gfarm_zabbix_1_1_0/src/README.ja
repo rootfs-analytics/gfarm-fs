@@ -1,0 +1,16 @@
+[This is written in Japanese, please look at README.en for English version.]
+
+本ディレクトリ下のファイル及びサブディレクトリの構成は、次のようになっ
+ています。
+
+    gfarm-zabbix_editor/       : クライアント設定ファイル編集機能スクリプト
+    gfarm-zabbix_scripts/      : Zabbix エージェント用設定ファイル
+       externalscripts/        : Gfarm 監視用スクリプト
+       zabbix_agentd.d/        : Zabbix ユーザパラメータ設定ファイル
+    gfarm-zabbix_templates/    : Gfarm 用 Zabbix テンプレート
+    failure_test_scripts/      : 障害発生テストプログラム
+    install-agentd.sh          : Zabbix エージェント用インストールスクリプト
+    install-editor.sh          : クライアント設定ファイル編集機能
+                                 インストールスクリプト
+    install.conf               : インストール設定ファイル
+    README.ja                  : 本ファイル

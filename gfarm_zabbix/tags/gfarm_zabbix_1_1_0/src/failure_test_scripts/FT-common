@@ -1,0 +1,349 @@
+#! /bin/sh
+#
+# Functions and definitions commonly used by test case scripts.
+#
+
+# Path to 'gfservice' command and its arguments.
+FT_GFSERVICE_CONF="./gfservice.conf"
+gfservice="/usr/local/gfarm/bin/gfservice -f $FT_GFSERVICE_CONF"
+. "$FT_GFSERVICE_CONF"
+
+# Install prefix of gf* commands on remote nodes.
+GFARM_PREFIX="/usr/local/gfarm"
+
+# log file.
+FT_LOG=log
+FT_TMP_LOG=log.tmp
+
+# Timeout interval for receiving an expected alert mail.
+FT_MAIL_TIMEOUT=600
+
+# Check mails every $FT_MAIL_WAIT_INTERVAL seconds.
+FT_MAIL_CHECK_INTERVAL=10
+
+# Timeout interval for waiting fail over of gfmd.
+FT_FAILOVER_TIMEOUT=900
+
+# Check completion of failover every $FT_FAILOVER_CHECK_INTERVAL seconds.
+FT_FAILOVER_CHECK_INTERVAL=30
+
+# Check completion of a remote command every $FT_PROCESS_CHECK_INTERVAL seconds.
+FT_PROCESS_CHECK_INTERVAL=30
+
+# Sleep Period Between a failover and file operations on Gfarm2fs
+FT_SLEEP_PERIOD_AFTER_FAILOVER=300
+
+# Syslog facility
+FT_SYSLOG_FACILITY=local7
+
+# Mbox file.
+FT_MBOX_FILE=/var/spool/mail/$USER
+FT_MBOX_BACKUP_FILE_PREFIX=mbox
+FT_MBOX_BACKUP_TMP_FILE=mbox.tmp
+
+# Test case scrips.
+FT_TEST_SCRIPT_PATTERN="FT*_*"
+
+#
+# Result codes.
+#
+FT_RESULT_PASS=0
+FT_RESULT_FAIL=1
+FT_RESULT_XPASS=2		# passed, but it's unexpected. fixed recently?
+FT_RESULT_XFAIL=3		# failed, but it's expected. i.e. known bug.
+FT_RESULT_UNRESOLVED=4		# cannot determine whether (X)?PASS or (X)?FAIL
+FT_RESULT_UNTESTED=5		# not tested, this test haven't written yet.
+FT_RESULT_UNSUPPORTED=6		# not tested, this environment can't test this.
+FT_RESULT_TRAP=7		# killed by Control-C or something
+
+#
+# Convert a result code to a string.
+#
+#   $1 ... result code.
+#
+# It prints a result code string corresponding with $1 to standard out.
+#
+result_string()
+{
+	[ $1 -eq $FT_RESULT_PASS        ] && { echo "PASS";        return 0; }
+	[ $1 -eq $FT_RESULT_FAIL        ] && { echo "FAIL";        return 0; }
+	[ $1 -eq $FT_RESULT_XPASS       ] && { echo "XPASS";       return 0; }
+	[ $1 -eq $FT_RESULT_XFAIL       ] && { echo "XFAIL";       return 0; }
+	[ $1 -eq $FT_RESULT_UNRESOLVED  ] && { echo "UNRESOLVED";  return 0; }
+	[ $1 -eq $FT_RESULT_UNTESTED    ] && { echo "UNTESTED";    return 0; }
+	[ $1 -eq $FT_RESULT_UNSUPPORTED ] && { echo "UNSUPPORTED"; return 0; }
+	[ $1 -eq $FT_RESULT_TRAP        ] && { echo "TRAP";        return 0; }
+	echo "UNKNOWN"; return 0
+}
+
+#
+# Report a checkpoint of the test case.
+#
+#   $1 ... checkpoint no (1, 2, 3 ...)
+#   $2 ... title
+#   $3 ... result code
+#
+ft_checkpoint()
+{
+	awk "BEGIN {printf(\"    checkpoint [%3s] %-40s ... %s\\n\", 
+		\"$1\", \"$2\", \""`result_string $3`"\")}" >> $FT_TMP_LOG
+}
+
+#
+# Wait a mail which has a subject '$1'.
+#
+#   $1 ... search string.
+#
+# The function returns 0 if it finds an expected mail.  Otherwise it
+# returns 1.
+#
+ft_check_mail()
+{
+	_I_=0
+	while [ $_I_ -le $FT_MAIL_TIMEOUT ]; do
+		./mbox-search -f $FT_MBOX_FILE -r -t 10 "$1" && return 0
+		sleep $FT_MAIL_CHECK_INTERVAL
+		_I_=`expr $_I_ + $FT_MAIL_CHECK_INTERVAL`
+	done
+
+	return 1
+}
+
+#
+# Wait mails which have subjects '$1', '$2', ...
+#
+#   $@ ... search strings
+#
+# The function returns 0 if it finds all mails.  Otherwise it returns 1.
+#
+ft_check_mails()
+{
+	_I_=0
+	while [ $# -gt 0 ]; do
+		[ $_I_ -le $FT_MAIL_TIMEOUT ] || return 1
+		if ./mbox-search -f $FT_MBOX_FILE -r -t 10 "$1"; then
+			shift
+			continue
+		fi
+		sleep $FT_MAIL_CHECK_INTERVAL
+		_I_=`expr $_I_ + $FT_MAIL_CHECK_INTERVAL`
+	done
+
+	return 0
+}
+
+#
+# Truncate an mbox file to size of 0 byte.
+#
+ft_truncate_mbox()
+{
+	./mbox-search -f $FT_MBOX_FILE -b $FT_MBOX_BACKUP_TMP_FILE
+	return 0
+}
+
+#
+# Wait for a failed over of gfmd.
+#
+#   $1 ... previous master gfmd.
+#
+ft_wait_failover()
+{
+	_I_=0
+	while [ $_I_ -le $FT_FAILOVER_TIMEOUT ]; do
+		case X`gfmdhost -l 2> /dev/null \
+			| awk "{if (\\$2 == \"master\") print \\$6}"` in
+		X)	true
+			;;
+		X$1)	true
+			;;
+		*)	return 0
+			;;
+		esac
+		sleep $FT_FAILOVER_CHECK_INTERVAL
+		_I_=`expr $_I_ + $FT_FAILOVER_CHECK_INTERVAL`
+	done
+
+	return 1
+}
+
+#
+# Wait for a remote command execution.
+#
+#   $1 ... remote host.
+#   $2 ... command.
+#
+ft_wait_remote_process()
+{
+	_HOST_=$1
+	_CMD_=$2
+	while [ "X`ssh $_HOST_ \"ps -ef | grep '$_CMD_' | grep -v grep \"`" != X ]; do
+		sleep $FT_PROCESS_CHECK_INTERVAL;
+	done
+	return 0
+}
+
+#
+# Reset gfmd servers.
+# At teardown, we have to make gfmd1 to be a master and other gfmd servers
+# to be slaves for the next test case.
+#
+ft_reset_gfmd()
+{
+	./FT-unconfig >> $FT_LOG 2>&1
+	./FT-config >> $FT_LOG 2>&1
+	return 0
+}
+
+#
+# Signal handler
+#
+ft_trap()
+{
+	echo $FT_RESULT_TRAP
+	cat $FT_TMP_LOG
+	awk "BEGIN {printf(\"@:= %-13s %-43s ... %s\\n\", \"$1\", \"$2\",
+		\"$FT_RESULT_TRAP\")}" >> $FT_LOG
+	cat $FT_TMP_LOG >> $FT_LOG
+
+	ft_teardown >> $FT_LOG 2>&1
+	rm -f $FT_TMP_LOG
+	exit $FT_RESULT_TRAP
+}
+
+#
+# Run a test case.
+#
+#   $1 ... test ID.
+#   $2 ... title.
+#
+ft_run()
+{
+	#
+	# Setup.
+	#
+	rm -f $FT_TMP_LOG
+	touch $FT_TMP_LOG
+	rm -f $FT_MBOX_BACKUP_TMP_FILE
+	touch $FT_MBOX_BACKUP_TMP_FILE
+	awk "BEGIN {printf(\"--- %-13s %-43s ... \", \"$1\", \"$2\")}"
+	awk "BEGIN {printf(\"--- %-13s %-43s ... BEGIN\\n\",
+		\"$1\", \"$2\")}" >> $FT_LOG
+	date +'@@_ start at %s - %Y-%m-%d %H:%M:%S' >>$FT_LOG
+
+	trap "ft_trap" 1 2 3 15
+
+	_RESULT_=$FT_RESULT_PASS
+	ft_setup >> $FT_LOG 2>&1
+	_RESULT_=$?
+	if [ $_RESULT_ -eq  $FT_RESULT_UNTESTED ]; then
+		echo "UNTESTED"
+		echo "    skip $1" >> $FT_LOG
+		exit $_RESULT_
+	fi
+	if [ $_RESULT_ -ne 0 ]; then
+		echo "failed to setup $1"
+		echo "    failed to setup $1" >> $FT_LOG
+	fi
+
+	# Truncate the mbox file.
+	./mbox-search -f $FT_MBOX_FILE
+
+	#
+	# Main.
+	#
+	if [ $_RESULT_ -eq 0 ]; then
+		ft_main >> $FT_LOG 2>&1
+		_RESULT_=$?
+		_RESULT_STRING_=`result_string $_RESULT_`
+	fi
+
+	#
+	# Teardown.
+	#
+	echo $_RESULT_STRING_
+	cat $FT_TMP_LOG
+	awk "BEGIN {printf(\"@:= %-13s %-43s ... %s\\n\", \"$1\", \"$2\",
+		\"$_RESULT_STRING_\")}" >> $FT_LOG
+	cat $FT_TMP_LOG >> $FT_LOG
+
+	ft_teardown >> $FT_LOG 2>&1
+	date +'@@~  end  at %s - %Y-%m-%d %H:%M:%S' >>$FT_LOG
+	echo "--- ------------------------------------------------------------ ----" >> $FT_LOG
+	rm -f $FT_TMP_LOG
+	ft_truncate_mbox
+	mv -f $FT_MBOX_BACKUP_TMP_FILE "$FT_MBOX_BACKUP_FILE_PREFIX.$1"
+
+	exit $_RESULT_
+}
+
+#
+# Run all test scripts.
+#
+ft_run_all()
+{
+	_N_PASS_=0
+	_N_FAIL_=0
+	_N_XPASS_=0
+	_N_XFAIL_=0
+	_N_UNRESOLVED_=0
+	_N_UNTESTED_=0
+	_N_UNSUPPORTED_=0
+	_N_TRAP_=0
+	_N_UNKNOWN_=0
+
+	for _FILE_ in `/bin/sh -c "echo $FT_TEST_SCRIPT_PATTERN"`; do
+		[ -x "$_FILE_" ] || continue
+		./$_FILE_
+		_RESULT_=$?
+		case $_RESULT_ in
+		$FT_RESULT_PASS)
+			_N_PASS_=`expr $_N_PASS_ + 1`
+			;;
+		$FT_RESULT_FAIL)
+			_N_FAIL_=`expr $_N_FAIL_ + 1`
+			;;
+		$FT_RESULT_XPASS)
+			_N_XPASS_=`expr $_N_XPASS_ + 1`
+			;;
+		$FT_RESULT_XFAIL)
+			_N_XFAIL_=`expr $_N_XFAIL_ + 1`
+			;;
+		$FT_RESULT_UNRESOLVED)
+			_N_UNRESOLVED_=`expr $_N_UNRESOLVED_ + 1`
+			;;
+		$FT_RESULT_UNTESTED)
+			_N_UNTESTED_=`expr $_N_UNTESTED_ + 1`
+			;;
+		$FT_RESULT_UNSUPPORTED)
+			_N_UNSUPPORTED_=`expr $_N_UNSUPPORTED_ + 1`
+			;;
+		$FT_RESULT_TRAP)
+			_N_TRAP_=`expr $_N_TRAP_ + 1`
+			;;
+		*)
+			_N_UNKNOWN_=`expr $_N_UNKNOWN_ + 1`
+			;;
+		esac
+
+		#
+		# Sleep a while to create an interval alter the last alert.
+		#
+		sleep $FT_MAIL_TIMEOUT
+	done
+
+	echo "Total test: `expr $_N_PASS_ + $_N_FAIL_`"
+	echo "  success            : $_N_PASS_"
+	echo "  failure            : $_N_FAIL_"
+	[ $_N_XPASS_ -gt 0 ] \
+		&& echo "  unexpected success : $_N_XPASS_"
+	[ $_N_XFAIL_ -gt 0 ] \
+		&& echo "  expected failure   : $_N_XFAIL_"
+	[ $_N_UNRESOLVED_ -gt 0 ] \
+		&& echo "  unresolved         : $_N_UNRESOLVED_"
+	[ $_N_UNTESTED_ -gt 0 ] \
+		&& echo "  untested           : $_N_UNTESTED_"
+	[ $_N_UNSUPPORTED_ -gt 0 ] \
+		&& echo "  unsupported        : $_N_UNSUPPORTED_"
+
+	exit 0
+}

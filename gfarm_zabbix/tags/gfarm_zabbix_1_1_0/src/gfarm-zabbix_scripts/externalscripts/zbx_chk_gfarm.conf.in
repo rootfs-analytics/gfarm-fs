@@ -1,0 +1,7 @@
+# set path
+PATH=@GFARM_BINDIR@:$PATH
+
+# set metadata server list path
+MDS_LIST_DIR=/var/tmp
+MDS_LIST_NAME=metadataserver_list.log
+MDS_LIST_PATH=$MDS_LIST_DIR/$MDS_LIST_NAME

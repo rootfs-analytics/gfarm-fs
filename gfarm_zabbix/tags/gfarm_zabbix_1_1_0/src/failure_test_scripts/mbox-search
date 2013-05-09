@@ -1,0 +1,327 @@
+#! /usr/bin/perl
+#
+# Usage:
+#     mbox-search [option...] [SUBJECT]
+#
+# 'mbox-search' searches an mbox file ('/var/sppol/mail/$USER by 
+# default) for a mail with SUBJECT.  For example,
+#
+#     mbox-search -p 'gfmd on gfmd.example.com is stopped'
+#
+# will output the following line:
+#
+#     Subject: gfmd on gfmd.example.com is stopped
+#
+# if a mail with such a subject is stored in the mbox file.
+# Please note that this tool distinguishes upper and lower cases.
+#
+# It truncates the file to size of 0 byte after it has searched
+# the file, by default.  To ensure the safe truncation, it locks
+# the mbox file during the operation.
+# 
+# 'mbox-search' recognizes the options below:
+#
+# -b BACKUP-FILE
+#     Specify a backup file of mbox.  If this option is specified,
+#     'mbox-search' creates a backup file of mbox.
+#
+# -f MBOX-FILE
+#     Specify the mbox file name.
+#
+# -p
+#     Print found lines to standard out.
+#
+# -r
+#     Do not truncate the mbox file.
+#
+# -t SECONDS
+#     Specifiy timeout period in seconds.  The default value is 30.
+#
+# If SUBJECT is not given, 'mbox-search' doesn't search a mail.
+# In this case, it truncates an mbox file and creates a backup file
+# when '-b' option is specified.
+#
+######################################################################
+package MBoxFile;
+use IO::File;
+use Fcntl ':flock';
+use Errno qw(EEXIST EPERM EACCES);
+
+@ISA = 'Exporter';
+@EXPORT = qw(MBOX_DIR);
+@EXPORT_OK = qw();
+
+use constant MBOX_DIR => "/var/spool/mail";
+
+#
+# Create an MBoxFile object.
+#
+sub new {
+    my ($class) = shift;
+    my ($mbox_file) = @_;
+
+    if (!defined $mbox_file) {
+	if (defined $ENV{USER} && $ENV{USER} ne "") {
+	    $mbox_file = sprintf("%s/%s", MBOX_DIR, $ENV{USER});
+	} else {
+	    my $name = scalar(getpwuid($<));
+	    if (defined $name && $name eq "") {
+		die("$0: failed to determine mbox file\n");
+	    }
+	    $mbox_file = sprintf("%s/%s", $mbox_dir, $name);
+	}
+    }
+
+    my $self = {
+	'mbox_file'    => $mbox_file,
+	'lock_file'    => "${mbox_file}.lock",
+	'dotlock_file' => "${mbox_file}.lock.mbox-search",
+	'mbox_handle'  => undef
+    };
+    bless($self, $class);
+
+    return $self;
+}
+
+#
+# Open and lock the mbox file.
+#
+sub open {
+    my ($self) = shift;
+
+    $self->{mbox_handle} = IO::File->new($self->{mbox_file}, O_RDWR);
+    if (!defined $self->{mbox_handle}) {
+	die("$0: failed to open the file, $!: " . $self->{mbox_file} . "\n");
+    }
+    if (!flock($self->{mbox_handle}, LOCK_EX)) {
+	warn("$0: failed to lock the file: " . $self->{mbox_file} . "\n");
+	$mbox_handle->close();
+	exit(1);
+    }
+
+    my $dotlock_io;
+    my $dotlock_eaccs = 0;
+    for (;;) {
+	$dotlock_io = IO::File->new($self->{dotlock_file},
+				    O_RDWR | O_CREAT | O_EXCL);
+	if (defined $dotlock_io) {
+	    $dotlock_io->write("pid $$");
+	    $dotlock_io->close();
+	    last;
+	} elsif ($!{EPERM} || $!{EACCES}) {
+	    $dotlock_eaccs = 1;
+	    last;
+	} elsif ($!{EEXIST}) {
+	    sleep(1);
+	    next;
+	}
+	warn("$0: failed to create the file, $!: " . $self->{dotlock_file}
+	     . "\n");
+	$mbox_handle->close();
+	exit(1);
+    }
+
+    while (!$dotlock_eaccs) {
+	last if (link($self->{dotlock_file}, $self->{lock_file}));
+	if ($!{EEXIST}) {
+	    sleep(1);
+	    next;
+	}
+	warn("$0: failed to create the file, $!: " . $self->{lock_file}
+	     . "\n");
+	$mbox_handle->close();
+	$dotlock_io->close();
+	unlink($self->{dotlock_file});
+	exit(1);
+    }
+    
+    return $mbox_handle;
+}
+
+#
+# Close the mbox file and delete its lock files.
+#
+sub close {
+    my ($self) = shift;
+
+    flock($self->{mbox_handle}, LOCK_UN);
+    $self->{mbox_handle}->close();
+    unlink($self->{lock_file});
+    unlink($self->{dotlock_file});
+}
+
+#
+# Truncate the mbox file.
+#
+sub truncate {
+    my ($self) = shift;
+    if (!$self->{mbox_handle}->truncate(0)) {
+	warn("$0: failed to truncte the file, $!: " . $self->{mbox_file}
+	     . "\n");
+    }
+}
+
+#
+# Return the mbox file name.
+#
+sub get_mbox_file {
+    my ($self) = shift;
+    return $self->{mbox_file};
+}
+
+#
+# Return the lock file name.
+#
+sub get_lock_file {
+    my ($self) = shift;
+    return $self->{lock_file};
+}
+
+#
+# Return the dot-lock file name.
+#
+sub get_dotlock_file {
+    my ($self) = shift;
+    return $self->{dotlock_file};
+}
+
+#
+# Return a file handle of the mbox file.
+#
+sub get_mbox_handle {
+    my ($self) = shift;
+    return $self->{mbox_handle};
+}
+
+1;
+
+######################################################################
+package main;
+
+use Getopt::Std;
+
+use constant DEFAULT_TIMEOUT => 30;
+
+#
+# Search the mbox file for a subject line which contains $substr.
+# If $show_found_lines argument is true, it also outputs the found lines.
+#
+sub search_mbox_file {
+    my ($mbox_handle, $substr, $show_found_lines) = @_;
+    my $in_header = 0;
+    my $in_subject = 0;
+    my $subject = '';
+
+    $result = 0;
+    for (;;) {
+	my $line = $mbox_handle->getline();
+	last if (!defined $line);
+	$line =~ s/\r?\n//;
+
+	if ($in_subject) {
+	    if ($line =~ /^[ \t]/) {
+		$line =~ s/^[ \t]+//;
+		$subject .= ' ' . $line;
+	    } else {
+		if ($subject eq $substr) {
+		    if ($show_found_lines) {
+			#print("X-Zabbix-Subject: $subject\n");
+			print("Subject: $subject\n");
+		    }
+		    $result = 1;
+		}
+		$in_subject = 0;
+		$subject = '';
+	    }
+	}
+
+	if ($line =~ /^From[ \t]/) {
+	    $in_header = 1;
+	} elsif (!$in_header) {
+	    next;
+	} elsif ($line =~ /^$/) {
+	    $in_header = 0;
+	#} elsif ($line =~ s/^X-Zabbix-Subject:\s*//i) {
+	} elsif ($line =~ s/^Subject:\s*//i) {
+	    $in_subject = 1;
+	    $subject = $line;
+	}
+    }
+
+    return $result;
+}
+
+#
+# Create a backup copy of mbox file.
+#
+sub backup_mbox_file {
+    my ($mbox_handle, $backup_file) = @_;
+#    my $backup_handle = IO::File->new($backup_file,
+#				      O_WRONLY | O_CREAT | O_APPEND, 0666);
+    my $backup_handle = IO::File->new($backup_file, '>>', 0666);
+    if (!defined $backup_handle) {
+	warn("$0: failed to open the file, $!: $backup_handle\n");
+	return;
+    }
+    $mbox_handle->seek(0, SEEK_SET);
+
+    for (;;) {
+	my $line = $mbox_handle->getline();
+	last if (!defined $line);
+	$backup_handle->print($line);
+    }
+
+    $backup_handle->close();
+}
+
+#
+# Parse command line arguments.
+#
+my %options;
+getopts("b:f:prt:", \%options) || exit 1;
+die("$0: too many arguments.\n") if (@ARGV > 1);
+
+my $substr = (@ARGV > 0) ? $ARGV[0] : undef;
+my $spool_file = $options{f};
+my $show_found_lines = defined $options{p};
+my $truncation = !defined $options{r};
+my $timeout = (defined $options{t}) ? int($options{t}) : DEFAULT_TIMEOUT;
+my $backup_file = (defined $options{b}) ? $options{b} : "";
+
+die("$0: empty search string.\n") if (defined $substr && $substr eq '');
+
+#
+# Set signal handlers.
+#
+$SIG{HUP}  = sub {$io->close(); exit(1);};
+$SIG{INT}  = sub {$io->close(); exit(1);};
+$SIG{QUIT} = sub {$io->close(); exit(1);};
+$SIG{TERM} = sub {$io->close(); exit(1);};
+$SIG{ALRM} = sub {
+    warn("$0: timeout occured.\n");
+    $io->close();
+    exit(1);
+};
+
+#
+# Main.
+#
+$io = MBoxFile->new($spool_file);
+alarm($timeout);
+$io->open();
+alarm(0);
+
+my $found = 1;
+if (defined $substr) {
+    $found = search_mbox_file($io->get_mbox_handle(), $substr,
+			      $show_found_lines);
+}
+if ($backup_file ne '') {
+    backup_mbox_file($io->get_mbox_handle(), $backup_file);
+}
+if ($truncation) {
+    $io->truncate();
+}
+$io->close();
+
+exit($found ? 0 : 1);

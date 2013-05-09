@@ -1,0 +1,17 @@
+* About Gfarm Zabbix plugins
+
+This directory includes documents and configuration files to monitor
+a Gfarm file system using the Zabbix monitoring software.
+
+To test the Gfarm monitoring, there are programs to cause failure in
+src/failure_test_scripts.
+
+* File and directory structures
+
+    doc/			: documents
+    src/			: source code
+       gfarm-zabbix_editor/	: scripts to edit Gfarm configuration file
+       gfarm-zabbix_scripts/	: Gfarm Zabbix plugin
+       gfarm-zabbix_templates/	: templates for the plugin
+       failure_test_scripts/	: test programs to cause failure
+    README.en			: this file
