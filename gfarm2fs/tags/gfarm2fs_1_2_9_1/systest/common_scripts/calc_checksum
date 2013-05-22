@@ -1,0 +1,9 @@
+load	"generate_testdata"
+
+#
+# calculate expected md5sum
+#
+calc_checksum()
+{
+	generate_testdata $1 | openssl md5 | awk '{print $2}'
+}
