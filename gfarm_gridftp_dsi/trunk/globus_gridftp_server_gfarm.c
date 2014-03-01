@@ -688,7 +688,11 @@ finish:
 		gfarm_handle->save_result = result;
 	}
 	if (gfarm_handle->concurrency_count <= 0 && gfarm_handle->eof) {
-		gfs_pio_close(gfarm_handle->gf);
+		e = gfs_pio_close(gfarm_handle->gf);
+		if (e != GFARM_ERR_NO_ERROR &&
+		    gfarm_handle->save_result == GLOBUS_SUCCESS)
+			gfarm_handle->save_result = GlobusGFSErrorSystemError(
+			    "gfs_pio_close", gfarm_error_to_errno(e));
 		uncache(gfarm_handle->path);
 		globus_gridftp_server_finished_transfer(
 			op, gfarm_handle->save_result);
@@ -826,8 +830,11 @@ gfarm_export_and_register_write(
 	if (result == GLOBUS_SUCCESS)
 		goto end; /* next */
 finish:
+	e = gfs_pio_close(gfarm_handle->gf);
+	if (e != GFARM_ERR_NO_ERROR && result == GLOBUS_SUCCESS)
+		result = GlobusGFSErrorSystemError("gfs_pio_close",
+		    gfarm_error_to_errno(e));
 	globus_gridftp_server_finished_transfer(op, result);
-	gfs_pio_close(gfarm_handle->gf);
 	gfarm_handle->done = GLOBUS_TRUE;
 end:
 	globus_mutex_unlock(&gfarm_handle->mutex);
