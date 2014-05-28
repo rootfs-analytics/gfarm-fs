@@ -56,7 +56,7 @@ void ADIOI_GFARM_Open(ADIO_File fd, int *error_code)
 					printf("[%d/%d] gfs_mkdir %s. gerr = %d\n", myrank, nprocs, fd->filename, gerr);
 				}
 				//set mpi-io/gfarm flag
-				if(gerr = gfs_setxattr(fd->filename, "mpiio", "1", 16, GFS_XATTR_CREATE)
+				if(gerr = gfs_setxattr(fd->filename, "user.mpiio", "1", 16, GFS_XATTR_CREATE)
 					!= GFARM_ERR_NO_ERROR){
 					printf("[%d/%d] gfs_setxattr %s. gerr = %d\n", myrank, nprocs, fd->filename, gerr);
 				}
@@ -88,7 +88,7 @@ void ADIOI_GFARM_Open(ADIO_File fd, int *error_code)
 	    gfs_closedir(gfs_dirp);
 	    getvalue = (char*)malloc(sizeof(char)*16);
 		size = 16;
-		gerr = gfs_getxattr(fd->filename, "mpiio", getvalue, &size);
+		gerr = gfs_getxattr(fd->filename, "user.mpiio", getvalue, &size);
 	    if(gerr != GFARM_ERR_NO_ERROR){
 		    //error_code
 			printf("[%d/%d] gfarm_open. getvalue = %s, size = %d\n", myrank, nprocs, getvalue, size);

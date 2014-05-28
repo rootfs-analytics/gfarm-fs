@@ -191,7 +191,7 @@ void ad_gfarm_set_view(ADIO_File fd, ADIO_Offset disp, MPI_Info info)
 			//
 			gfs_closedir(dirp);
 
-			if(true){//ghi->header_flag == 1 && ghi->gfarm_view_flag == 0){
+			if(1){//ghi->header_flag == 1 && ghi->gfarm_view_flag == 0){
 					if(myrank < 10){
 						gfarm_header_file = (char*)malloc(sizeof(char)*(strlen(fd->filename)+10+1));
 					}else{
