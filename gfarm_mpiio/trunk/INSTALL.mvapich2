@@ -1,0 +1,25 @@
+
+How to install
+--------------
+
+This assumes that Gfarm is installed in $GFARM_PREFIX.
+
+1. Download MPICH2
+% wget http://mvapich.cse.ohio-state.edu/download/mvapich2/mvapich2-1.9.tgz
+% tar zxvf mvapich2-1.9.tgz
+
+2. Copy ad_gfarm directory 
+% cp mvapich2/Makefile.mk ad_gfarm
+% cp -r ad_gfarm mvapich2-1.9/src/mpi/romio/adio/
+
+3. Apply patch
+% patch -p0 < mvapich2/mvapich2.patch
+% cd mvapich2-1.9
+% ./autogen.sh
+
+4. Build MPICH2
+% export CFLAG="-I$GFARM_PREFIX/include -lgfarm -L$GFARM_PREFIX/lib"
+% ./configure --enable-romio --with-file-system=ufs+nfs+gfarm
+% make
+% make install
+
