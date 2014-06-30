@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<zabbix_export version="1.0" date="12.02.28" time="15.51">
+<zabbix_export version="1.0" date="27.06.14" time="14.50">
   <hosts>
-    <host name="Template_Gfarm_redundant_common_nodep">
+    <host name="Template_Gfarm_gfmd_nodep">
       <proxy_hostid>0</proxy_hostid>
       <useip>1</useip>
       <dns></dns>
@@ -20,36 +20,45 @@
       </groups>
       <triggers>
         <trigger>
-          <description>Gfarm metadata server list is not available on {HOSTNAME}</description>
+          <description>PostgreSQL server is not running</description>
           <type>0</type>
-          <expression>(({Template_Gfarm_redundant_common_nodep:gfarm.cli.gfmdhost.regexp(error:)})=1) | (({Template_Gfarm_redundant_common_nodep:gfarm.cli.gfmdhost.nodata(360)})=1)</expression>
+          <expression>{Template_Gfarm_gfmd_nodep:gfarm.gfmd.postgresql.regexp(^ok$)}=0</expression>
           <url></url>
           <status>0</status>
           <priority>4</priority>
           <comments></comments>
         </trigger>
         <trigger>
-          <description>Gfarm metadata server list is changed on {HOSTNAME}</description>
+          <description>gfmd error message in {$GFMD_LOGFILE} on {HOSTNAME}</description>
           <type>0</type>
-          <expression>(({Template_Gfarm_redundant_common_nodep:gfarm.cli.gfmdlist.regexp(same)})=0) | (({Template_Gfarm_redundant_common_nodep:gfarm.cli.gfmdlist.nodata(360)})=1)</expression>
+          <expression>(({Template_Gfarm_gfmd_nodep:log[{$GFMD_LOGFILE},"\sgfmd\[[0-9]+\]:\s+&lt;err&gt;",UTF-8].regexp(err)})#0) &amp; (({Template_Gfarm_gfmd_nodep:log[{$GFMD_LOGFILE},"\sgfmd\[[0-9]+\]:\s+&lt;err&gt;",UTF-8].nodata({$NODATA_TIMEOUT})})=0)</expression>
+          <url></url>
+          <status>0</status>
+          <priority>3</priority>
+          <comments></comments>
+        </trigger>
+        <trigger>
+          <description>gfmd warning message in {$GFMD_LOGFILE} on {HOSTNAME}</description>
+          <type>0</type>
+          <expression>(({Template_Gfarm_gfmd_nodep:log[{$GFMD_LOGFILE},"\sgfmd\[[0-9]+\]:\s+&lt;warning&gt;",UTF-8].regexp(warning)})#0) &amp; (({Template_Gfarm_gfmd_nodep:log[{$GFMD_LOGFILE},"\sgfmd\[[0-9]+\]:\s+&lt;warning&gt;",UTF-8].nodata({$NODATA_TIMEOUT})})=0)</expression>
           <url></url>
           <status>0</status>
           <priority>2</priority>
           <comments></comments>
         </trigger>
         <trigger>
-          <description>Can't get metadata server master name on {HOSTNAME}</description>
+          <description>Low free disk space on {$GFMD_SPPOL_DIR} in %</description>
           <type>0</type>
-          <expression>{Template_Gfarm_redundant_common_nodep:gfarm.cli.mastername.nodata(360)}=1</expression>
+          <expression>{Template_Gfarm_gfmd_nodep:vfs.fs.size[{$GFMD_PGDATA_DIR},pfree].last(0)}&lt;{$GFMD_PGDATA_DIR_THRESHOLD}</expression>
           <url></url>
           <status>0</status>
-          <priority>1</priority>
+          <priority>2</priority>
           <comments></comments>
         </trigger>
       </triggers>
       <items>
-        <item type="0" key="gfarm.cli.gfmdhost" value_type="1">
-          <description>Monitoring metadata server hosts</description>
+        <item type="0" key="gfarm.gfmd.postgresql" value_type="4">
+          <description>PostgreSQL server status</description>
           <ipmi_sensor></ipmi_sensor>
           <delay>300</delay>
           <history>90</history>
@@ -59,7 +68,7 @@
           <units></units>
           <multiplier>0</multiplier>
           <delta>0</delta>
-          <formula>0</formula>
+          <formula>1</formula>
           <lastlogsize>0</lastlogsize>
           <logtimefmt></logtimefmt>
           <delay_flex></delay_flex>
@@ -69,7 +78,7 @@
           <publickey></publickey>
           <privatekey></privatekey>
           <params></params>
-          <trapper_hosts>localhost</trapper_hosts>
+          <trapper_hosts></trapper_hosts>
           <snmp_community></snmp_community>
           <snmp_oid></snmp_oid>
           <snmp_port>161</snmp_port>
@@ -79,14 +88,14 @@
           <snmpv3_privpassphrase></snmpv3_privpassphrase>
           <valuemapid>0</valuemapid>
           <applications>
-            <application>Gfarm Redundant</application>
+            <application>Gfarm gfmd</application>
           </applications>
         </item>
-        <item type="0" key="gfarm.cli.gfmdlist" value_type="1">
-          <description>Monitoring metadata server list</description>
+        <item type="0" key="log[{$GFMD_LOGFILE},&quot;\sgfmd\[[0-9]+\]:\s+&lt;err&gt;&quot;,UTF-8]" value_type="2">
+          <description>Error message in log file $1</description>
           <ipmi_sensor></ipmi_sensor>
-          <delay>300</delay>
-          <history>90</history>
+          <delay>600</delay>
+          <history>30</history>
           <trends>365</trends>
           <status>0</status>
           <data_type>0</data_type>
@@ -113,13 +122,47 @@
           <snmpv3_privpassphrase></snmpv3_privpassphrase>
           <valuemapid>0</valuemapid>
           <applications>
-            <application>Gfarm Redundant</application>
+            <application>Gfarm gfmd</application>
           </applications>
         </item>
-        <item type="0" key="gfarm.cli.mastername" value_type="1">
-          <description>Monitoring master metadata server name</description>
+        <item type="0" key="log[{$GFMD_LOGFILE},&quot;\sgfmd\[[0-9]+\]:\s+&lt;warning&gt;&quot;,UTF-8]" value_type="2">
+          <description>Warning message in log file $1</description>
           <ipmi_sensor></ipmi_sensor>
-          <delay>300</delay>
+          <delay>600</delay>
+          <history>30</history>
+          <trends>365</trends>
+          <status>0</status>
+          <data_type>0</data_type>
+          <units></units>
+          <multiplier>0</multiplier>
+          <delta>0</delta>
+          <formula>0</formula>
+          <lastlogsize>0</lastlogsize>
+          <logtimefmt></logtimefmt>
+          <delay_flex></delay_flex>
+          <authtype>0</authtype>
+          <username></username>
+          <password></password>
+          <publickey></publickey>
+          <privatekey></privatekey>
+          <params></params>
+          <trapper_hosts>localhost</trapper_hosts>
+          <snmp_community></snmp_community>
+          <snmp_oid></snmp_oid>
+          <snmp_port>161</snmp_port>
+          <snmpv3_securityname></snmpv3_securityname>
+          <snmpv3_securitylevel>0</snmpv3_securitylevel>
+          <snmpv3_authpassphrase></snmpv3_authpassphrase>
+          <snmpv3_privpassphrase></snmpv3_privpassphrase>
+          <valuemapid>0</valuemapid>
+          <applications>
+            <application>Gfarm gfmd</application>
+          </applications>
+        </item>
+        <item type="0" key="vfs.fs.size[{$GFMD_PGDATA_DIR},pfree]" value_type="0">
+          <description>Free disk space on $1 in %</description>
+          <ipmi_sensor></ipmi_sensor>
+          <delay>3600</delay>
           <history>90</history>
           <trends>365</trends>
           <status>0</status>
@@ -147,13 +190,30 @@
           <snmpv3_privpassphrase></snmpv3_privpassphrase>
           <valuemapid>0</valuemapid>
           <applications>
-            <application>Gfarm Redundant</application>
+            <application>Gfarm gfmd</application>
           </applications>
         </item>
       </items>
       <templates/>
       <graphs/>
-      <macros/>
+      <macros>
+        <macro>
+          <value>/var/log/messages</value>
+          <name>{$GFMD_LOGFILE}</name>
+        </macro>
+        <macro>
+          <value>30</value>
+          <name>{$GFMD_PGDATA_DIR_FREE_THRESHOLD}</name>
+        </macro>
+        <macro>
+          <value>/var/gfarm-spool</value>
+          <name>{$GFMD_PGDATA_DIR}</name>
+        </macro>
+        <macro>
+          <value>86400</value>
+          <name>{$NODATA_TIMEOUT}</name>
+        </macro>
+      </macros>
     </host>
   </hosts>
   <dependencies/>

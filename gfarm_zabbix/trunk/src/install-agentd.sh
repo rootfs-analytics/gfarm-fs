@@ -32,13 +32,12 @@ create_file()
 }
 
 #
-# Install files in 'gfarm-zabbix_scripts/zabbix_agentd.d/' to
+# Install files in 'scripts/zabbix_agentd.d/' to
 # $ZABBIX_AGENTD_CONFSUBDIR.
 #
-for I in  \
-    userparameter_postgresql.conf \
-    userparameter_redundant_gfarm.conf; do
-    SRCFILE=gfarm-zabbix_scripts/zabbix_agentd.d/$I
+for I in \
+    userparameter_gfarm.conf; do
+    SRCFILE=scripts/zabbix_agentd.d/$I
     DSTFILE=$ZABBIX_AGENTD_CONFSUBDIR/$I
     create_file $SRCFILE
     $INSTALL -c -m 0755 -o root -g root $SRCFILE $DSTFILE \
@@ -57,28 +56,20 @@ if [ ! -d $DIR ]; then
 fi
 
 #
-# Install files in 'gfarm-zabbix_scripts/externalscripts/' to
+# Install files in 'scripts/externalscripts/' to
 # $ZABBIX_EXTSCRIPTDIR.
 #
 for I in \
-    zbx_chk_dead_gfarm_pgsql.sh \
-    zbx_chk_dead_gfmd.sh \
-    zbx_chk_dead_gfsd.sh \
-    zbx_chk_gfarm.conf \
-    zbx_chk_gfhost_cli.sh \
-    zbx_chk_gfhost_gfsd.sh \
-    zbx_chk_gfmdhost_cli.sh \
-    zbx_chk_gfmdlist_cli.sh \
-    zbx_chk_gfmdtype_gfmd.sh \
-    zbx_chk_gfsched_gfmd.sh \
-    zbx_chk_gfsched_gfsd.sh \
-    zbx_chk_listenport_gfmd.sh \
-    zbx_chk_listenport_gfsd.sh \
-    zbx_chk_mastername_cli.sh \
-    zbx_chk_pgsql.sh \
-    zbx_failover.pl \
-    zbx_gfarm_utils.inc; do
-    SRCFILE=gfarm-zabbix_scripts/externalscripts/$I
+    gfarm_generic_client_gfhost.sh \
+    gfarm_generic_client_gfmdhost.sh \
+    gfarm_conf.inc \
+    gfarm_gfmd_failover.pl \
+    gfarm_gfmd_postgresql.sh \
+    gfarm_gfsd_gfhost.sh \
+    gfarm_represent_client_gfhost.sh \
+    gfarm_represent_client_gfmdhost.sh \
+    gfarm_utils.inc; do
+    SRCFILE=scripts/externalscripts/$I
     DSTFILE=$ZABBIX_EXTSCRIPTDIR/$I
     create_file $SRCFILE
     $INSTALL -c -m 0755 -o root -g root $SRCFILE $DSTFILE \

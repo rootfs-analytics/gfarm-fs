@@ -1,0 +1,49 @@
+#! /bin/sh
+#
+# External script for gfarm-zabbix.
+#
+# This script is assumed to be executed on gfmd hosts.
+# It tries executing an SQL statement with 'psql' to check whether PostgreSQL
+# server is running.
+#
+
+. @ZABBIX_EXTSCRIPTDIR@/gfarm_utils.inc
+
+#
+# Parse command line arguments.
+#
+TIMEOUT=${1:-"15"}
+
+#
+# Read a configuration file
+#
+CONF_FILE=@ZABBIX_EXTSCRIPTDIR@/gfarm_conf.inc
+[ -f $CONF_FILE ] && . $CONF_FILE
+
+#
+# Set path to 'psql' command.
+#
+PSQL=${PSQL:-"psql"}
+
+#
+# Set parameters about connection to PostgreSQL server.
+#
+export PGHOST PGPORT PGDATABASE PGUSER PGPASSWORD
+PGHOST=${PGHOST:-"localhost"}
+PGPORT=${PGPORT:-"10602"}
+PGDATABASE=${PGDATABASE:-"gfarm"}
+PGUSER=${PGUSER:-"gfarm"}
+
+#
+# Execute 'psql' command.
+#
+@GFARM_BINDIR@/gfservice-timeout $TIMEOUT \
+    psql -t -w -f - -c "SELECT COUNT(*) FROM seqnum;" > /dev/null 2>&1
+PSQL_EXITCODE=$?
+if [ $? -ne 0 ]; then
+    echo "not running"
+    exit 0
+fi
+
+echo "ok"
+exit 0
