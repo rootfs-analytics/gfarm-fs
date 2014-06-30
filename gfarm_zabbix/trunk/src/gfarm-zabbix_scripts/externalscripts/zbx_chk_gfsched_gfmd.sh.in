@@ -9,7 +9,7 @@ CONF_FILE=@ZABBIX_EXTSCRIPTDIR@/zbx_chk_gfarm.conf
 # create temporary files
 outfile=/tmp/zbx_chk_gfsched_gfmd.$$
 errfile=/tmp/zbx_chk_gfsched_gfmd.$$.err
-trap "rm -f $outfile $errfile; exit 1" 1 2 3 15
+trap "rm -f $outfile $errfile; log_err 'killed'; exit 1" 1 2 3 15
 rm -f $outfile $errfile
 
 # execute 'gfsched'
