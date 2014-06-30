@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- This template is for backward compatibility -->
 <zabbix_export version="1.0" date="11.03.24" time="13.58">
   <hosts>
-    <host name="Template_Gfarm_redundant_cli">
+    <host name="Template_Gfarm_redundant_gfsd">
       <proxy_hostid>0</proxy_hostid>
       <useip>1</useip>
       <dns></dns>
@@ -21,9 +22,7 @@
       <triggers/>
       <items/>
       <templates>
-        <template>Template_Gfarm_common_nodep</template>
-        <template>Template_Gfarm_redundant_common_nodep</template>
-        <template>Template_Gfarm_cli_nodep</template>
+        <template>Template_Gfarm_gfsd</template>
       </templates>
       <graphs/>
       <macros/>

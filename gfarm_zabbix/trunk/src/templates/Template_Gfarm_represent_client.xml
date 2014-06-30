@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<zabbix_export version="1.0" date="11.03.24" time="13.58">
+  <hosts>
+    <host name="Template_Gfarm_represent_client">
+      <proxy_hostid>0</proxy_hostid>
+      <useip>1</useip>
+      <dns></dns>
+      <ip>127.0.0.1</ip>
+      <port>10050</port>
+      <status>3</status>
+      <useipmi>0</useipmi>
+      <ipmi_ip>127.0.0.1</ipmi_ip>
+      <ipmi_port>623</ipmi_port>
+      <ipmi_authtype>0</ipmi_authtype>
+      <ipmi_privilege>2</ipmi_privilege>
+      <ipmi_username></ipmi_username>
+      <ipmi_password></ipmi_password>
+      <groups>
+        <group>Templates</group>
+      </groups>
+      <triggers/>
+      <items/>
+      <templates>
+        <template>Template_Gfarm_common_nodep</template>
+        <template>Template_Gfarm_represent_client_nodep</template>
+      </templates>
+      <graphs/>
+      <macros/>
+    </host>
+  </hosts>
+  <dependencies/>
+</zabbix_export>
