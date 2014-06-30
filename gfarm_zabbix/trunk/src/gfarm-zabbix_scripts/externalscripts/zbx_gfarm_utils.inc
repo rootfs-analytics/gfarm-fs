@@ -1,3 +1,4 @@
+SYSLOG_FACILITY=${SYSLOG_FACILITY:-"local0"}
 
 GFSD_DEFAULT_PREFIX="/"
 GFSD_DEFAULT_HOSTNAME="`hostname -f`"
@@ -6,6 +7,16 @@ GFSD_DEFAULT_PORT="600"
 if [ -f ./zbx_gfarm_local.inc ]; then
     . ./zbx_gfarm_local.inc
 fi
+
+log_err()
+{
+    logger -p $SYSLOG_FACILITY.err -i -t `basename $0` "$@"
+}
+
+log_warning()
+{
+    logger -p $SYSLOG_FACILITY.warning -i -t `basename $0` "$@"
+}
 
 parse_gfsd_conf () {
     arg="$1"

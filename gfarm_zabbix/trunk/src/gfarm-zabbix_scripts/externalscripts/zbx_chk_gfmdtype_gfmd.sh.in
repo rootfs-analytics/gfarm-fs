@@ -21,7 +21,7 @@ read prefix myhost port<<EOF
 `read_gfmd_confs "$1"`
 EOF
 
-if [ $? -ne 0 ]; then
+if [ "X$myhost" = X ]; then
     myhost=`hostname`
 fi
 
@@ -33,7 +33,7 @@ if [ -f $MDS_LIST_PATH ]; then
        RESULT="slave"
     fi
 else
-    RESULT="error: $MDS_LIST_PATH not found."
+    RESULT="unknown"
 fi
 
 echo $RESULT

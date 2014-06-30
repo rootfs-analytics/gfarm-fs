@@ -1,26 +1,39 @@
 #!/bin/sh
 
-# defines
-CONF_FILE=@ZABBIX_EXTSCRIPTDIR@/zbx_chk_gfarm.conf
+. @ZABBIX_EXTSCRIPTDIR@/zbx_gfarm_utils.inc
 
-# check config file
-if [ -f $CONF_FILE ]; then
-    . $CONF_FILE
-else
-    echo -1
+# read a configuration file
+CONF_FILE=@ZABBIX_EXTSCRIPTDIR@/zbx_chk_gfarm.conf
+[ -f $CONF_FILE ] && . $CONF_FILE
+
+# create temporary files
+outfile=/tmp/zbx_chk_gfsched_gfmd.$$
+errfile=/tmp/zbx_chk_gfsched_gfmd.$$.err
+trap "rm -f $outfile $errfile; exit 1" 1 2 3 15
+rm -f $outfile $errfile
+
+# execute 'gfsched'
+GFCMD="gfsched $*"
+$GFCMD > $outfile 2> $errfile
+GFCMD_EXITCODE=$?
+if [ $GFCMD_EXITCODE -ne 0 ]; then
+    echo "error: '$GFCMD' error."
+    log_err "'$GFCMD' failed with the exit code $GFCMD_EXITCODE"
+    rm -f $outfile $errfile
     exit 0
 fi
 
-# exec check command
-RESULT=`gfsched $*`
-
-if [ $? != 0 ]; then
-    RESULT="error: gfsched $* error."
-else
-    if [ -z "${RESULT}" ]; then
-        RESULT="gfsched show no fsn."
-    fi
+# check whether 'gfsched' outputs results correctly.
+if [ ! -s $outfile ]; then
+    echo "error: '$GFCMD' shows no fsn"
+    log_warning "'$GFCMD' outputs no data"
+    [ -s $errfile ] && head -1 $errfile | syslog_warning
+    rm -f $outfile $errfile
+    exit 0
 fi
 
-echo $RESULT
+# print the results.
+cat $outfile
+rm -f $outfile $errfile
+
 exit 0
