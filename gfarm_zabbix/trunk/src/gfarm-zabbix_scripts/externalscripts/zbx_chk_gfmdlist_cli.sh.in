@@ -1,55 +1,39 @@
 #!/bin/sh
 
-# defines
+. @ZABBIX_EXTSCRIPTDIR@/zbx_gfarm_utils.inc
+
+# read a configuration file
 CONF_FILE=@ZABBIX_EXTSCRIPTDIR@/zbx_chk_gfarm.conf
+[ -f $CONF_FILE ] && . $CONF_FILE
 
-# check config file
-if [ -f $CONF_FILE ]; then
-    . $CONF_FILE
-else
-    echo -1
-    exit 0
-fi
-
-OLD_MDS_LIST_PATH=$MDS_LIST_PATH.old
+# create temporary files
 TMP_MDS_LIST_PATH=$MDS_LIST_PATH.tmp
+ERR_MDS_LIST_PATH=$MDS_LIST_PATH.err
+trap "rm -f $TMP_MDS_LIST_PATH $ERR_MDS_LIST_PATH; exit 1" 1 2 3 15
+rm -f $TMP_MDS_LIST_PATH $ERR_MDS_LIST_PATH
 
-rm -f $TMP_MDS_LIST_PATH
-trap "rm -f $TMP_MDS_LIST_PATH; exit 1" 1 2 3 15
-
-# get a list of gmfd servers.
-gfmdhost -l > $TMP_MDS_LIST_PATH
-if [ $? -ne 0 ]; then
-    echo "error: gfmdhost -l error."
+# execute 'gfmdhost'.
+GFCMD="gfmdhost -l"
+$GFCMD > $TMP_MDS_LIST_PATH 2> $ERR_MDS_LIST_PATH
+GFCMD_EXITCODE=$?
+if [ $GFCMD_EXITCODE -ne 0 ]; then
+    echo "error: '$GFCMD' failed."
+    log_err "'$GFCMD' failed with the exit code $GFCMD_EXITCODE"
+    rm -f $TMP_MDS_LIST_PATH $ERR_MDS_LIST_PATH
     exit 0
 fi
 
-# check whether the list is changed.
-if [ -f $MDS_LIST_PATH ]; then
-    cp -f $MDS_LIST_PATH $OLD_MDS_LIST_PATH 
-    if cmp $MDS_LIST_PATH $TMP_MDS_LIST_PATH > /dev/null 2>&1; then
-        CHECK_STATUS=same
-    else
-        CHECK_STATUS=changed
-    fi
-else
-    CHECK_STATUS=nonexist
+# check whether 'gfmdhost' outputs a list of servers correctly.
+if [ ! -s $TMP_MDS_LIST_PATH ]; then
+    log_warning "'$GFCMD' outputs no data"
+    [ -s $ERR_MDS_LIST_PATH ] && head -1 $ERR_MDS_LIST_PATH | syslog_warning
+    rm -f $TMP_MDS_LIST_PATH $ERR_MDS_LIST_PATH
+    exit 0
 fi
 
-# output a result message and update $MDS_LIST_PATH file if needed.
-case "$CHECK_STATUS" in
-same)
-    rm -f $TMP_MDS_LIST_PATH
-    echo "gfmdhost -l same."
-    ;;
-changed)
-    mv -f $TMP_MDS_LIST_PATH $MDS_LIST_PATH
-    echo "gfmdhost -l changed."
-    ;;
-nonexist)
-    mv -f $TMP_MDS_LIST_PATH $MDS_LIST_PATH
-    echo "gfmdhost -l same."
-    ;;
-esac
+# for backward compatibility.
+echo "gfmdhost -l same."
+mv -f $TMP_MDS_LIST_PATH $MDS_LIST_PATH
+rm -f $ERR_MDS_LIST_PATH
 
 exit 0

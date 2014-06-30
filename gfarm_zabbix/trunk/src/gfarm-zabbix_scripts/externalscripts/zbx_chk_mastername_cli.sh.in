@@ -15,7 +15,7 @@ fi
 if [ -f $MDS_LIST_PATH ]; then
     RESULT=`grep '^+ master' $MDS_LIST_PATH | awk '{ print $6 }'`
 else
-    RESULT="error: $MDS_LIST not found."
+    RESULT="unknown"
 fi
 
 echo $RESULT
