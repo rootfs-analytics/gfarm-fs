@@ -40,7 +40,7 @@ if [ ! -d $DIR ]; then
 fi
 
 #
-# Install files 'gfarm-zabbix_editor/*.php' to $EDITOR_HTMLDIR.
+# Install files 'editor/*.php' to $EDITOR_HTMLDIR.
 #
 for I in \
     common.php \
@@ -48,7 +48,7 @@ for I in \
     edit.php \
     index.php \
     save.php; do
-    SRCFILE=gfarm-zabbix_editor/$I
+    SRCFILE=editor/$I
     DSTFILE=$EDITOR_HTMLDIR/$I
     $INSTALL -c -m 0755 -o root -g root $SRCFILE $DSTFILE \
         || { echo "Failed to install the file: $DSTFILE"; exit 1; }
@@ -68,7 +68,7 @@ fi
 #
 # Create initial 'gfarm2.conf' file.
 #
-SRCFILE=gfarm-zabbix_editor/gfarm2.conf
+SRCFILE=editor/gfarm2.conf
 DSTFILE=$EDITOR_SKELETON_DIR/gfarm2.conf
 if [ ! -f $DSTFILE ]; then
     $INSTALL -c -m 0644 -o $EDITOR_HTMLDIR_USER -g $EDITOR_HTMLDIR_GROUP \
@@ -88,9 +88,9 @@ if [ ! -d $DIR ]; then
 fi
 
 #
-# Install 'gfarm-zabbix_editor/gfmdlist.sh' to '$ZABBIX_CONFDIR'.
+# Install 'editor/gfmdlist.sh' to '$ZABBIX_CONFDIR'.
 #
-SRCFILE=gfarm-zabbix_editor/gfmdlist.sh
+SRCFILE=editor/gfmdlist.sh
 DSTFILE=$ZABBIX_CONFDIR/gfmdlist.sh
 create_file $SRCFILE
 $INSTALL -c -m 0755 -o root -g root $SRCFILE $DSTFILE \
