@@ -12,7 +12,7 @@ use POSIX q(:sys_wait_h);
 use Sys::Syslog qw(:standard :macros);
 
 # Program name.
-use constant PROGRAM => 'zbx_failover.pl';
+use constant PROGRAM => 'gfarm_gfmd_failover.pl';
 
 # Timeout period for reading a line (in sec).
 use constant READ_TIMEOUT => 60;
@@ -21,7 +21,7 @@ use constant READ_TIMEOUT => 60;
 use constant PROMPTION_CHECK_INTERVAL => 20;
 
 # Interval for checking promotion status.
-use constant DEFAULT_CONFIGURATION_FILE => '@ZABBIX_EXTSCRIPTDIR@/zbx_failover.conf';
+use constant DEFAULT_CONFIGURATION_FILE => '@ZABBIX_EXTSCRIPTDIR@/gfarm_gfmd_failover.conf';
 
 # Debug flag.
 my $debug = 0;
@@ -49,7 +49,7 @@ my $configuration_file = DEFAULT_CONFIGURATION_FILE;
 #
 my %conf_defaults =
     ('promotion_timeout'   => '0',
-     'lock_file'           => '/var/tmp/zbx_failover.lock',
+     'lock_file'           => '/var/tmp/gfarm_gfmd_failover.lock',
      'log_to_syslog'       => 'true',
      'syslog_facility'     => 'user',
      'ssh'                 => 'ssh',
