@@ -26,13 +26,9 @@ CONF_FILE=@ZABBIX_EXTSCRIPTDIR@/gfarm_conf.inc
 PSQL=${PSQL:-"psql"}
 
 #
-# Set parameters about connection to PostgreSQL server.
+# Export variables about connection to PostgreSQL server.
 #
 export PGHOST PGPORT PGDATABASE PGUSER PGPASSWORD
-PGHOST=${PGHOST:-"localhost"}
-PGPORT=${PGPORT:-"10602"}
-PGDATABASE=${PGDATABASE:-"gfarm"}
-PGUSER=${PGUSER:-"gfarm"}
 
 #
 # Execute 'psql' command.
