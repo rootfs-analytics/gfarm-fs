@@ -1,2 +1,17 @@
 # syslog facility
 SYSLOG_FACILITY=local0
+
+# Host name on which PostgreSQL server is running.
+PGHOST=@PGHOST@
+
+# TCP port number on which PostgreSQL server is listening.
+PGPORT=@PGPORT@
+
+# Database name of PostgreSQL database.
+PGDATABASE=@PGDATABASE@
+
+# User name used to connect with the PostgreSQL server.
+PGUSER=@PGUSER@
+
+# Password to connect with the PostgreSQL server.
+PGPASSWORD=@PGPASSWORD@
