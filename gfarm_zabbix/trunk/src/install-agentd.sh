@@ -39,7 +39,7 @@ create_file()
     sed \
         -e "s|@GFARM_BINDIR@|$GFARM_BINDIR|g" \
         -e "s|@PGHOST@|$PGHOST|g" \
-        -e "s|@PGPORT@|$GPORT|g" \
+        -e "s|@PGPORT@|$PGPORT|g" \
         -e "s|@PGDATABASE@|$PGDATABASE|g" \
         -e "s|@PGUSER@|$PGUSER|g" \
         -e "s|@PGPASSWORD@|$PGPASSWORD|g" \
