@@ -20,8 +20,8 @@ src/failure_test_scripts ディレクトリ以下の README.ja をご参照ください。
        en/                      : 同上 (英語版)
        ja/                      : 同上 (日本語版)
     src/                        : ソースコード
+       editor/                  : クライアント設定ファイル編集スクリプト
+       scripts/                 : Zabbix エージェント用設定ファイル
+       templates/               : Gfarm 用 Zabbix テンプレート
        failure_test_scripts/    : 障害発生テストプログラム
-       gfarm-zabbix_editor/     : クライアント設定ファイル編集スクリプト
-       gfarm-zabbix_scripts/    : Zabbix エージェント用設定ファイル
-       gfarm-zabbix_templates/  : Gfarm 用 Zabbix テンプレート
     README.ja                   : 本ファイル
