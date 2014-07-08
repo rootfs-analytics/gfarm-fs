@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <zabbix_export version="1.0" date="11.03.24" time="13.58">
   <hosts>
-    <host name="Template_Gfarm_redundant_gfmd">
+    <host name="Template_Gfarm_gfmd">
       <proxy_hostid>0</proxy_hostid>
       <useip>1</useip>
       <dns></dns>

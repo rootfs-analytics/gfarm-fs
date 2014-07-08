@@ -206,7 +206,7 @@
           <name>{$GFMD_PGDATA_DIR_FREE_THRESHOLD}</name>
         </macro>
         <macro>
-          <value>/var/gfarm-spool</value>
+          <value>/var/gfarm-pgsql</value>
           <name>{$GFMD_PGDATA_DIR}</name>
         </macro>
         <macro>
