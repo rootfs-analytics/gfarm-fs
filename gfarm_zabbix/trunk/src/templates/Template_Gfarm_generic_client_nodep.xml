@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<zabbix_export version="1.0" date="18.06.14" time="14.31">
+<zabbix_export version="1.0" date="14.07.10" time="17.13">
   <hosts>
     <host name="Template_Gfarm_generic_client_nodep">
       <proxy_hostid>0</proxy_hostid>
@@ -20,7 +20,7 @@
       </groups>
       <triggers>
         <trigger>
-          <description>result of gfhost command shows a trouble of gfsd ({ITEM.LASTVALUE})</description>
+          <description>Auth request to gfsd ({ITEM.LASTVALUE}) failed</description>
           <type>0</type>
           <expression>{Template_Gfarm_generic_client_nodep:gfarm.generic_client.gfhost.regexp(^ok$)}=0</expression>
           <url></url>
@@ -29,7 +29,7 @@
           <comments></comments>
         </trigger>
         <trigger>
-          <description>result of gfmdhost command shows a trouble of gfmd ({ITEM.LASTVALUE})</description>
+          <description>Auth request to gfmd ({ITEM.LASTVALUE}) failed</description>
           <type>0</type>
           <expression>{Template_Gfarm_generic_client_nodep:gfarm.generic_client.gfmdhost.regexp(^ok$)}=0</expression>
           <url></url>
@@ -40,7 +40,7 @@
       </triggers>
       <items>
         <item type="0" key="gfarm.generic_client.gfhost" value_type="4">
-          <description>execution result of gfhost command on {HOSTNAME}</description>
+          <description>Execution result of gfhost command on {HOSTNAME}</description>
           <ipmi_sensor></ipmi_sensor>
           <delay>300</delay>
           <history>90</history>
@@ -70,11 +70,11 @@
           <snmpv3_privpassphrase></snmpv3_privpassphrase>
           <valuemapid>0</valuemapid>
           <applications>
-            <application>Gfarm genericative client</application>
+            <application>Gfarm generic client</application>
           </applications>
         </item>
         <item type="0" key="gfarm.generic_client.gfmdhost" value_type="4">
-          <description>execution result of gfmdhost command on {HOSTNAME}</description>
+          <description>Execution result of gfmdhost command on {HOSTNAME}</description>
           <ipmi_sensor></ipmi_sensor>
           <delay>300</delay>
           <history>90</history>
@@ -104,7 +104,7 @@
           <snmpv3_privpassphrase></snmpv3_privpassphrase>
           <valuemapid>0</valuemapid>
           <applications>
-            <application>Gfarm genericative client</application>
+            <application>Gfarm generic client</application>
           </applications>
         </item>
       </items>
@@ -114,8 +114,8 @@
     </host>
   </hosts>
   <dependencies>
-    <dependency description="Template_Gfarm_generic_client_nodep:result of gfhost command shows a trouble of gfsd ({ITEM.LASTVALUE})">
-      <depends>Template_Gfarm_generic_client_nodep:result of gfmdhost command shows a trouble of gfmd ({ITEM.LASTVALUE})</depends>
+    <dependency description="Template_Gfarm_generic_client_nodep:Auth request to gfsd ({ITEM.LASTVALUE}) failed">
+      <depends>Template_Gfarm_generic_client_nodep:Auth request to gfmd ({ITEM.LASTVALUE}) failed</depends>
     </dependency>
   </dependencies>
 </zabbix_export>

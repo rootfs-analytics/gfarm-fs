@@ -37,6 +37,7 @@ GFCMD_EXITCODE=$?
 if [ $GFCMD_EXITCODE -ne 0 ]; then
     echo "execution of '$GFCMD' failed"
     log_err "'$GFCMD' failed with the exit code $GFCMD_EXITCODE"
+    [ -s $errfile ] && head -1 $errfile | log_warning
     rm -f $outfile $errfile
     exit 0
 fi
