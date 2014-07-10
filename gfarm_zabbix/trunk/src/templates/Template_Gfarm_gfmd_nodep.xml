@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<zabbix_export version="1.0" date="27.06.14" time="14.50">
+<zabbix_export version="1.0" date="14.07.09" time="09.45">
   <hosts>
     <host name="Template_Gfarm_gfmd_nodep">
       <proxy_hostid>0</proxy_hostid>
@@ -47,9 +47,9 @@
           <comments></comments>
         </trigger>
         <trigger>
-          <description>Low free disk space on {$GFMD_SPPOL_DIR} in %</description>
+          <description>Low free disk space on {$GFMD_PGDATA_DIR} in %</description>
           <type>0</type>
-          <expression>{Template_Gfarm_gfmd_nodep:vfs.fs.size[{$GFMD_PGDATA_DIR},pfree].last(0)}&lt;{$GFMD_PGDATA_DIR_THRESHOLD}</expression>
+          <expression>{Template_Gfarm_gfmd_nodep:vfs.fs.size[{$GFMD_PGDATA_DIR},pfree].last(0)}&lt;{$GFMD_PGDATA_DIR_FREE_THRESHOLD}</expression>
           <url></url>
           <status>0</status>
           <priority>2</priority>
@@ -91,7 +91,7 @@
             <application>Gfarm gfmd</application>
           </applications>
         </item>
-        <item type="0" key="log[{$GFMD_LOGFILE},&quot;\sgfmd\[[0-9]+\]:\s+&lt;err&gt;&quot;,UTF-8]" value_type="2">
+        <item type="7" key="log[{$GFMD_LOGFILE},&quot;\sgfmd\[[0-9]+\]:\s+&lt;err&gt;&quot;,UTF-8]" value_type="2">
           <description>Error message in log file $1</description>
           <ipmi_sensor></ipmi_sensor>
           <delay>600</delay>
@@ -125,7 +125,7 @@
             <application>Gfarm gfmd</application>
           </applications>
         </item>
-        <item type="0" key="log[{$GFMD_LOGFILE},&quot;\sgfmd\[[0-9]+\]:\s+&lt;warning&gt;&quot;,UTF-8]" value_type="2">
+        <item type="7" key="log[{$GFMD_LOGFILE},&quot;\sgfmd\[[0-9]+\]:\s+&lt;warning&gt;&quot;,UTF-8]" value_type="2">
           <description>Warning message in log file $1</description>
           <ipmi_sensor></ipmi_sensor>
           <delay>600</delay>
