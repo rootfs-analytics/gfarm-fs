@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<zabbix_export version="1.0" date="27.06.14" time="14.14">
+<zabbix_export version="1.0" date="14.07.15" time="14.11">
   <hosts>
     <host name="Template_Gfarm_common_nodep">
       <proxy_hostid>0</proxy_hostid>
@@ -40,7 +40,7 @@
         <trigger>
           <description>Zabbix_agentd is not running on {HOSTNAME}</description>
           <type>0</type>
-          <expression>{Template_Gfarm_common_nodep:proc.num[zabbix_agentd].last(0)}&lt;1</expression>
+          <expression>({Template_Gfarm_common_nodep:proc.num[zabbix_agentd].last(0)}&lt;1 | {Template_Gfarm_common_nodep:proc.num[zabbix_agentd].nodata({$ZABBIX_AGENT_TIMEOUT})}=1)</expression>
           <url></url>
           <status>0</status>
           <priority>4</priority>
@@ -76,7 +76,7 @@
         <trigger>
           <description>Low free memory on server {HOSTNAME}</description>
           <type>0</type>
-          <expression>({Template_Gfarm_common_nodep:vm.memory.size[total].last(0)}-{Template_Gfarm_common_nodep:vm.memory.size[cached].last(0)}-{Template_Gfarm_common_nodep:vm.memory.size[free].last(0)}-{Template_Gfarm_common_nodep:vm.memory.size[buffers].last(0)})/{Template_Gfarm_common_nodep:vm.memory.size[total].last(0)}&gt;{$MEM_FREE_THRESHOLD}</expression>
+          <expression>100.0-({Template_Gfarm_common_nodep:vm.memory.size[total].last(0)}-{Template_Gfarm_common_nodep:vm.memory.size[cached].last(0)}-{Template_Gfarm_common_nodep:vm.memory.size[free].last(0)}-{Template_Gfarm_common_nodep:vm.memory.size[buffers].last(0)})/{Template_Gfarm_common_nodep:vm.memory.size[total].last(0)}*100.0&lt;{$MEM_FREE_THRESHOLD}</expression>
           <url></url>
           <status>0</status>
           <priority>3</priority>
@@ -489,6 +489,10 @@
         <macro>
           <value>5m</value>
           <name>{$TIME_DIFF_THRESHOLD}</name>
+        </macro>
+        <macro>
+          <value>300</value>
+          <name>{$ZABBIX_AGENT_TIMEOUT}</name>
         </macro>
       </macros>
     </host>
