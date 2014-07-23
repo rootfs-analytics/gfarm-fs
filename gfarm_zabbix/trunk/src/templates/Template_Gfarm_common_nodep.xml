@@ -491,7 +491,7 @@
           <name>{$TIME_DIFF_THRESHOLD}</name>
         </macro>
         <macro>
-          <value>300</value>
+          <value>600</value>
           <name>{$ZABBIX_AGENT_TIMEOUT}</name>
         </macro>
       </macros>
