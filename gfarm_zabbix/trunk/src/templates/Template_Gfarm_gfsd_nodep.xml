@@ -210,7 +210,7 @@
           <name>{$GFSD_SPOOL_DIR}</name>
         </macro>
         <macro>
-          <value>86400</value>
+          <value>10800</value>
           <name>{$NODATA_TIMEOUT}</name>
         </macro>
       </macros>
