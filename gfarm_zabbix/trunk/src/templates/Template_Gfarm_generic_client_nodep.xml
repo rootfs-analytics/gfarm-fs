@@ -20,7 +20,7 @@
       </groups>
       <triggers>
         <trigger>
-          <description>Auth request to gfsd ({ITEM.LASTVALUE}) failed</description>
+          <description>Auth request to gfsd failed ({ITEM.LASTVALUE})</description>
           <type>0</type>
           <expression>{Template_Gfarm_generic_client_nodep:gfarm.generic_client.gfhost.regexp(^ok$)}=0</expression>
           <url></url>
@@ -29,7 +29,7 @@
           <comments></comments>
         </trigger>
         <trigger>
-          <description>Auth request to gfmd ({ITEM.LASTVALUE}) failed</description>
+          <description>Auth request to gfmd failed ({ITEM.LASTVALUE})</description>
           <type>0</type>
           <expression>{Template_Gfarm_generic_client_nodep:gfarm.generic_client.gfmdhost.regexp(^ok$)}=0</expression>
           <url></url>
@@ -114,8 +114,8 @@
     </host>
   </hosts>
   <dependencies>
-    <dependency description="Template_Gfarm_generic_client_nodep:Auth request to gfsd ({ITEM.LASTVALUE}) failed">
-      <depends>Template_Gfarm_generic_client_nodep:Auth request to gfmd ({ITEM.LASTVALUE}) failed</depends>
+    <dependency description="Template_Gfarm_generic_client_nodep:Auth request to gfsd failed ({ITEM.LASTVALUE})">
+      <depends>Template_Gfarm_generic_client_nodep:Auth request to gfmd failed ({ITEM.LASTVALUE})</depends>
     </dependency>
   </dependencies>
 </zabbix_export>
