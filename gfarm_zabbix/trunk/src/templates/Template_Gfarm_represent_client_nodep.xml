@@ -20,7 +20,7 @@
       </groups>
       <triggers>
         <trigger>
-          <description>Result of gfhost command shows a trouble of gfsd ({ITEM.LASTVALUE})</description>
+          <description>Problem of gfsd ({ITEM.LASTVALUE})</description>
           <type>0</type>
           <expression>{Template_Gfarm_represent_client_nodep:gfarm.represent_client.gfhost.regexp(^ok$)}=0</expression>
           <url></url>
@@ -29,7 +29,7 @@
           <comments></comments>
         </trigger>
         <trigger>
-          <description>Result of gfmdhost command shows a trouble of gfmd ({ITEM.LASTVALUE})</description>
+          <description>Problem of gfmd ({ITEM.LASTVALUE})</description>
           <type>0</type>
           <expression>{Template_Gfarm_represent_client_nodep:gfarm.represent_client.gfmdhost.regexp(^ok$)}=0</expression>
           <url></url>
@@ -114,8 +114,8 @@
     </host>
   </hosts>
   <dependencies>
-    <dependency description="Template_Gfarm_represent_client_nodep:Result of gfhost command shows a trouble of gfsd ({ITEM.LASTVALUE})">
-      <depends>Template_Gfarm_represent_client_nodep:Result of gfmdhost command shows a trouble of gfmd ({ITEM.LASTVALUE})</depends>
+    <dependency description="Template_Gfarm_represent_client_nodep:Problem of gfsd ({ITEM.LASTVALUE})">
+      <depends>Template_Gfarm_represent_client_nodep:Problem of gfmd ({ITEM.LASTVALUE})</depends>
     </dependency>
   </dependencies>
 </zabbix_export>
