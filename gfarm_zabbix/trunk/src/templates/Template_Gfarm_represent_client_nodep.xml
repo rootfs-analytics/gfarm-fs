@@ -24,7 +24,7 @@
           <type>0</type>
           <expression>{Template_Gfarm_represent_client_nodep:gfarm.represent_client.gfhost.regexp(^ok$)}=0</expression>
           <url></url>
-          <status>0</status>
+          <status>1</status>
           <priority>4</priority>
           <comments></comments>
         </trigger>
@@ -45,7 +45,7 @@
           <delay>300</delay>
           <history>90</history>
           <trends>365</trends>
-          <status>0</status>
+          <status>1</status>
           <data_type>0</data_type>
           <units></units>
           <multiplier>0</multiplier>

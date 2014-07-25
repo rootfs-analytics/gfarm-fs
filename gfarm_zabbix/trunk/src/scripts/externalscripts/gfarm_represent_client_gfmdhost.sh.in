@@ -12,7 +12,6 @@
 #
 # Parse command line arguments.
 #
-TIMEOUT=${1:-"15"}
 
 #
 # Read a configuration file
@@ -23,8 +22,8 @@ CONF_FILE=@ZABBIX_EXTSCRIPTDIR@/gfarm_conf.inc
 #
 # Create temporary files
 #
-outfile=/tmp/gfarm_repcli_gfmdhost.out
-errfile=/tmp/gfarm_repcli_gfmdhost.err
+outfile=/tmp/gfarm_represent_client_gfmdhost.out.$$
+errfile=/tmp/gfarm_represent_client_gfmdhost.err.$$
 trap "rm -f $outfile $errfile; log_err 'killed'; exit 1" 1 2 3 15
 rm -f $outfile $errfile
 
@@ -35,8 +34,13 @@ GFCMD="@GFARM_BINDIR@/gfmdhost -l"
 @GFARM_BINDIR@/gfservice-timeout $TIMEOUT $GFCMD > $outfile 2> $errfile
 GFCMD_EXITCODE=$?
 if [ $GFCMD_EXITCODE -ne 0 ]; then
-    echo "execution of '$GFCMD' failed"
-    log_err "'$GFCMD' failed with the exit code $GFCMD_EXITCODE"
+    if [ $GFCMD_EXITCODE -eq $TIMEOUT_EXITCODE ]; then
+        echo "execution of '$GFCMD' failed, timeout"
+        log_err "'$GFCMD' failed, timeout"
+    else
+        echo "execution of '$GFCMD' failed"
+        log_err "'$GFCMD' failed with the exit code $GFCMD_EXITCODE"
+    fi
     [ -s $errfile ] && head -1 $errfile | log_warning
     rm -f $outfile $errfile
     exit 0

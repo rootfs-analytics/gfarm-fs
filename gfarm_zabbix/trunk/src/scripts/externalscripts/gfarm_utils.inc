@@ -1,4 +1,11 @@
+# Syslog facility
 SYSLOG_FACILITY=${SYSLOG_FACILITY:-"local0"}
+
+# Timeout interval of 'gf*' command.
+TIMEOUT=${TIMEOUT:-15}
+
+# Exit code of 'gfservice-timeout' when timeout occurs.
+TIMEOUT_EXITCODE=124
 
 #
 # Output a syslog message of the priority 'err'.

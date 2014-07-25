@@ -1,10 +1,10 @@
-#!/bin/sh
+! /bin/sh
 #
 # External script for gfarm-zabbix.
 #
-# This script is assumed to be executed on generic client hosts.
+# This script is assumed to be executed on gfmd hosts.
 # It tries executing 'gfmdhost' to check whether it can connect with
-# the master gfmd and succeeds in authentication.
+# master gfmd servers and succeeds in authentication.
 #
 
 . @ZABBIX_EXTSCRIPTDIR@/gfarm_utils.inc
@@ -22,29 +22,27 @@ CONF_FILE=@ZABBIX_EXTSCRIPTDIR@/gfarm_conf.inc
 #
 # Create temporary files
 #
-outfile=/tmp/gfarm_generic_client_gfmdhost.out.$$
-errfile=/tmp/gfarm_generic_client_gfmdhost.err.$$
+outfile=/tmp/gfarm_gfmd_gfmdhost.out.$$
+errfile=/tmp/gfarm_gfmd_gfdmhost.err.$$
 trap "rm -f $outfile $errfile; log_err 'killed'; exit 1" 1 2 3 15
 rm -f $outfile $errfile
 
 #
 # Execute 'gfmdhost'.
 #
-GFCMD="@GFARM_BINDIR@/gfmdhost -l"
+GFCMD="sudo -n -u _gfarmmd @GFARM_BINDIR@/gfmdhost"
 @GFARM_BINDIR@/gfservice-timeout $TIMEOUT $GFCMD > $outfile 2> $errfile
 GFCMD_EXITCODE=$?
-if [ $GFCMD_EXITCODE -eq $TIMEOUT_EXITCODE ]; then
-    # We ignore timeout, since too many alerts will be triggered
-    # if each generic clients report it.
+if [ $GFCMD_EXITCODE -ne 0 ]; then
+    # We ignore the execution failure itself, since too many alerts will
+    # be triggered if each file system node reports the failure.
     echo "ok"
-    log_warning "'$GFCMD' failed, timeout"
-    [ -s $errfile ] && head -1 $errfile | log_warning
-    rm -f $outfile $errfile
-    exit 0
-elif [ $GFCMD_EXITCODE -ne 0 ]; then
-    echo "execution of '$GFCMD' failed"
-    log_err "'$GFCMD' failed with the exit code $GFCMD_EXITCODE"
-    [ -s $errfile ] && head -1 $errfile | log_warning
+    if [ $GFCMD_EXITCODE -eq $TIMEOUT_EXITCODE ]; then
+        log_warning "'$GFCMD' failed, timeout"
+    else
+        log_warning "'$GFCMD' failed with the exit code $GFCMD_EXITCODE"
+    fi
+    [ -s $errfile ] && head -1 $errfile | log_err
     rm -f $outfile $errfile
     exit 0
 fi
