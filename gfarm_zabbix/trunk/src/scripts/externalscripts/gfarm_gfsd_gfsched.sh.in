@@ -1,10 +1,10 @@
-#!/bin/sh
+#! /bin/sh
 #
 # External script for gfarm-zabbix.
 #
-# This script is assumed to be executed on generic client hosts.
-# It tries executing 'gfmdhost' to check whether it can connect with
-# the master gfmd and succeeds in authentication.
+# This script is assumed to be executed on gfsd hosts.
+# It tries executing 'gfsched' to check the current availability
+# of 'gfsd' on that host.
 #
 
 . @ZABBIX_EXTSCRIPTDIR@/gfarm_utils.inc
@@ -12,6 +12,10 @@
 #
 # Parse command line arguments.
 #
+GFSD_HOSTNAME=$1
+if [ "X$GFSD_HOSTNAME" = X -o "X$GFSD_HOSTNAME" = X- ]; then
+    GFSD_HOSTNAME=`hostname`
+fi
 
 #
 # Read a configuration file
@@ -22,26 +26,18 @@ CONF_FILE=@ZABBIX_EXTSCRIPTDIR@/gfarm_conf.inc
 #
 # Create temporary files
 #
-outfile=/tmp/gfarm_generic_client_gfmdhost.out.$$
-errfile=/tmp/gfarm_generic_client_gfmdhost.err.$$
+outfile=/tmp/gfarm_gfsd_gfsched.out.$$
+errfile=/tmp/gfarm_gfsd_gfsched.err.$$
 trap "rm -f $outfile $errfile; log_err 'killed'; exit 1" 1 2 3 15
 rm -f $outfile $errfile
 
 #
-# Execute 'gfmdhost'.
+# Execute 'gfhost'.
 #
-GFCMD="@GFARM_BINDIR@/gfmdhost -l"
+GFCMD="@GFARM_BINDIR@/gfsched -M"
 @GFARM_BINDIR@/gfservice-timeout $TIMEOUT $GFCMD > $outfile 2> $errfile
 GFCMD_EXITCODE=$?
-if [ $GFCMD_EXITCODE -eq $TIMEOUT_EXITCODE ]; then
-    # We ignore timeout, since too many alerts will be triggered
-    # if each generic clients report it.
-    echo "ok"
-    log_warning "'$GFCMD' failed, timeout"
-    [ -s $errfile ] && head -1 $errfile | log_warning
-    rm -f $outfile $errfile
-    exit 0
-elif [ $GFCMD_EXITCODE -ne 0 ]; then
+if [ $GFCMD_EXITCODE -ne 0 ]; then
     echo "execution of '$GFCMD' failed"
     log_err "'$GFCMD' failed with the exit code $GFCMD_EXITCODE"
     [ -s $errfile ] && head -1 $errfile | log_warning
@@ -50,7 +46,7 @@ elif [ $GFCMD_EXITCODE -ne 0 ]; then
 fi
 
 #
-# Check whether 'gfmdhost' outputs something.
+# Check whether 'gfhost' outputs a list of servers correctly.
 #
 if [ ! -s $outfile ]; then
     echo "ok"
@@ -60,6 +56,14 @@ if [ ! -s $outfile ]; then
     exit 0
 fi
 
-echo "ok"
+#
+# Check the result data of 'gfhost'.
+#
+if grep "^$GFSD_HOSTNAME\$" $outfile > /dev/null 2>&1; then
+    echo "ok"
+else
+    echo "unavailable: $GFSD_HOSTNAME"
+fi
+
 rm -f $outfile $errfile
 exit 0
