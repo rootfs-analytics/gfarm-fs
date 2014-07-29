@@ -34,7 +34,7 @@ GFCMD="sudo -n -u _gfarmmd @GFARM_BINDIR@/gfmdhost"
 @GFARM_BINDIR@/gfservice-timeout $TIMEOUT $GFCMD > $outfile 2> $errfile
 GFCMD_EXITCODE=$?
 if check_auth_error $errfile; then
-    echo "auth to master gfmd failed"
+    echo "auth request to master gfmd failed"
     rm -f $outfile $errfile
     exit 0
 elif [ $GFCMD_EXITCODE -ne 0 ]; then
