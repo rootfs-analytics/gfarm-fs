@@ -29,7 +29,7 @@
           <comments></comments>
         </trigger>
         <trigger>
-          <description>Problem of gfmd ({ITEM.LASTVALUE})</description>
+          <description>Auth request to master gfmd failed</description>
           <type>0</type>
           <expression>{Template_Gfarm_gfmd_nodep:gfarm.gfmd.gfmdhost.regexp(^ok$)}=0</expression>
           <url></url>
