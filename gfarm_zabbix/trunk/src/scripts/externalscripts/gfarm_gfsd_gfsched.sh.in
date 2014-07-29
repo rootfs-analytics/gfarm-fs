@@ -32,7 +32,7 @@ trap "rm -f $outfile $errfile; log_err 'killed'; exit 1" 1 2 3 15
 rm -f $outfile $errfile
 
 #
-# Execute 'gfhost'.
+# Execute 'gfsched'.
 #
 GFCMD="@GFARM_BINDIR@/gfsched -M"
 @GFARM_BINDIR@/gfservice-timeout $TIMEOUT $GFCMD > $outfile 2> $errfile
@@ -46,7 +46,7 @@ if [ $GFCMD_EXITCODE -ne 0 ]; then
 fi
 
 #
-# Check whether 'gfhost' outputs a list of servers correctly.
+# Check whether 'gfsched' outputs a list of servers correctly.
 #
 if [ ! -s $outfile ]; then
     echo "ok"
@@ -57,7 +57,7 @@ if [ ! -s $outfile ]; then
 fi
 
 #
-# Check the result data of 'gfhost'.
+# Check the result data of 'gfsched'.
 #
 if grep "^$GFSD_HOSTNAME\$" $outfile > /dev/null 2>&1; then
     echo "ok"
