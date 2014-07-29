@@ -1,4 +1,4 @@
-! /bin/sh
+#! /bin/sh
 #
 # External script for gfarm-zabbix.
 #
@@ -33,7 +33,11 @@ rm -f $outfile $errfile
 GFCMD="sudo -n -u _gfarmmd @GFARM_BINDIR@/gfmdhost"
 @GFARM_BINDIR@/gfservice-timeout $TIMEOUT $GFCMD > $outfile 2> $errfile
 GFCMD_EXITCODE=$?
-if [ $GFCMD_EXITCODE -ne 0 ]; then
+if check_auth_error $errfile; then
+    echo "auth to master gfmd failed"
+    rm -f $outfile $errfile
+    exit 0
+elif [ $GFCMD_EXITCODE -ne 0 ]; then
     # We ignore the execution failure itself, since too many alerts will
     # be triggered if each file system node reports the failure.
     echo "ok"
@@ -43,17 +47,6 @@ if [ $GFCMD_EXITCODE -ne 0 ]; then
         log_warning "'$GFCMD' failed with the exit code $GFCMD_EXITCODE"
     fi
     [ -s $errfile ] && head -1 $errfile | log_err
-    rm -f $outfile $errfile
-    exit 0
-fi
-
-#
-# Check whether 'gfmdhost' outputs something.
-#
-if [ ! -s $outfile ]; then
-    echo "ok"
-    log_warning "'$GFCMD' outputs no data"
-    [ -s $errfile ] && head -1 $errfile | log_warning
     rm -f $outfile $errfile
     exit 0
 fi
