@@ -30,8 +30,9 @@ rm -f $outfile $errfile
 #
 # Execute 'gfhost'.
 #
-GFCMD="sudo -n -u _gfarmfs @GFARM_BINDIR@/gfhost -lv"
-@GFARM_BINDIR@/gfservice-timeout $TIMEOUT $GFCMD > $outfile 2> $errfile
+GFCMD="@GFARM_BINDIR@/gfhost -lv"
+sudo -n -u _gfarmfs @GFARM_BINDIR@/gfservice-timeout $TIMEOUT \
+    $GFCMD > $outfile 2> $errfile
 GFCMD_EXITCODE=$?
 if [ $GFCMD_EXITCODE -ne 0 ]; then
     # We ignore the execution failure itself, since too many alerts will
