@@ -14,7 +14,7 @@
 #
 GFSD_HOSTNAME=$1
 if [ "X$GFSD_HOSTNAME" = X -o "X$GFSD_HOSTNAME" = X- ]; then
-    GFSD_HOSTNAME=`hostname`
+    GFSD_HOSTNAME=`hostname -f`
 fi
 
 #
