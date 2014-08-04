@@ -3,7 +3,7 @@
 # External script for gfarm-zabbix.
 #
 # This script is assumed to be executed on gfmd hosts.
-# It tries executing 'gfmdhost' to check whether it can connect with
+# It tries executing 'gfhost' to check whether it can connect with
 # master gfmd servers and succeeds in authentication.
 #
 
@@ -22,15 +22,15 @@ CONF_FILE=@ZABBIX_EXTSCRIPTDIR@/gfarm_conf.inc
 #
 # Create temporary files
 #
-outfile=/tmp/gfarm_gfmd_gfmdhost.out.$$
-errfile=/tmp/gfarm_gfmd_gfdmhost.err.$$
+outfile=/tmp/gfarm_gfmd_gfhost.out.$$
+errfile=/tmp/gfarm_gfmd_gfhost.err.$$
 trap "rm -f $outfile $errfile; log_err 'killed'; exit 1" 1 2 3 15
 rm -f $outfile $errfile
 
 #
-# Execute 'gfmdhost'.
+# Execute 'gfhost'.
 #
-GFCMD="@GFARM_BINDIR@/gfmdhost"
+GFCMD="@GFARM_BINDIR@/gfhost"
 sudo -n -u _gfarmmd @GFARM_BINDIR@/gfservice-timeout $TIMEOUT \
     $GFCMD > $outfile 2> $errfile
 GFCMD_EXITCODE=$?

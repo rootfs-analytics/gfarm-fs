@@ -31,7 +31,7 @@
         <trigger>
           <description>Auth request to master gfmd failed</description>
           <type>0</type>
-          <expression>{Template_Gfarm_gfmd_nodep:gfarm.gfmd.gfmdhost.regexp(^ok$)}=0</expression>
+          <expression>{Template_Gfarm_gfmd_nodep:gfarm.gfmd.gfhost.regexp(^ok$)}=0</expression>
           <url></url>
           <status>0</status>
           <priority>3</priority>
@@ -100,8 +100,8 @@
             <application>Gfarm gfmd</application>
           </applications>
         </item>
-        <item type="0" key="gfarm.gfmd.gfmdhost" value_type="4">
-          <description>Execution result of gfmdhost command on {HOSTNAME}</description>
+        <item type="0" key="gfarm.gfmd.gfhost" value_type="4">
+          <description>Execution result of gfhost command on {HOSTNAME}</description>
           <ipmi_sensor></ipmi_sensor>
           <delay>300</delay>
           <history>90</history>
