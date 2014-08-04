@@ -34,12 +34,17 @@ rm -f $outfile $errfile
 #
 # Execute 'gfsched'.
 #
-GFCMD="@GFARM_BINDIR@/gfsched -M"
+GFCMD="@GFARM_BINDIR@/gfsched -M -D $GFSD_HOSTNAME"
 @GFARM_BINDIR@/gfservice-timeout $TIMEOUT $GFCMD > $outfile 2> $errfile
 GFCMD_EXITCODE=$?
 if [ $GFCMD_EXITCODE -ne 0 ]; then
-    echo "execution of '$GFCMD' failed"
-    log_err "'$GFCMD' failed with the exit code $GFCMD_EXITCODE"
+    if [ $GFCMD_EXITCODE -eq $TIMEOUT_EXITCODE ]; then
+        echo "execution of '$GFCMD' failed, timeout"
+        log_err "'$GFCMD' failed, timeout"
+    else
+        echo "execution of '$GFCMD' failed"
+        log_err "'$GFCMD' failed with the exit code $GFCMD_EXITCODE"
+    fi
     [ -s $errfile ] && head -1 $errfile | log_warning
     rm -f $outfile $errfile
     exit 0
