@@ -65,7 +65,7 @@
           <comments></comments>
         </trigger>
         <trigger>
-          <description>Low free disk space on / in %</description>
+          <description>Low free disk space on {$MONITOR_DIR} in %</description>
           <type>0</type>
           <expression>{Template_Gfarm_common_nodep:vfs.fs.size[{$MONITOR_DIR},pfree].last(0)}&lt;{$MONITOR_DIR_FREE_THRESHOLD}</expression>
           <url></url>
@@ -491,7 +491,7 @@
           <name>{$TIME_DIFF_THRESHOLD}</name>
         </macro>
         <macro>
-          <value>600</value>
+          <value>900</value>
           <name>{$ZABBIX_AGENT_TIMEOUT}</name>
         </macro>
       </macros>
