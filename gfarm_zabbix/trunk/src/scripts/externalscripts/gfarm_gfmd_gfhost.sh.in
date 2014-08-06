@@ -30,7 +30,7 @@ rm -f $outfile $errfile
 #
 # Execute 'gfhost'.
 #
-GFCMD="@GFARM_BINDIR@/gfhost"
+GFCMD="@GFARM_BINDIR@/gfhost -M"
 sudo -n -u _gfarmmd @GFARM_BINDIR@/gfservice-timeout $TIMEOUT \
     $GFCMD > $outfile 2> $errfile
 GFCMD_EXITCODE=$?

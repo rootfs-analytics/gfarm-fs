@@ -4,7 +4,7 @@
 #
 # This script is assumed to be executed on generic client hosts.
 # It tries executing 'gfhost' to check whether it can connect with
-# other gfsd servers and succeeds in authentication.
+# gfsd servers and succeeds in authentication.
 #
 
 . @ZABBIX_EXTSCRIPTDIR@/gfarm_utils.inc
@@ -22,16 +22,50 @@ CONF_FILE=@ZABBIX_EXTSCRIPTDIR@/gfarm_conf.inc
 #
 # Create temporary files
 #
-outfile=/tmp/gfarm_generic_client_gfhost.out.$$
+outfile1=/tmp/gfarm_generic_client_gfhost.out1.$$
+outfile2=/tmp/gfarm_generic_client_gfhost.out2.$$
 errfile=/tmp/gfarm_generic_client_gfhost.err.$$
-trap "rm -f $outfile $errfile; log_err 'killed'; exit 1" 1 2 3 15
-rm -f $outfile $errfile
+trap "rm -f $outfile1 $outfile2 $errfile; log_err 'killed'; exit 1" 1 2 3 15
+rm -f $outfile1 $outfile2 $errfile
+
+#
+# Execute 'gfsched' to get a list of running 'gfsd'.
+#
+GFCMD="@GFARM_BINDIR@/gfsched -M"
+@GFARM_BINDIR@/gfservice-timeout $TIMEOUT $GFCMD > $outfile1 2> $errfile
+GFCMD_EXITCODE=$?
+if [ $GFCMD_EXITCODE -ne 0 ]; then
+    # We ignore the execution failure itself, since too many alerts will
+    # be triggered if each file system node reports the failure.
+    echo "ok"
+    if [ $GFCMD_EXITCODE -eq $TIMEOUT_EXITCODE ]; then
+        log_warning "'$GFCMD' failed, timeout"
+    else
+        log_warning "'$GFCMD' failed with the exit code $GFCMD_EXITCODE"
+    fi
+    [ -s $errfile ] && head -1 $errfile | log_err
+    rm -f $outfile1 $outfile2 $errfile
+    exit 0
+fi
+
+#
+# Check whether 'gfsched' outputs a list of servers correctly.
+#
+if [ ! -s $outfile1 ]; then
+    echo "ok"
+    log_warning "'$GFCMD' outputs no data"
+    [ -s $errfile ] && head -1 $errfile | log_warning
+    rm -f $outfile1 $outfile2 $errfile
+    exit 0
+fi
 
 #
 # Execute 'gfhost'.
 #
+rm -f $errfile
 GFCMD="@GFARM_BINDIR@/gfhost -lv"
-@GFARM_BINDIR@/gfservice-timeout $TIMEOUT $GFCMD > $outfile 2> $errfile
+@GFARM_BINDIR@/gfservice-timeout $TIMEOUT \
+    $GFCMD `cat $outfile1` > $outfile2 2> $errfile
 GFCMD_EXITCODE=$?
 if [ $GFCMD_EXITCODE -ne 0 ]; then
     # We ignore the execution failure itself, since too many alerts will
@@ -43,18 +77,18 @@ if [ $GFCMD_EXITCODE -ne 0 ]; then
         log_warning "'$GFCMD' failed with the exit code $GFCMD_EXITCODE"
     fi
     [ -s $errfile ] && head -1 $errfile | log_warning
-    rm -f $outfile $errfile
+    rm -f $outfile1 $outfile2 $errfile
     exit 0
 fi
 
 #
 # Check whether 'gfhost' outputs a list of servers correctly.
 #
-if [ ! -s $outfile ]; then
+if [ ! -s $outfile2 ]; then
     echo "ok"
     log_warning "'$GFCMD' outputs no data"
     [ -s $errfile ] && head -1 $errfile | log_warning
-    rm -f $outfile $errfile
+    rm -f $outfile1 $outfile2 $errfile
     exit 0
 fi
 
@@ -77,7 +111,7 @@ BEGIN {
         print "auth failed: " auth_fail_gfsds
     else
         print "ok"
-}' $outfile
+}' $outfile2
 
-rm -f $outfile $errfile
+rm -f $outfile1 $outfile2 $errfile
 exit 0
