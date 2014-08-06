@@ -2,7 +2,7 @@
 SYSLOG_FACILITY=${SYSLOG_FACILITY:-"local0"}
 
 # Timeout interval of 'gf*' command.
-TIMEOUT=${TIMEOUT:-15}
+TIMEOUT=${TIMEOUT:-12}
 
 # Exit code of 'gfservice-timeout' when timeout occurs.
 TIMEOUT_EXITCODE=124
