@@ -45,6 +45,7 @@ create_file()
         -e "s|@PGPASSWORD@|$PGPASSWORD|g" \
         -e "s|@ZABBIX_CONFDIR@|$ZABBIX_CONFDIR|g" \
         -e "s|@ZABBIX_EXTSCRIPTDIR@|$ZABBIX_EXTSCRIPTDIR|g" \
+        -e "s|@ZABBIX_SYSLOG_FACILITY@|$ZABBIX_SYSLOG_FACILITY|g" \
         "$1.in" > "$1"
 }
 
@@ -142,7 +143,7 @@ if [ -f $ZABBIX_EXTSCRIPTDIR/zbx_chk_gfarm.conf ]; then
 fi
 
 #
-# Change mode of $SYSLOG_FILE
+# Change mode of $GFARM_SYSLOG_FILE
 #
-chmod 0644 $SYSLOG_FILE \
-    && echo "Set mode (= 0644) of the file: $SYSLOG_FILE"
+chmod 0644 $GFARM_SYSLOG_FILE \
+    && echo "Set mode (= 0644) of the file: $GFARM_SYSLOG_FILE"
