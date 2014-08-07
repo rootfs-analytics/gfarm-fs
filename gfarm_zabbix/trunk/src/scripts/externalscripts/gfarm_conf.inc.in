@@ -1,5 +1,5 @@
 # syslog facility
-SYSLOG_FACILITY=local0
+SYSLOG_FACILITY=@ZABBIX_SYSLOG_FACILITY@
 
 # Host name on which PostgreSQL server is running.
 PGHOST=@PGHOST@
@@ -7,7 +7,7 @@ PGHOST=@PGHOST@
 # TCP port number on which PostgreSQL server is listening.
 PGPORT=@PGPORT@
 
-# Database name of PostgreSQL database.
+# Database name of PostgreSQL.
 PGDATABASE=@PGDATABASE@
 
 # User name used to connect with the PostgreSQL server.
