@@ -31,7 +31,7 @@
         <trigger>
           <description>Problem of gfsd ({ITEM.LASTVALUE})</description>
           <type>0</type>
-          <expression>{Template_Gfarm_gfsd_nodep:gfarm.gfsd.gfsched[{$GFSD_HOSTNAME}].regexp(^ok$)}=0</expression>
+          <expression>{Template_Gfarm_gfsd_nodep:gfarm.gfsd.gfsched[{$GFSD_HOSTNAMES}].regexp(^ok$)}=0</expression>
           <url></url>
           <status>0</status>
           <priority>4</priority>
@@ -100,7 +100,7 @@
             <application>Gfarm gfsd</application>
           </applications>
         </item>
-        <item type="0" key="gfarm.gfsd.gfsched[{$GFSD_HOSTNAME}]" value_type="4">
+        <item type="0" key="gfarm.gfsd.gfsched[{$GFSD_HOSTNAMES}]" value_type="4">
           <description>Execution result of gfsched command on {HOSTNAME}</description>
           <ipmi_sensor></ipmi_sensor>
           <delay>300</delay>
@@ -258,7 +258,7 @@
         </macro>
         <macro>
           <value>-</value>
-          <name>{$GFSD_HOSTNAME}</name>
+          <name>{$GFSD_HOSTNAMES}</name>
         </macro>
       </macros>
     </host>

@@ -12,9 +12,9 @@
 #
 # Parse command line arguments.
 #
-GFSD_HOSTNAME=$1
-if [ "X$GFSD_HOSTNAME" = X -o "X$GFSD_HOSTNAME" = X- ]; then
-    GFSD_HOSTNAME=`hostname -f`
+GFSD_HOSTNAMES=$1
+if [ "X$GFSD_HOSTNAMES" = X -o "X$GFSD_HOSTNAMES" = X- ]; then
+    GFSD_HOSTNAMES=`hostname -f`
 fi
 
 #
@@ -31,44 +31,27 @@ errfile=/tmp/gfarm_gfsd_gfsched.err.$$
 trap "rm -f $outfile $errfile; log_err 'killed'; exit 1" 1 2 3 15
 rm -f $outfile $errfile
 
-#
-# Execute 'gfsched'.
-#
-GFCMD="@GFARM_BINDIR@/gfsched -M -D $GFSD_HOSTNAME"
-@GFARM_BINDIR@/gfservice-timeout $TIMEOUT $GFCMD > $outfile 2> $errfile
-GFCMD_EXITCODE=$?
-if [ $GFCMD_EXITCODE -ne 0 ]; then
-    if [ $GFCMD_EXITCODE -eq $TIMEOUT_EXITCODE ]; then
-        echo "execution of '$GFCMD' failed, timeout"
-        log_err "'$GFCMD' failed, timeout"
-    else
-        echo "execution of '$GFCMD' failed"
-        log_err "'$GFCMD' failed with the exit code $GFCMD_EXITCODE"
+for GFSD_HOSTNAME in $GFSD_HOSTNAMES; do
+    #
+    # Execute 'gfsched'.
+    #
+    GFCMD="@GFARM_BINDIR@/gfsched -M -D $GFSD_HOSTNAME"
+    @GFARM_BINDIR@/gfservice-timeout $TIMEOUT $GFCMD > $outfile 2> $errfile
+    GFCMD_EXITCODE=$?
+    if [ $GFCMD_EXITCODE -ne 0 ]; then
+        if [ $GFCMD_EXITCODE -eq $TIMEOUT_EXITCODE ]; then
+            echo "execution of '$GFCMD' failed, timeout"
+            log_err "'$GFCMD' failed, timeout"
+        else
+            echo "execution of '$GFCMD' failed"
+            log_err "'$GFCMD' failed with the exit code $GFCMD_EXITCODE"
+        fi
+        [ -s $errfile ] && head -1 $errfile | log_warning
+        rm -f $outfile $errfile
+        exit 0
     fi
-    [ -s $errfile ] && head -1 $errfile | log_warning
-    rm -f $outfile $errfile
-    exit 0
-fi
+done
 
-#
-# Check whether 'gfsched' outputs a list of servers correctly.
-#
-if [ ! -s $outfile ]; then
-    echo "ok"
-    log_warning "'$GFCMD' outputs no data"
-    [ -s $errfile ] && head -1 $errfile | log_warning
-    rm -f $outfile $errfile
-    exit 0
-fi
-
-#
-# Check the result data of 'gfsched'.
-#
-if grep "^$GFSD_HOSTNAME\$" $outfile > /dev/null 2>&1; then
-    echo "ok"
-else
-    echo "unavailable: $GFSD_HOSTNAME"
-fi
-
+echo "ok"
 rm -f $outfile $errfile
 exit 0
