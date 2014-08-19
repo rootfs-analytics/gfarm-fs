@@ -68,7 +68,7 @@ sudo -n -u _gfarmfs @GFARM_BINDIR@/gfservice-timeout $TIMEOUT \
     $GFCMD `cat $outfile1` > $outfile2 2> $errfile
 GFCMD_EXITCODE=$?
 if [ $GFCMD_EXITCODE -eq $TIMEOUT_EXITCODE ]; then
-    echo "execution of '$GFCMD' failed, timeout"
+    echo "'$GFCMD' failed, timeout"
     log_err "'$GFCMD' failed, timeout"
     [ -s $errfile ] && head -1 $errfile | log_err
     rm -f $outfile1 $outfile2 $errfile

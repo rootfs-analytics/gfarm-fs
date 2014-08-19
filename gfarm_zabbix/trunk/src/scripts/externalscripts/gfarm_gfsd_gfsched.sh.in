@@ -40,10 +40,10 @@ for GFSD_HOSTNAME in $GFSD_HOSTNAMES; do
     GFCMD_EXITCODE=$?
     if [ $GFCMD_EXITCODE -ne 0 ]; then
         if [ $GFCMD_EXITCODE -eq $TIMEOUT_EXITCODE ]; then
-            echo "execution of '$GFCMD' failed, timeout"
+            echo "'$GFCMD' failed, timeout"
             log_err "'$GFCMD' failed, timeout"
         else
-            echo "execution of '$GFCMD' failed"
+            echo "'$GFCMD' failed"
             log_err "'$GFCMD' failed with the exit code $GFCMD_EXITCODE"
         fi
         [ -s $errfile ] && head -1 $errfile | log_warning
