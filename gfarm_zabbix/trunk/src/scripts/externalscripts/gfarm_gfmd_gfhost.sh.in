@@ -47,7 +47,7 @@ elif [ $GFCMD_EXITCODE -ne 0 ]; then
     else
         log_warning "'$GFCMD' failed with the exit code $GFCMD_EXITCODE"
     fi
-    [ -s $errfile ] && head -1 $errfile | log_err
+    [ -s $errfile ] && head -1 $errfile | log_warning
     rm -f $outfile $errfile
     exit 0
 fi
