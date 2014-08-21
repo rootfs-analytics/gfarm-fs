@@ -70,7 +70,7 @@ GFCMD_EXITCODE=$?
 if [ $GFCMD_EXITCODE -eq $TIMEOUT_EXITCODE ]; then
     echo "'$GFCMD' failed, timeout"
     log_err "'$GFCMD' failed, timeout"
-    [ -s $errfile ] && head -1 $errfile | log_err
+    [ -s $errfile ] && head -1 $errfile | log_warning
     rm -f $outfile1 $outfile2 $errfile
     exit 0
 elif [ $GFCMD_EXITCODE -ne 0 ]; then
@@ -78,7 +78,7 @@ elif [ $GFCMD_EXITCODE -ne 0 ]; then
     # be triggered if each file system node reports the failure.
     echo "ok"
     log_warning "'$GFCMD' failed with the exit code $GFCMD_EXITCODE"
-    [ -s $errfile ] && head -1 $errfile | log_err
+    [ -s $errfile ] && head -1 $errfile | log_warning
     rm -f $outfile1 $outfile2 $errfile
     exit 0
 fi
