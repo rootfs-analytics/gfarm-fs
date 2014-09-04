@@ -5,7 +5,7 @@
        externalscripts/		: scripts to monitor Gfarm
        zabbix_agentd.d/		: configuration file for user parameters
     templates/	                : templates for the plugin
-    failure_test_scripts/	: test programs to cause failure
+    failure_test_scripts/	: test programs to cause failure (obsolete)
     install-agentd.sh		: install script for Gfarm Zabbix plugin
     install-editor.sh		: install script for gfarm-zabbix_editor
     install.conf		: configuration file for install scripts
