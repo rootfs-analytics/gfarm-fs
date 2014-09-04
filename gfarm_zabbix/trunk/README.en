@@ -13,5 +13,5 @@ src/failure_test_scripts.
        editor/                  : scripts to edit Gfarm configuration file
        scripts/                 : Gfarm Zabbix plugin
        templates/               : templates for the plugin
-       failure_test_scripts/    : test programs to cause failure
+       failure_test_scripts/    : test programs to cause failure (obsolete)
     README.en			: this file

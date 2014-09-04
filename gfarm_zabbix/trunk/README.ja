@@ -24,4 +24,5 @@ src/failure_test_scripts ディレクトリ以下の README.ja をご参照ください。
        scripts/                 : Zabbix エージェント用設定ファイル
        templates/               : Gfarm 用 Zabbix テンプレート
        failure_test_scripts/    : 障害発生テストプログラム
+                                  (旧式で今はメンテナンスされていない)
     README.ja                   : 本ファイル
