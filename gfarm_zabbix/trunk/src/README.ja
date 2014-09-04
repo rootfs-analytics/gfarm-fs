@@ -8,8 +8,6 @@
        externalscripts/        : Gfarm 監視用スクリプト
        zabbix_agentd.d/        : Zabbix ユーザパラメータ設定ファイル
     templates/                 : Gfarm 用 Zabbix テンプレート
-    failure_test_scripts/      : 障害発生テストプログラム
-                                 (旧式で今はメンテナンスされていない)
     install-agentd.sh          : Zabbix エージェント用インストールスクリプト
     install-editor.sh          : クライアント設定ファイル編集機能
                                  インストールスクリプト
