@@ -1,3 +1,15 @@
+Release note for Gfarm Zabbix plugin 2.0.0
+==========================================
+
+[2014.10.2]
+
+Updated feature
+* fully revise the templates and external scripts to suppress dupliate
+  alerts and to introduce template macros for trigger threshold
+  [sf.net ticket #770]
+* update documents for installation, operation, and troubleshooting
+* zabbix 2.2 support
+
 Release note for Gfarm Zabbix plugin 1.1.0
 ==========================================
 
