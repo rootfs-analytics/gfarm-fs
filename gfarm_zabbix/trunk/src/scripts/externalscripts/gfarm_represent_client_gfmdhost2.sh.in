@@ -1,0 +1,77 @@
+#!/bin/sh
+#
+# External script for gfarm-zabbix.
+#
+# This script is assumed to be executed on a representative client host.
+# It executes 'gfmdhost -1 -N -P ...' for each gfmd server.  It checks
+# which servers are listening on TCP ports and which server are not.
+#
+
+. @ZABBIX_EXTSCRIPTDIR@/gfarm_utils.inc
+
+#
+# Parse command line arguments.
+#
+
+#
+# Read a configuration file
+#
+CONF_FILE=@ZABBIX_EXTSCRIPTDIR@/gfarm_conf.inc
+[ -f $CONF_FILE ] && . $CONF_FILE
+
+#
+# Execute 'gfmdhost' to get a list of gfmd servers.
+#
+GFCMD="@GFARM_BINDIR@/gfmdhost -l"
+GFMDS=`@GFARM_BINDIR@/gfservice-timeout $TIMEOUT $GFCMD \
+    | awk '{print $6 ":" $7}'`
+
+#
+# Execute 'gfmdhost -1 -N -P ...' for each gfmd.
+#
+I=1
+for GFMD in - $GFMDS; do
+    [ "X$GFMD" = X- ] && continue
+    GFCMD="@GFARM_BINDIR@/gfmdhost -1 -N -P gfarm://$GFMD"
+    @GFARM_BINDIR@/gfservice-timeout $TIMEOUT $GFCMD > /dev/null 2>&1 &
+    eval "GFCMD_PID$I=$!"
+    I=`expr $I + 1`
+done
+
+I=1
+for GFMD in - $GFMDS; do
+    [ "X$GFMD" = X- ] && continue
+    GFCMD_PID=`eval echo \\$GFCMD_PID$I`
+    [ "X$GFCMD_PID" = X ] && continue
+    wait $GFCMD_PID
+    eval "GFCMD_EXITCODE$I=$?"
+    I=`expr $I + 1`
+done
+
+#
+# Check whether more than one gfmd servers are listening.
+#
+I=1
+LISTENING_GFMDS_COUNT=0
+LISTENING_GFMDS=""
+for GFMD in - $GFMDS; do
+    [ "X$GFMD" = X- ] && continue
+    if [ `eval echo \\$GFCMD_EXITCODE$I` -eq 0 ]; then
+         if [ "X$LISTENING_GFMDS" = X ]; then
+             LISTENING_GFMDS=$GFMD
+         else
+             LISTENING_GFMDS="$LISTENING_GFMDS, $GFMD"
+         fi
+         LISTENING_GFMDS_COUNT=`expr $LISTENING_GFMDS_COUNT + 1`
+    fi
+    I=`expr $I + 1`
+done
+
+if [ $LISTENING_GFMDS_COUNT -gt 1 ]; then
+    LISTENING_GFMDS="`echo $LISTENING_GFMDS | sed -e 's/:[0-9]*//g'`"
+    echo "master: $LISTENING_GFMDS"
+else
+    echo "ok"
+fi
+
+exit 0

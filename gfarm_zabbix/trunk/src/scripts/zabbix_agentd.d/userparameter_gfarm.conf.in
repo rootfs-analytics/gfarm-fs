@@ -6,3 +6,4 @@ UserParameter=gfarm.gfsd.gfhost,HOME=@ZABBIX_CONFDIR@ @ZABBIX_EXTSCRIPTDIR@/gfar
 UserParameter=gfarm.gfsd.gfsched[*],HOME=@ZABBIX_CONFDIR@ @ZABBIX_EXTSCRIPTDIR@/gfarm_gfsd_gfsched.sh "$1"
 UserParameter=gfarm.represent_client.gfhost,HOME=@ZABBIX_CONFDIR@ @ZABBIX_EXTSCRIPTDIR@/gfarm_represent_client_gfhost.sh
 UserParameter=gfarm.represent_client.gfmdhost,HOME=@ZABBIX_CONFDIR@ @ZABBIX_EXTSCRIPTDIR@/gfarm_represent_client_gfmdhost.sh
+UserParameter=gfarm.represent_client.gfmdhost2,HOME=@ZABBIX_CONFDIR@ @ZABBIX_EXTSCRIPTDIR@/gfarm_represent_client_gfmdhost2.sh
