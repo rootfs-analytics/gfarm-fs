@@ -96,6 +96,7 @@ for I in \
     gfarm_gfsd_gfsched.sh \
     gfarm_represent_client_gfhost.sh \
     gfarm_represent_client_gfmdhost.sh \
+    gfarm_represent_client_gfmdhost2.sh \
     gfarm_utils.inc; do
     SRCFILE=scripts/externalscripts/$I
     DSTFILE=$ZABBIX_EXTSCRIPTDIR/$I
