@@ -38,14 +38,15 @@ for GFSD_HOSTNAME in $GFSD_HOSTNAMES; do
     GFCMD="@GFARM_BINDIR@/gfsched -M -D $GFSD_HOSTNAME"
     @GFARM_BINDIR@/gfservice-timeout $TIMEOUT $GFCMD > $outfile 2> $errfile
     GFCMD_EXITCODE=$?
-    if [ $GFCMD_EXITCODE -ne 0 ]; then
-        if [ $GFCMD_EXITCODE -eq $TIMEOUT_EXITCODE ]; then
-            echo "'$GFCMD' failed, timeout"
-            log_err "'$GFCMD' failed, timeout"
-        else
-            echo "'$GFCMD' failed"
-            log_err "'$GFCMD' failed with the exit code $GFCMD_EXITCODE"
-        fi
+
+    #
+    # We ignore timeout.  The timeout is caused by network trouble or high
+    # load of the gfsd host, but those troubles are also detected by other
+    # monitoring items.
+    #
+    if [ $GFCMD_EXITCODE -ne 0 -a $GFCMD_EXITCODE -ne $TIMEOUT_EXITCODE ]; then
+        echo "'$GFCMD' failed"
+        log_err "'$GFCMD' failed with the exit code $GFCMD_EXITCODE"
         [ -s $errfile ] && head -1 $errfile | log_warning
         rm -f $outfile $errfile
         exit 0
