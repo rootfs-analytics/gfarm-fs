@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<zabbix_export date="14.08.20" time="09.56" version="1.0">
+<zabbix_export date="14.11.14" time="15.31" version="1.0">
   <hosts>
     <host name="Template_Gfarm_common_nodep">
       <proxy_hostid>0</proxy_hostid>
@@ -1161,6 +1161,15 @@
           <priority>4</priority>
           <comments />
         </trigger>
+        <trigger>
+          <description>Multiple master gfmds ({ITEM.LASTVALUE})</description>
+          <type>0</type>
+          <expression>{Template_Gfarm_represent_client_nodep:gfarm.represent_client.gfmdhost2.regexp(^ok$)}=0</expression>
+          <url />
+          <status>0</status>
+          <priority>4</priority>
+          <comments />
+        </trigger>
       </triggers>
       <items>
         <item key="gfarm.represent_client.gfhost" type="0" value_type="4">
@@ -1199,6 +1208,40 @@
         </item>
         <item key="gfarm.represent_client.gfmdhost" type="0" value_type="4">
           <description>Execution result of gfmdhost command on {HOSTNAME}</description>
+          <ipmi_sensor />
+          <delay>300</delay>
+          <history>90</history>
+          <trends>365</trends>
+          <status>0</status>
+          <data_type>0</data_type>
+          <units />
+          <multiplier>0</multiplier>
+          <delta>0</delta>
+          <formula>1</formula>
+          <lastlogsize>0</lastlogsize>
+          <logtimefmt />
+          <delay_flex />
+          <authtype>0</authtype>
+          <username />
+          <password />
+          <publickey />
+          <privatekey />
+          <params />
+          <trapper_hosts />
+          <snmp_community />
+          <snmp_oid />
+          <snmp_port>161</snmp_port>
+          <snmpv3_securityname />
+          <snmpv3_securitylevel>0</snmpv3_securitylevel>
+          <snmpv3_authpassphrase />
+          <snmpv3_privpassphrase />
+          <valuemapid>0</valuemapid>
+          <applications>
+            <application>Gfarm representative client</application>
+          </applications>
+        </item>
+        <item key="gfarm.represent_client.gfmdhost2" type="0" value_type="4">
+          <description>Execution result of gfmdhost -1 command on each gfmd</description>
           <ipmi_sensor />
           <delay>300</delay>
           <history>90</history>
@@ -1850,8 +1893,8 @@
         </item>
       </items>
       <templates>
-        <template>Template_Gfarm_generic_client_nodep</template>
         <template>Template_Gfarm_common_nodep</template>
+        <template>Template_Gfarm_generic_client_nodep</template>
       </templates>
       <graphs />
       <macros />
@@ -3253,6 +3296,15 @@
           <comments />
         </trigger>
         <trigger>
+          <description>Multiple master gfmds ({ITEM.LASTVALUE})</description>
+          <type>0</type>
+          <expression>{Template_Gfarm_represent_client:gfarm.represent_client.gfmdhost2.regexp(^ok$)}=0</expression>
+          <url />
+          <status>0</status>
+          <priority>4</priority>
+          <comments />
+        </trigger>
+        <trigger>
           <description>I/O error message in log file {$KERNEL_LOGFILE}</description>
           <type>0</type>
           <expression>{Template_Gfarm_represent_client:log[{$KERNEL_LOGFILE},"kernel:\s.*I/O\serror",UTF-8].regexp(err)}#0 &amp; {Template_Gfarm_represent_client:log[{$KERNEL_LOGFILE},"kernel:\s.*I/O\serror",UTF-8].nodata({$NODATA_TIMEOUT})}=0</expression>
@@ -3353,6 +3405,40 @@
         </item>
         <item key="gfarm.represent_client.gfmdhost" type="0" value_type="4">
           <description>Execution result of gfmdhost command on {HOSTNAME}</description>
+          <ipmi_sensor />
+          <delay>300</delay>
+          <history>90</history>
+          <trends>365</trends>
+          <status>0</status>
+          <data_type>0</data_type>
+          <units />
+          <multiplier>0</multiplier>
+          <delta>0</delta>
+          <formula>1</formula>
+          <lastlogsize>0</lastlogsize>
+          <logtimefmt />
+          <delay_flex />
+          <authtype>0</authtype>
+          <username />
+          <password />
+          <publickey />
+          <privatekey />
+          <params />
+          <trapper_hosts />
+          <snmp_community />
+          <snmp_oid />
+          <snmp_port>161</snmp_port>
+          <snmpv3_securityname />
+          <snmpv3_securitylevel>0</snmpv3_securitylevel>
+          <snmpv3_authpassphrase />
+          <snmpv3_privpassphrase />
+          <valuemapid>0</valuemapid>
+          <applications>
+            <application>Gfarm representative client</application>
+          </applications>
+        </item>
+        <item key="gfarm.represent_client.gfmdhost2" type="0" value_type="4">
+          <description>Execution result of gfmdhost -1 command on each gfmd</description>
           <ipmi_sensor />
           <delay>300</delay>
           <history>90</history>
